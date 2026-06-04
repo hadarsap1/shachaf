@@ -1,102 +1,39 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  MOCK_ACTIVITY_LOGS,
-  MOCK_NEW_FAMILIES, MOCK_HOST_FAMILIES,
-} from '../../lib/mockData'
-import { getTasks, getEvents, getUsers } from '../../lib/db'
+import { getTasks, getEvents, getUsers, getMessages } from '../../lib/db'
 import StatCard from '../../components/ui/StatCard'
-import { Users, CheckSquare, Calendar, Activity, Clock, TrendingUp, UserPlus, X, MessageCircle, Loader2 } from 'lucide-react'
+import {
+  Users, CheckSquare, Calendar, Activity,
+  Clock, TrendingUp, UserPlus, X, MessageCircle,
+  Loader2, MessageSquare,
+} from 'lucide-react'
 import clsx from 'clsx'
 
-const ACTION_LABELS = {
-  completed_task: { label: 'השלים משימה', color: 'text-green-600', bg: 'bg-green-50' },
-  sent_message:   { label: 'שלח הודעה',   color: 'text-blue-600',  bg: 'bg-blue-50' },
-  chatbot_query:  { label: 'שאלה לעוזר',  color: 'text-purple-600',bg: 'bg-purple-50' },
-  published_event:{ label: 'פרסם אירוע',  color: 'text-accent-600',bg: 'bg-accent-50' },
-}
+const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
 
-// ---- Panel content components ----
-// These still use mock data for the detailed family lists (users schema migration is a later step)
-
-function NewFamiliesPanel() {
-  const hostMap = Object.fromEntries(MOCK_HOST_FAMILIES.map(h => [h.id, h.name]))
-
+function UsersPanel({ users, title }) {
   return (
     <div className="space-y-2">
-      {MOCK_NEW_FAMILIES.map(f => {
-        const pct = Math.round((f.tasksDone / f.tasksTotal) * 100)
-        const hostName = hostMap[f.hostFamilyId] || '—'
-        const phone = f.phone?.replace(/\D/g, '') || ''
-
+      {users.length === 0 && (
+        <p className="text-center text-sm text-gray-400 py-6">אין משתמשים עדיין</p>
+      )}
+      {users.map(u => {
+        const phone = u.phone?.replace(/\D/g, '') || ''
         return (
-          <div key={f.id} className="bg-gray-50 rounded-xl p-3">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="avatar w-9 h-9 text-sm bg-primary-100 text-primary-700 flex-shrink-0">
-                {f.avatar}
-              </div>
-              <div className="flex-1 text-right min-w-0">
-                <div className="font-semibold text-gray-800 text-sm">{f.name}</div>
-                <div className="text-xs text-gray-500 truncate">מארחת: {hostName}</div>
-              </div>
-              {phone && (
-                <a
-                  href={`https://wa.me/${phone}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 flex-shrink-0"
-                >
-                  <MessageCircle size={14} />
-                </a>
-              )}
+          <div key={u.uid} className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
+            {isUrl(u.avatar)
+              ? <img src={u.avatar} alt="" className="w-9 h-9 rounded-full flex-shrink-0 object-cover" />
+              : <div className="avatar w-9 h-9 text-sm bg-primary-100 text-primary-700 flex-shrink-0">{u.name?.[0] || '?'}</div>
+            }
+            <div className="flex-1 text-right min-w-0">
+              <div className="font-semibold text-gray-800 text-sm">{u.name}</div>
+              <div className="text-xs text-gray-500 truncate">{u.email}</div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary-400 to-secondary-400"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 flex-shrink-0 w-12 text-left">
-                {f.tasksDone}/{f.tasksTotal}
-              </span>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function HostFamiliesPanel() {
-  const newFamilyMap = Object.fromEntries(MOCK_NEW_FAMILIES.map(f => [f.id, f]))
-
-  return (
-    <div className="space-y-2">
-      {MOCK_HOST_FAMILIES.map(h => {
-        const assigned = h.assignedIds.map(id => newFamilyMap[id]).filter(Boolean)
-
-        return (
-          <div key={h.id} className="bg-gray-50 rounded-xl p-3">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="avatar w-9 h-9 text-sm bg-secondary-100 text-secondary-700 flex-shrink-0">
-                {h.avatar}
-              </div>
-              <div className="flex-1 text-right">
-                <div className="font-semibold text-gray-800 text-sm">{h.name}</div>
-                <div className="text-xs text-gray-500">
-                  {assigned.length > 0 ? `${assigned.length} משפחות בטיפול` : 'ללא משפחות כרגע'}
-                </div>
-              </div>
-            </div>
-            {assigned.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {assigned.map(f => (
-                  <span key={f.id} className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-600">
-                    {f.name}
-                  </span>
-                ))}
-              </div>
+            {phone && (
+              <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+                className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 flex-shrink-0">
+                <MessageCircle size={14} />
+              </a>
             )}
           </div>
         )
@@ -105,99 +42,39 @@ function HostFamiliesPanel() {
   )
 }
 
-function TasksPanel({ tasks }) {
-  const byFamily = MOCK_NEW_FAMILIES.map(f => {
-    const familyTasks = tasks.filter(t => t.assignedTo === f.id)
-    const done = familyTasks.filter(t => t.status === 'done').length
-    const inProgress = familyTasks.filter(t => t.status === 'in_progress').length
-    const pending = familyTasks.filter(t => t.status === 'pending').length
-    const pct = familyTasks.length ? Math.round((done / familyTasks.length) * 100) : Math.round((f.tasksDone / f.tasksTotal) * 100)
-    return { ...f, done: familyTasks.length ? done : f.tasksDone, inProgress, pending, pct }
-  })
-
-  return (
-    <div className="space-y-2">
-      {byFamily.map(f => (
-        <div key={f.id} className="bg-gray-50 rounded-xl p-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-gray-500">{f.pct}%</span>
-            <span className="text-sm font-semibold text-gray-800">{f.name}</span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-primary-400 to-secondary-400 transition-all"
-              style={{ width: `${f.pct}%` }}
-            />
-          </div>
-          <div className="flex justify-end gap-3 mt-1.5 text-xs text-gray-400">
-            <span className="text-green-600">{f.done} הושלמו</span>
-            {f.inProgress > 0 && <span className="text-primary-500">{f.inProgress} בתהליך</span>}
-            {f.pending > 0 && <span>{f.pending} ממתינות</span>}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ---- Slide Panel ----
-
-function SlidePanel({ panelKey, tasks, onClose }) {
-  const PANELS = {
-    new_families:    { title: 'משפחות חדשות',  sub: `${MOCK_NEW_FAMILIES.length} משפחות`,  Content: () => <NewFamiliesPanel /> },
-    host_families:   { title: 'משפחות מארחות', sub: `${MOCK_HOST_FAMILIES.length} מארחות`, Content: () => <HostFamiliesPanel /> },
-    task_completion: { title: 'השלמת משימות',  sub: 'פירוט לפי משפחה',                      Content: () => <TasksPanel tasks={tasks} /> },
-  }
-
-  const panel = PANELS[panelKey]
-  if (!panel) return null
-  const { Content } = panel
-
+function SlidePanel({ title, sub, children, onClose }) {
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
-            <X size={18} />
-          </button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
           <div className="text-right">
-            <h2 className="font-bold text-gray-800">{panel.title}</h2>
-            <p className="text-xs text-gray-500">{panel.sub}</p>
+            <h2 className="font-bold text-gray-800">{title}</h2>
+            {sub && <p className="text-xs text-gray-500">{sub}</p>}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          <Content />
-        </div>
+        <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
       </div>
     </>
   )
 }
 
-// ---- Dashboard ----
-
 export default function AdminDashboard() {
   const [activePanel, setActivePanel] = useState(null)
-  const [tasks, setTasks] = useState([])
-  const [events, setEvents] = useState([])
-  const [users, setUsers] = useState([])
+  const [tasks, setTasks]     = useState([])
+  const [events, setEvents]   = useState([])
+  const [users, setUsers]     = useState([])
+  const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([getTasks(), getEvents(), getUsers()])
-      .then(([t, e, u]) => {
-        setTasks(t)
-        setEvents(e)
-        setUsers(u)
+    Promise.all([getTasks(), getEvents(), getUsers(), getMessages()])
+      .then(([t, e, u, m]) => {
+        setTasks(t); setEvents(e); setUsers(u); setMessages(m)
         setLoading(false)
       })
-      .catch(err => {
-        console.error('Dashboard load failed', err)
-        setLoading(false)
-      })
+      .catch(err => { console.error('Dashboard load failed', err); setLoading(false) })
   }, [])
 
   const pendingTasks    = tasks.filter(t => t.status === 'pending').length
@@ -205,13 +82,13 @@ export default function AdminDashboard() {
   const doneTasks       = tasks.filter(t => t.status === 'done').length
   const totalTasks      = tasks.length
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
   const upcomingEvents = events.filter(e => e.date && new Date(e.date) >= today).length
 
-  const newFamilies  = users.filter(u => u.role === 'new_family').length  || MOCK_NEW_FAMILIES.length
-  const hostFamilies = users.filter(u => u.role === 'host_family').length || MOCK_HOST_FAMILIES.length
+  const newFamilies  = users.filter(u => u.role === 'new_family')
+  const hostFamilies = users.filter(u => u.role === 'host_family')
   const avgCompletion = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
+  const unreadMessages = messages.filter(m => !m.read).length
 
   return (
     <div className="page-container rtl" dir="rtl">
@@ -228,47 +105,40 @@ export default function AdminDashboard() {
         <>
           {/* Stats grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <StatCard
-              icon={Users} label="משפחות חדשות" value={newFamilies} color="primary"
-              onClick={() => setActivePanel('new_families')}
-            />
-            <StatCard
-              icon={UserPlus} label="משפחות מארחות" value={hostFamilies} color="secondary"
-              onClick={() => setActivePanel('host_families')}
-            />
-            <StatCard
-              icon={TrendingUp} label="השלמת משימות" value={`${avgCompletion}%`} color="success"
-              onClick={() => setActivePanel('task_completion')}
-            />
-            <StatCard
-              icon={Clock} label="אירועים קרובים" value={upcomingEvents} color="accent"
-            />
+            <StatCard icon={Users}     label="משפחות חדשות"   value={newFamilies.length}  color="primary"   onClick={() => setActivePanel('new_families')} />
+            <StatCard icon={UserPlus}  label="משפחות מארחות"  value={hostFamilies.length} color="secondary" onClick={() => setActivePanel('host_families')} />
+            <StatCard icon={TrendingUp} label="השלמת משימות"  value={`${avgCompletion}%`} color="success"   onClick={() => setActivePanel('tasks')} />
+            <StatCard icon={Clock}     label="אירועים קרובים" value={upcomingEvents}       color="accent" />
           </div>
 
-          {/* Task overview */}
           <div className="grid md:grid-cols-2 gap-4 mb-6">
+            {/* Task status */}
             <div className="card p-5">
               <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
                 <CheckSquare size={16} className="text-primary-600" />
                 סטטוס משימות
               </h2>
-              <div className="space-y-3">
-                {[
-                  { label: 'ממתין',  count: pendingTasks,    color: 'bg-gray-300',    width: totalTasks ? `${(pendingTasks    / totalTasks) * 100}%` : '0%' },
-                  { label: 'בתהליך', count: inProgressTasks, color: 'bg-primary-400', width: totalTasks ? `${(inProgressTasks / totalTasks) * 100}%` : '0%' },
-                  { label: 'הושלם',  count: doneTasks,       color: 'bg-green-400',   width: totalTasks ? `${(doneTasks       / totalTasks) * 100}%` : '0%' },
-                ].map(item => (
-                  <div key={item.label}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-500">{item.count}</span>
-                      <span className="font-medium text-gray-600">{item.label}</span>
+              {totalTasks === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">אין משימות עדיין</p>
+              ) : (
+                <div className="space-y-3">
+                  {[
+                    { label: 'ממתין',  count: pendingTasks,    color: 'bg-gray-300',    pct: (pendingTasks    / totalTasks) * 100 },
+                    { label: 'בתהליך', count: inProgressTasks, color: 'bg-primary-400', pct: (inProgressTasks / totalTasks) * 100 },
+                    { label: 'הושלם',  count: doneTasks,       color: 'bg-green-400',   pct: (doneTasks       / totalTasks) * 100 },
+                  ].map(item => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-500">{item.count}</span>
+                        <span className="font-medium text-gray-600">{item.label}</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${item.pct}%` }} />
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: item.width }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Quick actions */}
@@ -276,18 +146,15 @@ export default function AdminDashboard() {
               <h2 className="font-bold text-gray-700 mb-4">פעולות מהירות</h2>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { to: '/admin/users',    label: 'הוסף משפחה', icon: UserPlus,    color: 'bg-primary-50 text-primary-600 border-primary-200' },
-                  { to: '/admin/tasks',    label: 'פרסם משימה', icon: CheckSquare, color: 'bg-secondary-50 text-secondary-600 border-secondary-200' },
-                  { to: '/admin/events',   label: 'צור אירוע',  icon: Calendar,    color: 'bg-accent-50 text-accent-600 border-accent-200' },
-                  { to: '/admin/activity', label: 'פעילות',     icon: Activity,    color: 'bg-purple-50 text-purple-600 border-purple-200' },
+                  { to: '/admin/users',    label: 'ניהול משתמשים', icon: Users,         color: 'bg-primary-50 text-primary-600 border-primary-200' },
+                  { to: '/admin/tasks',    label: 'פרסם משימה',    icon: CheckSquare,   color: 'bg-secondary-50 text-secondary-600 border-secondary-200' },
+                  { to: '/admin/events',   label: 'צור אירוע',     icon: Calendar,      color: 'bg-accent-50 text-accent-600 border-accent-200' },
+                  { to: '/admin/messages', label: `הודעות${unreadMessages > 0 ? ` (${unreadMessages})` : ''}`, icon: MessageSquare, color: 'bg-purple-50 text-purple-600 border-purple-200' },
                 ].map(action => {
                   const Icon = action.icon
                   return (
-                    <Link
-                      key={action.to}
-                      to={action.to}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border hover:scale-105 transition-all text-center ${action.color}`}
-                    >
+                    <Link key={action.to} to={action.to}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border hover:scale-105 transition-all text-center ${action.color}`}>
                       <Icon size={18} />
                       <span className="text-xs font-medium">{action.label}</span>
                     </Link>
@@ -297,48 +164,66 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Activity feed */}
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <Link to="/admin/activity" className="text-xs text-primary-600 hover:underline">הצג הכל</Link>
-              <h2 className="font-bold text-gray-700 flex items-center gap-2">
-                <Activity size={16} className="text-primary-600" />
-                פעילות אחרונה
-              </h2>
-            </div>
-            <div className="space-y-3">
-              {MOCK_ACTIVITY_LOGS.map(log => {
-                const config = ACTION_LABELS[log.action] || { label: log.action, color: 'text-gray-600', bg: 'bg-gray-50' }
-                return (
-                  <div key={log.id} className="flex items-start gap-3">
-                    <span className="text-xs text-gray-400 flex-shrink-0 pt-0.5">
-                      {new Date(log.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <div className="flex-1 min-w-0 text-right">
-                      <div className="flex items-center gap-2 justify-end">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${config.bg} ${config.color}`}>
-                          {config.label}
-                        </span>
-                        <span className="text-sm font-medium text-gray-800">{log.userName}</span>
+          {/* Recent messages */}
+          {messages.length > 0 && (
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <Link to="/admin/messages" className="text-xs text-primary-600 hover:underline">הצג הכל</Link>
+                <h2 className="font-bold text-gray-700 flex items-center gap-2">
+                  <MessageSquare size={16} className="text-primary-600" />
+                  הודעות אחרונות
+                  {unreadMessages > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{unreadMessages}</span>
+                  )}
+                </h2>
+              </div>
+              <div className="space-y-2">
+                {messages.slice(0, 3).map(msg => (
+                  <Link key={msg.id} to="/admin/messages"
+                    className={clsx('block p-3 rounded-xl text-right transition-colors hover:bg-gray-50',
+                      !msg.read ? 'bg-blue-50' : 'bg-gray-50')}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-gray-400">
+                        {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleDateString('he-IL') : ''}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {!msg.read && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />}
+                        <span className="font-semibold text-gray-800 text-sm">{msg.subject}</span>
                       </div>
-                      <p className="text-xs text-gray-500 truncate mt-0.5">{log.detail}</p>
                     </div>
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${config.bg}`}>
-                      <Activity size={12} className={config.color} />
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{msg.userName} · {msg.body}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Panels */}
+          {activePanel === 'new_families' && (
+            <SlidePanel title="משפחות חדשות" sub={`${newFamilies.length} משפחות`} onClose={() => setActivePanel(null)}>
+              <UsersPanel users={newFamilies} />
+            </SlidePanel>
+          )}
+          {activePanel === 'host_families' && (
+            <SlidePanel title="משפחות מארחות" sub={`${hostFamilies.length} מארחות`} onClose={() => setActivePanel(null)}>
+              <UsersPanel users={hostFamilies} />
+            </SlidePanel>
+          )}
+          {activePanel === 'tasks' && (
+            <SlidePanel title="פירוט משימות" sub={`${totalTasks} משימות`} onClose={() => setActivePanel(null)}>
+              <div className="space-y-2">
+                {tasks.length === 0 && <p className="text-center text-sm text-gray-400 py-6">אין משימות</p>}
+                {tasks.map(t => (
+                  <div key={t.id} className={clsx('bg-gray-50 rounded-xl p-3 text-right',
+                    t.status === 'done' && 'opacity-60')}>
+                    <div className="font-medium text-gray-800 text-sm">{t.title}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {t.status === 'done' ? '✓ הושלם' : t.status === 'in_progress' ? 'בתהליך' : 'ממתין'}
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Slide panel */}
-          {activePanel && (
-            <SlidePanel
-              panelKey={activePanel}
-              tasks={tasks}
-              onClose={() => setActivePanel(null)}
-            />
+                ))}
+              </div>
+            </SlidePanel>
           )}
         </>
       )}
