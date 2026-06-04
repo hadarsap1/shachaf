@@ -65,6 +65,7 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]  = useState(null)
   const [saved, setSaved]    = useState(null)
+  const [error, setError]    = useState('')
 
   const loadUsers = async () => {
     setLoading(true)
@@ -77,12 +78,19 @@ export default function SuperAdminPage() {
 
   const changeRole = async (user, newRole) => {
     if (user.role === newRole) return
+    setError('')
     setSaving(user.uid)
-    await updateDoc(doc(db, 'users', user.uid), { role: newRole })
-    setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, role: newRole } : u))
-    setSaving(null)
-    setSaved(user.uid)
-    setTimeout(() => setSaved(null), 2000)
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { role: newRole })
+      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, role: newRole } : u))
+      setSaved(user.uid)
+      setTimeout(() => setSaved(null), 2000)
+    } catch (err) {
+      console.error('changeRole error:', err)
+      setError(`שגיאה: ${err.code || err.message}`)
+    } finally {
+      setSaving(null)
+    }
   }
 
   const admins  = users.filter(u => u.role === 'admin' || u.role === 'super_admin')
@@ -102,6 +110,12 @@ export default function SuperAdminPage() {
           <p className="text-sm text-gray-500 mt-0.5 text-right">{users.length} משתמשים רשומים</p>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-right">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16 text-gray-400">

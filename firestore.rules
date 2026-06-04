@@ -2,26 +2,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users — can only read/write own doc; cannot self-assign elevated roles
     match /users/{userId} {
+      // Any authenticated user can read their own profile
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.role == 'new_family';
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && !('role' in request.resource.data.diff(resource.data).affectedKeys());
-    }
 
-    // Admins can read all user profiles
-    match /users/{userId} {
+      // Admins and super_admins can read all profiles
       allow read: if request.auth != null
                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                      in ['admin', 'super_admin'];
-    }
 
-    // Super admins can update any user's role
-    match /users/{userId} {
+      // New accounts can only be created with role=new_family
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.role == 'new_family';
+
+      // Users can update their own profile but cannot change their own role
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.role == resource.data.role;
+
+      // Super admins can update any user including changing roles
       allow update: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                        == 'super_admin';
