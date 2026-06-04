@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_TASKS, MOCK_EVENTS, MOCK_MILESTONES } from '../../lib/mockData'
+import { getTasks, getEvents, MILESTONES } from '../../lib/db'
 import { getForms, getSubmissions } from '../../lib/formsStorage'
 import ProgressRing from '../../components/ui/ProgressRing'
 import TaskCard from '../../components/ui/TaskCard'
@@ -10,11 +10,14 @@ import { CheckSquare, Calendar, MessageCircle, ArrowLeft, Sparkles, ClipboardLis
 
 export default function DashboardPage() {
   const { user, isHostFamily } = useAuth()
-  const [tasks, setTasks] = useState(MOCK_TASKS)
+  const [tasks, setTasks] = useState([])
+  const [events, setEvents] = useState([])
   const [pendingForms, setPendingForms] = useState(0)
 
   useEffect(() => {
-    if (!user) return
+    if (!user?.uid) return
+    getTasks(user.uid).then(setTasks)
+    getEvents().then(setEvents)
     const myForms = getForms().filter(f =>
       f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')
     )
@@ -23,22 +26,22 @@ export default function DashboardPage() {
     setPendingForms(pending.length)
   }, [user])
 
-  const myTasks = tasks.filter(t => t.assignedTo === 'new-1')
+  const myTasks = tasks
   const doneTasks = myTasks.filter(t => t.status === 'done')
-  const progress = Math.round((doneTasks.length / myTasks.length) * 100)
+  const progress = myTasks.length ? Math.round((doneTasks.length / myTasks.length) * 100) : 0
 
-  const upcomingEvents = MOCK_EVENTS.slice(0, 2)
+  const upcomingEvents = events.slice(0, 2)
   const urgentTasks = myTasks.filter(t => t.status !== 'done' && t.priority === 'high').slice(0, 3)
 
   const handleStatusChange = (taskId, newStatus) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
   }
 
-  const currentMilestone = MOCK_MILESTONES.find(m => {
+  const currentMilestone = MILESTONES.find(m => {
     const msTasksDone = myTasks.filter(t => t.milestone === m.title && t.status === 'done').length
     const msTasks = myTasks.filter(t => t.milestone === m.title).length
     return msTasksDone < msTasks
-  }) || MOCK_MILESTONES[MOCK_MILESTONES.length - 1]
+  }) || MILESTONES[MILESTONES.length - 1]
 
   return (
     <div className="page-container rtl" dir="rtl">

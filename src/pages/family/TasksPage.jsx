@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { MOCK_TASKS, MOCK_MILESTONES } from '../../lib/mockData'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { getTasks, MILESTONES } from '../../lib/db'
 import TaskCard from '../../components/ui/TaskCard'
 import ProgressRing from '../../components/ui/ProgressRing'
 import { CheckSquare, Filter } from 'lucide-react'
@@ -13,12 +14,17 @@ const FILTERS = [
 ]
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState(MOCK_TASKS)
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState([])
   const [filter, setFilter] = useState('all')
 
-  const myTasks = tasks.filter(t => t.assignedTo === 'new-1')
+  useEffect(() => {
+    if (user?.uid) getTasks(user.uid).then(setTasks)
+  }, [user])
+
+  const myTasks = tasks
   const doneTasks = myTasks.filter(t => t.status === 'done')
-  const progress = Math.round((doneTasks.length / myTasks.length) * 100)
+  const progress = myTasks.length ? Math.round((doneTasks.length / myTasks.length) * 100) : 0
 
   const filtered = filter === 'all' ? myTasks : myTasks.filter(t => t.status === filter)
 
@@ -69,7 +75,7 @@ export default function TasksPage() {
       </div>
 
       {/* Tasks grouped by milestone */}
-      {MOCK_MILESTONES.map(milestone => {
+      {MILESTONES.map(milestone => {
         const milestoneTasks = filtered.filter(t => t.milestone === milestone.title)
         if (milestoneTasks.length === 0) return null
 

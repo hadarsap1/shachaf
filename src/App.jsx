@@ -18,14 +18,17 @@ import AdminEventsPage from './pages/admin/AdminEventsPage'
 import AdminActivityPage from './pages/admin/AdminActivityPage'
 import AdminFormsPage from './pages/admin/AdminFormsPage'
 import FormFillPage from './pages/family/FormFillPage'
+import ContactPage from './pages/family/ContactPage'
 import SuperAdminPage from './pages/superadmin/SuperAdminPage'
+import AdminMessagesPage from './pages/admin/AdminMessagesPage'
 
-function ProtectedShell({ adminOnly = false, superOnly = false }) {
-  const { user, loading, isAdmin, isSuperAdmin } = useAuth()
+function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false }) {
+  const { user, loading, isAdmin, isSuperAdmin, isHostFamily } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />
+  if (hostOnly && !isHostFamily && !isAdmin) return <Navigate to="/" replace />
   return <AppShell />
 }
 
@@ -51,9 +54,13 @@ export default function App() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/resources" element={<ResourcesPage />} />
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/families" element={<FamiliesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/forms" element={<FormFillPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+          </Route>
+
+          <Route element={<ProtectedShell hostOnly />}>
+            <Route path="/families" element={<FamiliesPage />} />
           </Route>
 
           <Route element={<ProtectedShell adminOnly />}>
@@ -63,6 +70,7 @@ export default function App() {
             <Route path="/admin/events" element={<AdminEventsPage />} />
             <Route path="/admin/activity" element={<AdminActivityPage />} />
             <Route path="/admin/forms" element={<AdminFormsPage />} />
+            <Route path="/admin/messages" element={<AdminMessagesPage />} />
           </Route>
 
           <Route element={<ProtectedShell superOnly />}>

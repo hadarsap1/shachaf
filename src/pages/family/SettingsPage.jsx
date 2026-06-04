@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings } from 'lucide-react'
+import { updateUserProfile } from '../../lib/db'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
+import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const TUTORIALS = [
@@ -103,6 +106,7 @@ function TutorialItem({ tutorial }) {
 export default function SettingsPage() {
   const { user } = useAuth()
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -110,15 +114,35 @@ export default function SettingsPage() {
     address: '',
   })
 
+  useEffect(() => {
+    if (!user?.uid) return
+    getDoc(doc(db, 'users', user.uid)).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data()
+        setForm(prev => ({ ...prev, address: data.address || '' }))
+      }
+    })
+  }, [user])
+
   const handleChange = (field, value) => {
     setSaved(false)
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setSaving(true)
+    try {
+      await updateUserProfile(user.uid, {
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -189,14 +213,17 @@ export default function SettingsPage() {
 
           <button
             type="submit"
+            disabled={saving}
             className={clsx(
               'w-full py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2',
               saved
                 ? 'bg-green-500 text-white'
-                : 'bg-primary-600 text-white hover:bg-primary-700'
+                : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-70'
             )}
           >
-            {saved ? (
+            {saving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : saved ? (
               <>
                 <CheckCircle2 size={16} />
                 נשמר בהצלחה

@@ -48,12 +48,17 @@ function getFollowups(reply) {
 }
 
 function buildSystemPrompt(user, tasks, events) {
+  const safeName = String(user?.name || 'משתמש').slice(0, 50).replace(/[`"\\]/g, '')
+  const safeRole = ['new_family', 'host_family', 'admin', 'super_admin'].includes(user?.role)
+    ? user.role : 'new_family'
+  const roleLabel = safeRole === 'new_family' ? 'משפחה חדשה' : 'משפחה מארחת'
   return `אתה עוזר חכם ואדיב של פלטפורמת הקליטה "שחף" לבית הספר שחף.
-המשתמש הוא: ${user?.name} (${user?.role === 'new_family' ? 'משפחה חדשה' : 'משפחה מארחת'}).
-
-מידע עדכני על המשתמש:
-משימות פתוחות: ${JSON.stringify(tasks.filter(t => t.status !== 'done').map(t => ({ title: t.title, status: t.status, due: t.dueDate })))}
-אירועים קרובים: ${JSON.stringify(events.map(e => ({ title: e.title, date: e.date, location: e.location })))}
+[CONTEXT]
+name: "${safeName}"
+role: "${roleLabel}"
+open_tasks: ${JSON.stringify(tasks.filter(t => t.status !== 'done').map(t => ({ title: t.title, due: t.dueDate })))}
+events: ${JSON.stringify(events.map(e => ({ title: e.title, date: e.date, location: e.location })))}
+[/CONTEXT]
 
 הנחיות:
 - ענה רק על בסיס המידע שסופק לך.
@@ -62,38 +67,15 @@ function buildSystemPrompt(user, tasks, events) {
 - אל תדמיין מידע שלא ניתן לך.`
 }
 
-async function callGemini(messages, systemPrompt) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-  if (!apiKey || apiKey.includes('your-')) {
-    // Mock response when no API key
-    await new Promise(r => setTimeout(r, 800))
-    const lastMsg = messages[messages.length - 1]?.content || ''
-    if (lastMsg.includes('משימה')) {
-      return 'המשימה הבאה שלך היא: "פגישת היכרות עם המשפחה המארחת" — יעד: 28 בינואר. 🤝'
-    }
-    if (lastMsg.includes('אירוע')) {
-      return 'האירוע הקרוב ביותר הוא "ערב קבלת פנים למשפחות חדשות" ב-1 בפברואר בשעה 19:00 באולם האירועים. 🎉'
-    }
-    return 'שלום! אני כאן לעזור. נסה לשאול אותי על המשימות, האירועים, או פרטי הקשר של המשפחה המארחת.'
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`
-  const body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    })),
-  }
-
-  const res = await fetch(url, {
+async function callChat(messages, systemPrompt) {
+  const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ messages, systemPrompt }),
   })
-  if (!res.ok) throw new Error('Gemini API error')
+  if (!res.ok) throw new Error('chat error')
   const data = await res.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין תשובה זמינה.'
+  return data.reply || 'אין תשובה זמינה.'
 }
 
 export default function ChatPage() {
@@ -125,7 +107,7 @@ export default function ChatPage() {
 
     try {
       const systemPrompt = buildSystemPrompt(user, MOCK_TASKS, MOCK_EVENTS)
-      const reply = await callGemini(
+      const reply = await callChat(
         newMessages.filter(m => m.role !== 'assistant' || m.id !== 1),
         systemPrompt
       )

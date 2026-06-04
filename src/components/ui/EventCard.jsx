@@ -35,16 +35,27 @@ function buildICSContent({ title, start, end, location, description = '' }) {
   ].join('\n')
 }
 
+function buildCalendarData(event) {
+  if (event.calendarData) return event.calendarData
+  const time = event.time || '09:00'
+  const start = `${event.date}T${time}`
+  const [h, m] = time.split(':').map(Number)
+  const endHour = String(h + 1).padStart(2, '0')
+  const end = `${event.date}T${endHour}:${String(m).padStart(2, '0')}`
+  return { title: event.title, start, end, location: event.location || '', description: event.description || '' }
+}
+
 export default function EventCard({ event }) {
   const typeConfig = TYPE_CONFIG[event.type] || TYPE_CONFIG.social
   const eventDate = new Date(event.date)
+  const calData = buildCalendarData(event)
 
   const handleAddToCalendar = () => {
-    window.open(buildGoogleCalendarUrl(event.calendarData), '_blank')
+    window.open(buildGoogleCalendarUrl(calData), '_blank')
   }
 
   const handleDownloadICS = () => {
-    const content = buildICSContent(event.calendarData)
+    const content = buildICSContent(calData)
     const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

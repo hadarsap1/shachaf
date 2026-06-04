@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { getMessages } from '../../lib/db'
 import {
   Home, CheckSquare, Calendar, Users,
   LayoutDashboard, BookOpen, MessageCircle, Menu, X,
   LogOut, ChevronDown, Activity, FileText, SlidersHorizontal,
-  ClipboardList, Shield,
+  ClipboardList, Shield, MessageSquare,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -17,6 +18,7 @@ const NAV_LINKS = {
     { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
+    { to: '/contact', label: 'צור קשר', icon: MessageSquare },
     { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   host_family: [
@@ -26,6 +28,7 @@ const NAV_LINKS = {
     { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
+    { to: '/contact', label: 'צור קשר', icon: MessageSquare },
     { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   admin: [
@@ -34,6 +37,7 @@ const NAV_LINKS = {
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
+    { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
   ],
   super_admin: [
@@ -42,12 +46,13 @@ const NAV_LINKS = {
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
+    { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/super/admins', label: 'מנהלים', icon: Shield },
   ],
 }
 
-function NavLink({ to, label, icon: Icon, onClick }) {
+function NavLink({ to, label, icon: Icon, onClick, unread = 0 }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/dashboard' && to !== '/admin' && pathname.startsWith(to))
 
@@ -63,18 +68,24 @@ function NavLink({ to, label, icon: Icon, onClick }) {
       )}
     >
       <Icon size={18} className="flex-shrink-0" />
-      <span>{label}</span>
+      <span className="flex-1">{label}</span>
+      {unread > 0 && (
+        <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
+          {unread}
+        </span>
+      )}
     </Link>
   )
 }
 
 function UserMenu({ user, logout }) {
   const [open, setOpen] = useState(false)
-  const initials = user?.avatar || user?.name?.[0] || '?'
+  const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
   const roleLabel = {
-    new_family: 'משפחה חדשה',
+    new_family:  'משפחה חדשה',
     host_family: 'משפחה מארחת',
-    admin: 'מנהל',
+    admin:       'מנהל',
+    super_admin: 'מנהל ראשי',
   }[user?.role] || ''
 
   return (
@@ -83,9 +94,10 @@ function UserMenu({ user, logout }) {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-primary-600/50 transition-colors w-full"
       >
-        <div className="avatar w-8 h-8 text-sm bg-accent-400 flex-shrink-0">
-          {initials}
-        </div>
+        {isUrl(user?.avatar)
+          ? <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0 object-cover" />
+          : <div className="avatar w-8 h-8 text-sm bg-accent-400 flex-shrink-0">{user?.name?.[0] || '?'}</div>
+        }
         <div className="text-right flex-1 min-w-0">
           <div className="text-sm font-semibold text-white truncate">{user?.name}</div>
           <div className="text-xs text-primary-200">{roleLabel}</div>
@@ -113,9 +125,15 @@ function UserMenu({ user, logout }) {
 }
 
 export default function AppShell() {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const links = NAV_LINKS[user?.role] || []
+
+  useEffect(() => {
+    if (!isAdmin) return
+    getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
+  }, [isAdmin])
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -129,7 +147,7 @@ export default function AppShell() {
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {links.map(link => (
-            <NavLink key={link.to} {...link} />
+            <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} />
           ))}
         </nav>
 
@@ -152,7 +170,7 @@ export default function AppShell() {
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {links.map(link => (
-                <NavLink key={link.to} {...link} onClick={() => setSidebarOpen(false)} />
+                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
             <div className="px-3 py-4 border-t border-primary-600">

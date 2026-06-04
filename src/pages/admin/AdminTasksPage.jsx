@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { MOCK_TASKS, MOCK_USERS, MOCK_MILESTONES, MOCK_NEW_FAMILIES } from '../../lib/mockData'
-import { CheckSquare, Plus, Edit2, Trash2, X, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MOCK_USERS, MOCK_NEW_FAMILIES } from '../../lib/mockData'
+import { getTasks, saveTask, deleteTask, MILESTONES } from '../../lib/db'
+import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const STATUS_OPTIONS = [
@@ -35,7 +36,7 @@ const blankTask = () => ({
   id: 'task-' + Date.now(),
   title: '',
   description: '',
-  milestone: MOCK_MILESTONES[0]?.title || '',
+  milestone: MILESTONES[0]?.title || '',
   status: 'pending',
   priority: 'medium',
   dueDate: '',
@@ -47,7 +48,7 @@ const blankTask = () => ({
 
 // ---- Task slide panel (add / edit) ----
 
-function TaskPanel({ task, onSave, onClose }) {
+function TaskPanel({ task, isNew, onSave, onClose }) {
   const [draft, setDraft] = useState({ ...task })
   const [errors, setErrors] = useState({})
 
@@ -74,7 +75,7 @@ function TaskPanel({ task, onSave, onClose }) {
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{task.id.startsWith('task-') && !MOCK_TASKS.find(t => t.id === task.id) ? 'משימה חדשה' : 'עריכת משימה'}</h2>
+          <h2 className="font-bold text-gray-800">{isNew ? 'משימה חדשה' : 'עריכת משימה'}</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -114,7 +115,7 @@ function TaskPanel({ task, onSave, onClose }) {
             <label className="label block mb-1 text-right">שלב</label>
             <select value={draft.milestone} onChange={e => set('milestone', e.target.value)}
               className="input w-full text-right">
-              {MOCK_MILESTONES.map(m => <option key={m.id} value={m.title}>{m.icon} {m.title}</option>)}
+              {MILESTONES.map(m => <option key={m.id} value={m.title}>{m.icon} {m.title}</option>)}
               <option value="">ללא שלב</option>
             </select>
           </div>
@@ -164,24 +165,48 @@ function TaskPanel({ task, onSave, onClose }) {
 // ---- Main page ----
 
 export default function AdminTasksPage() {
-  const [tasks, setTasks] = useState(MOCK_TASKS)
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
-  const [editing, setEditing] = useState(null)       // task being edited (or null)
-  const [confirmDelete, setConfirmDelete] = useState(null) // taskId pending delete
+  const [editing, setEditing] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  useEffect(() => {
+    getTasks().then(t => { setTasks(t); setLoading(false) })
+  }, [])
 
   const filtered = statusFilter === 'all' ? tasks : tasks.filter(t => t.status === statusFilter)
 
-  const handleSave = (saved) => {
-    setTasks(prev => {
-      const idx = prev.findIndex(t => t.id === saved.id)
-      return idx >= 0 ? prev.map(t => t.id === saved.id ? saved : t) : [...prev, saved]
+  const handleSave = async (saved) => {
+    const prev = [...tasks]
+    // Optimistic update
+    setTasks(cur => {
+      const idx = cur.findIndex(t => t.id === saved.id)
+      return idx >= 0 ? cur.map(t => t.id === saved.id ? saved : t) : [...cur, saved]
     })
     setEditing(null)
+    try {
+      const persisted = await saveTask(saved)
+      // If it was a new task, replace temp id with real Firestore id
+      if (persisted.id !== saved.id) {
+        setTasks(cur => cur.map(t => t.id === saved.id ? persisted : t))
+      }
+    } catch (err) {
+      console.error('saveTask failed', err)
+      setTasks(prev)
+    }
   }
 
-  const handleDelete = (id) => {
-    setTasks(prev => prev.filter(t => t.id !== id))
+  const handleDelete = async (id) => {
+    const prev = [...tasks]
+    setTasks(cur => cur.filter(t => t.id !== id))
     setConfirmDelete(null)
+    try {
+      await deleteTask(id)
+    } catch (err) {
+      console.error('deleteTask failed', err)
+      setTasks(prev)
+    }
   }
 
   const toggleStatus = (taskId) => {
@@ -229,83 +254,92 @@ export default function AdminTasksPage() {
         ))}
       </div>
 
+      {/* Loading spinner */}
+      {loading && (
+        <div className="flex justify-center items-center py-16">
+          <Loader2 size={32} className="animate-spin text-primary-400" />
+        </div>
+      )}
+
       {/* Tasks list */}
-      <div className="space-y-2">
-        {filtered.map(task => (
-          <div key={task.id} className="card p-4">
-            <div className="flex items-start gap-3">
-              {/* Status toggle */}
-              <button
-                onClick={() => toggleStatus(task.id)}
-                className={clsx(
-                  'mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 transition-all',
-                  task.status === 'done'
-                    ? 'bg-green-500 border-green-500'
-                    : 'border-gray-300 hover:border-primary-400'
-                )}
-              />
-
-              {/* Content */}
-              <div className="flex-1 text-right min-w-0">
-                <div className="flex items-center gap-2 justify-end flex-wrap">
-                  <span className={clsx('font-semibold text-sm', task.status === 'done' && 'line-through text-gray-400')}>
-                    {task.title}
-                  </span>
-                  <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', STATUS_COLOR[task.status])}>
-                    {STATUS_OPTIONS.find(o => o.value === task.status)?.label}
-                  </span>
-                </div>
-                {task.description && (
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
-                )}
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 justify-end flex-wrap">
-                  {task.assignedTo && <span>{getUserName(task.assignedTo)}</span>}
-                  {task.dueDate && <span>{new Date(task.dueDate).toLocaleDateString('he-IL')}</span>}
-                  {task.milestone && <span className="text-primary-400">{task.milestone}</span>}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+      {!loading && (
+        <div className="space-y-2">
+          {filtered.map(task => (
+            <div key={task.id} className="card p-4">
+              <div className="flex items-start gap-3">
+                {/* Status toggle */}
                 <button
-                  onClick={() => { setEditing(task); setConfirmDelete(null) }}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                  title="ערוך"
-                >
-                  <Edit2 size={14} />
-                </button>
+                  onClick={() => toggleStatus(task.id)}
+                  className={clsx(
+                    'mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 transition-all',
+                    task.status === 'done'
+                      ? 'bg-green-500 border-green-500'
+                      : 'border-gray-300 hover:border-primary-400'
+                  )}
+                />
 
-                {confirmDelete === task.id ? (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition-colors"
-                    >
-                      מחק
-                    </button>
-                    <button
-                      onClick={() => setConfirmDelete(null)}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100"
-                    >
-                      ביטול
-                    </button>
+                {/* Content */}
+                <div className="flex-1 text-right min-w-0">
+                  <div className="flex items-center gap-2 justify-end flex-wrap">
+                    <span className={clsx('font-semibold text-sm', task.status === 'done' && 'line-through text-gray-400')}>
+                      {task.title}
+                    </span>
+                    <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', STATUS_COLOR[task.status])}>
+                      {STATUS_OPTIONS.find(o => o.value === task.status)?.label}
+                    </span>
                   </div>
-                ) : (
+                  {task.description && (
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
+                  )}
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 justify-end flex-wrap">
+                    {task.assignedTo && <span>{getUserName(task.assignedTo)}</span>}
+                    {task.dueDate && <span>{new Date(task.dueDate).toLocaleDateString('he-IL')}</span>}
+                    {task.milestone && <span className="text-primary-400">{task.milestone}</span>}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <button
-                    onClick={() => setConfirmDelete(task.id)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="מחק"
+                    onClick={() => { setEditing(task); setConfirmDelete(null) }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                    title="ערוך"
                   >
-                    <Trash2 size={14} />
+                    <Edit2 size={14} />
                   </button>
-                )}
+
+                  {confirmDelete === task.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition-colors"
+                      >
+                        מחק
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(null)}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100"
+                      >
+                        ביטול
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDelete(task.id)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="מחק"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין משימות להצגה</p>
@@ -318,6 +352,7 @@ export default function AdminTasksPage() {
       {editing && (
         <TaskPanel
           task={editing}
+          isNew={editing.id.startsWith('task-')}
           onSave={handleSave}
           onClose={() => setEditing(null)}
         />

@@ -1,7 +1,17 @@
-import { useState } from 'react'
-import { MOCK_EVENTS } from '../../lib/mockData'
-import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { getEvents, saveEvent, deleteEvent } from '../../lib/db'
+import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
+
+function googleCalendarUrl(event) {
+  const time = event.time || '09:00'
+  const start = `${event.date}T${time}`
+  const [h, m] = time.split(':').map(Number)
+  const end = `${event.date}T${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  const fmt = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00Z'
+  const params = new URLSearchParams({ action: 'TEMPLATE', text: event.title, dates: `${fmt(start)}/${fmt(end)}`, location: event.location || '', details: event.description || '' })
+  return `https://calendar.google.com/calendar/render?${params}`
+}
 
 const TYPE_OPTIONS = [
   { value: 'social',      label: 'חברתי' },
@@ -36,7 +46,7 @@ const blankEvent = () => ({
 
 // ---- Event slide panel (add / edit) ----
 
-function EventPanel({ event, onSave, onClose }) {
+function EventPanel({ event, isNew, onSave, onClose }) {
   const [draft, setDraft] = useState({ ...event })
   const [errors, setErrors] = useState({})
 
@@ -57,8 +67,6 @@ function EventPanel({ event, onSave, onClose }) {
     if (Object.keys(e).length) { setErrors(e); return }
     onSave({ ...draft, title: draft.title.trim() })
   }
-
-  const isNew = !MOCK_EVENTS.find(ev => ev.id === event.id)
 
   return (
     <>
@@ -138,21 +146,45 @@ function EventPanel({ event, onSave, onClose }) {
 // ---- Main page ----
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState(MOCK_EVENTS)
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  const handleSave = (saved) => {
-    setEvents(prev => {
-      const idx = prev.findIndex(e => e.id === saved.id)
-      return idx >= 0 ? prev.map(e => e.id === saved.id ? saved : e) : [...prev, saved]
+  useEffect(() => {
+    getEvents().then(e => { setEvents(e); setLoading(false) })
+  }, [])
+
+  const handleSave = async (saved) => {
+    const prev = [...events]
+    // Optimistic update
+    setEvents(cur => {
+      const idx = cur.findIndex(e => e.id === saved.id)
+      return idx >= 0 ? cur.map(e => e.id === saved.id ? saved : e) : [...cur, saved]
     })
     setEditing(null)
+    try {
+      const persisted = await saveEvent(saved)
+      // If it was a new event, replace temp id with real Firestore id
+      if (persisted.id !== saved.id) {
+        setEvents(cur => cur.map(e => e.id === saved.id ? persisted : e))
+      }
+    } catch (err) {
+      console.error('saveEvent failed', err)
+      setEvents(prev)
+    }
   }
 
-  const handleDelete = (id) => {
-    setEvents(prev => prev.filter(e => e.id !== id))
+  const handleDelete = async (id) => {
+    const prev = [...events]
+    setEvents(cur => cur.filter(e => e.id !== id))
     setConfirmDelete(null)
+    try {
+      await deleteEvent(id)
+    } catch (err) {
+      console.error('deleteEvent failed', err)
+      setEvents(prev)
+    }
   }
 
   const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -176,100 +208,118 @@ export default function AdminEventsPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {sorted.map(event => {
-          const typeConf = TYPE_COLOR[event.type]
-          const typeLabel = TYPE_OPTIONS.find(o => o.value === event.type)?.label || event.type
+      {/* Loading spinner */}
+      {loading && (
+        <div className="flex justify-center items-center py-16">
+          <Loader2 size={32} className="animate-spin text-primary-400" />
+        </div>
+      )}
 
-          return (
-            <div key={event.id} className="card p-4">
-              <div className="flex items-start gap-3">
-                {/* Date badge */}
-                <div className="w-12 h-12 rounded-xl bg-primary-50 flex flex-col items-center justify-center flex-shrink-0">
-                  {event.date ? (
-                    <>
-                      <span className="text-xs text-primary-400 font-medium leading-none">
-                        {new Date(event.date).toLocaleDateString('he-IL', { month: 'short' })}
-                      </span>
-                      <span className="text-lg font-black text-primary-700 leading-tight">
-                        {new Date(event.date).getDate()}
-                      </span>
-                    </>
-                  ) : (
-                    <Calendar size={16} className="text-primary-300" />
-                  )}
-                </div>
+      {/* Events list */}
+      {!loading && (
+        <div className="space-y-3">
+          {sorted.map(event => {
+            const typeConf = TYPE_COLOR[event.type]
+            const typeLabel = TYPE_OPTIONS.find(o => o.value === event.type)?.label || event.type
 
-                {/* Content */}
-                <div className="flex-1 text-right min-w-0">
-                  <div className="flex items-center gap-2 justify-end flex-wrap mb-0.5">
-                    <span className="font-semibold text-gray-800 text-sm">{event.title}</span>
-                    <span className={typeConf || 'badge'}>{typeLabel}</span>
-                    {event.required && (
-                      <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium">כולם מוזמנים</span>
+            return (
+              <div key={event.id} className="card p-4">
+                <div className="flex items-start gap-3">
+                  {/* Date badge */}
+                  <div className="w-12 h-12 rounded-xl bg-primary-50 flex flex-col items-center justify-center flex-shrink-0">
+                    {event.date ? (
+                      <>
+                        <span className="text-xs text-primary-400 font-medium leading-none">
+                          {new Date(event.date).toLocaleDateString('he-IL', { month: 'short' })}
+                        </span>
+                        <span className="text-lg font-black text-primary-700 leading-tight">
+                          {new Date(event.date).getDate()}
+                        </span>
+                      </>
+                    ) : (
+                      <Calendar size={16} className="text-primary-300" />
                     )}
                   </div>
-                  {event.description && (
-                    <p className="text-xs text-gray-500 mb-1 line-clamp-1">{event.description}</p>
-                  )}
-                  <div className="flex items-center gap-3 text-xs text-gray-400 justify-end flex-wrap">
-                    {event.date && (
-                      <span className="flex items-center gap-1">
-                        <Clock size={11} />
-                        {formatDate(event.date)}{event.time ? ` • ${event.time}` : ''}
-                      </span>
-                    )}
-                    {event.location && (
-                      <span className="flex items-center gap-1">
-                        <MapPin size={11} />
-                        {event.location}
-                      </span>
-                    )}
-                  </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => { setEditing(event); setConfirmDelete(null) }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                    title="ערוך"
-                  >
-                    <Edit2 size={14} />
-                  </button>
-
-                  {confirmDelete === event.id ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition-colors"
-                      >
-                        מחק
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(null)}
-                        className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100"
-                      >
-                        ביטול
-                      </button>
+                  {/* Content */}
+                  <div className="flex-1 text-right min-w-0">
+                    <div className="flex items-center gap-2 justify-end flex-wrap mb-0.5">
+                      <span className="font-semibold text-gray-800 text-sm">{event.title}</span>
+                      <span className={typeConf || 'badge'}>{typeLabel}</span>
+                      {event.required && (
+                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium">כולם מוזמנים</span>
+                      )}
                     </div>
-                  ) : (
+                    {event.description && (
+                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">{event.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-gray-400 justify-end flex-wrap">
+                      {event.date && (
+                        <span className="flex items-center gap-1">
+                          <Clock size={11} />
+                          {formatDate(event.date)}{event.time ? ` • ${event.time}` : ''}
+                        </span>
+                      )}
+                      {event.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin size={11} />
+                          {event.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {event.date && (
+                      <a href={googleCalendarUrl(event)} target="_blank" rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-secondary-600 hover:bg-secondary-50 transition-colors"
+                        title="הוסף ליומן Google"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
                     <button
-                      onClick={() => setConfirmDelete(event.id)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                      title="מחק"
+                      onClick={() => { setEditing(event); setConfirmDelete(null) }}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                      title="ערוך"
                     >
-                      <Trash2 size={14} />
+                      <Edit2 size={14} />
                     </button>
-                  )}
+
+                    {confirmDelete === event.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(event.id)}
+                          className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition-colors"
+                        >
+                          מחק
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100"
+                        >
+                          ביטול
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(event.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="מחק"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
-      {events.length === 0 && (
+      {!loading && events.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <Calendar size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין אירועים מתוכננים</p>
@@ -282,6 +332,7 @@ export default function AdminEventsPage() {
       {editing && (
         <EventPanel
           event={editing}
+          isNew={editing.id.startsWith('event-')}
           onSave={handleSave}
           onClose={() => setEditing(null)}
         />
