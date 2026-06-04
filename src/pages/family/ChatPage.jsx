@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_TASKS, MOCK_EVENTS } from '../../lib/mockData'
 import { Send, Bot, User, Sparkles, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -47,26 +46,6 @@ function getFollowups(reply) {
   return FOLLOWUP_POOLS.general
 }
 
-function buildSystemPrompt(user, tasks, events) {
-  const safeName = String(user?.name || 'משתמש').slice(0, 50).replace(/[`"\\]/g, '')
-  const safeRole = ['new_family', 'host_family', 'admin', 'super_admin'].includes(user?.role)
-    ? user.role : 'new_family'
-  const roleLabel = safeRole === 'new_family' ? 'משפחה חדשה' : 'משפחה מארחת'
-  return `אתה עוזר חכם ואדיב של פלטפורמת הקליטה "שחף" לבית הספר שחף.
-[CONTEXT]
-name: "${safeName}"
-role: "${roleLabel}"
-open_tasks: ${JSON.stringify(tasks.filter(t => t.status !== 'done').map(t => ({ title: t.title, due: t.dueDate })))}
-events: ${JSON.stringify(events.map(e => ({ title: e.title, date: e.date, location: e.location })))}
-[/CONTEXT]
-
-הנחיות:
-- ענה רק על בסיס המידע שסופק לך.
-- אם שאלה חורגת מהמידע הזמין, ציין זאת ויעץ לפנות למשפחה המארחת או לוועד.
-- ענה בעברית בצורה ידידותית, קצרה וברורה.
-- אל תדמיין מידע שלא ניתן לך.`
-}
-
 async function callChat(messages) {
   const token = await import('../../lib/firebase').then(m => m.auth.currentUser?.getIdToken())
   const res = await fetch('/api/chat', {
@@ -78,7 +57,10 @@ async function callChat(messages) {
     body: JSON.stringify({ messages }),
   })
   if (res.status === 401) throw Object.assign(new Error('auth'), { status: 401 })
-  if (res.status === 429) throw Object.assign(new Error('rate_limit'), { status: 429 })
+  if (res.status === 429) {
+    const body = await res.json().catch(() => ({}))
+    throw Object.assign(new Error('rate_limit'), { status: 429, code: body.code })
+  }
   if (!res.ok) throw new Error('chat error')
   const data = await res.json()
   return data.reply || 'אין תשובה זמינה.'
@@ -120,7 +102,8 @@ export default function ChatPage() {
     } catch (err) {
       let content = 'מצטער, אירעה שגיאה. נסה שוב או פנה למשפחה המארחת.'
       if (err.status === 401) content = 'יש להתחבר מחדש.'
-      if (err.status === 429) content = 'שלחת יותר מדי הודעות, המתן דקה.'
+      if (err.status === 429 && err.code === 'daily_limit') content = 'הגעת למגבלת ההודעות היומית (30 הודעות). נסה שוב מחר.'
+      else if (err.status === 429) content = 'שלחת יותר מדי הודעות, המתן דקה.'
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
