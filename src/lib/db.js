@@ -62,8 +62,14 @@ export async function getUsers() {
   return snap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }))
 }
 
+const ALLOWED_PROFILE_FIELDS = ['name', 'phone', 'address', 'avatar']
+
 export async function updateUserProfile(uid, data) {
-  await updateDoc(doc(db, 'users', uid), data)
+  const safe = Object.fromEntries(
+    Object.entries(data).filter(([k]) => ALLOWED_PROFILE_FIELDS.includes(k))
+  )
+  if (Object.keys(safe).length === 0) return
+  await updateDoc(doc(db, 'users', uid), safe)
 }
 
 // ── Forms ────────────────────────────────────────────────────────────────────

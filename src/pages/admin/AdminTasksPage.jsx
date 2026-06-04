@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MOCK_USERS, MOCK_NEW_FAMILIES } from '../../lib/mockData'
-import { getTasks, saveTask, deleteTask, MILESTONES } from '../../lib/db'
+import { getTasks, saveTask, deleteTask, getUsers, MILESTONES } from '../../lib/db'
 import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -22,16 +21,6 @@ const STATUS_COLOR = {
   done:        'bg-green-50 text-green-700',
 }
 
-const ALL_ASSIGNABLE = [
-  ...Object.values(MOCK_USERS).filter(u => u.role === 'new_family'),
-  ...MOCK_NEW_FAMILIES.filter(f => !Object.values(MOCK_USERS).find(u => u.id === f.id)),
-]
-
-const getUserName = (id) => {
-  const all = [...Object.values(MOCK_USERS), ...MOCK_NEW_FAMILIES]
-  return all.find(u => u.id === id)?.name || id
-}
-
 const blankTask = () => ({
   id: 'task-' + Date.now(),
   title: '',
@@ -40,7 +29,7 @@ const blankTask = () => ({
   status: 'pending',
   priority: 'medium',
   dueDate: '',
-  assignedTo: ALL_ASSIGNABLE[0]?.id || '',
+  assignedTo: '',
   completedAt: null,
   resourceUrl: '',
   whatsappPhone: '',
@@ -48,7 +37,7 @@ const blankTask = () => ({
 
 // ---- Task slide panel (add / edit) ----
 
-function TaskPanel({ task, isNew, onSave, onClose }) {
+function TaskPanel({ task, isNew, onSave, onClose, assignableUsers }) {
   const [draft, setDraft] = useState({ ...task })
   const [errors, setErrors] = useState({})
 
@@ -125,7 +114,7 @@ function TaskPanel({ task, isNew, onSave, onClose }) {
             <select value={draft.assignedTo} onChange={e => set('assignedTo', e.target.value)}
               className="input w-full text-right">
               <option value="">לא הוקצה</option>
-              {ALL_ASSIGNABLE.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              {assignableUsers.map(u => <option key={u.uid} value={u.uid}>{u.name}</option>)}
             </select>
           </div>
 
@@ -166,13 +155,21 @@ function TaskPanel({ task, isNew, onSave, onClose }) {
 
 export default function AdminTasksPage() {
   const [tasks, setTasks] = useState([])
+  const [assignableUsers, setAssignableUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   useEffect(() => {
-    getTasks().then(t => { setTasks(t); setLoading(false) })
+    setLoading(true)
+    Promise.all([getTasks(), getUsers()])
+      .then(([t, u]) => {
+        setTasks(t)
+        setAssignableUsers(u.filter(u => u.role === 'new_family' || u.role === 'host_family'))
+        setLoading(false)
+      })
+      .catch(err => { console.error(err); setLoading(false) })
   }, [])
 
   const filtered = statusFilter === 'all' ? tasks : tasks.filter(t => t.status === statusFilter)
@@ -292,7 +289,7 @@ export default function AdminTasksPage() {
                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
                   )}
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 justify-end flex-wrap">
-                    {task.assignedTo && <span>{getUserName(task.assignedTo)}</span>}
+                    {task.assignedTo && <span>{assignableUsers.find(u => u.uid === task.assignedTo)?.name || task.assignedTo}</span>}
                     {task.dueDate && <span>{new Date(task.dueDate).toLocaleDateString('he-IL')}</span>}
                     {task.milestone && <span className="text-primary-400">{task.milestone}</span>}
                   </div>
@@ -355,6 +352,7 @@ export default function AdminTasksPage() {
           isNew={editing.id.startsWith('task-')}
           onSave={handleSave}
           onClose={() => setEditing(null)}
+          assignableUsers={assignableUsers}
         />
       )}
     </div>

@@ -1,11 +1,9 @@
-import { MOCK_USERS, MOCK_TASKS } from '../../lib/mockData'
-import { Users, MessageCircle, CheckSquare, Phone } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { getUsers } from '../../lib/db'
+import { Users, MessageCircle, CheckSquare, Loader2 } from 'lucide-react'
 
 
 function FamilyCard({ family }) {
-  const familyTasks = MOCK_TASKS.filter(t => t.assignedTo === family.id)
-  const doneTasks = familyTasks.filter(t => t.status === 'done')
-  const progress = familyTasks.length ? Math.round((doneTasks.length / familyTasks.length) * 100) : 0
   const phone = family.phone?.replace(/\D/g, '') || ''
 
   return (
@@ -13,7 +11,7 @@ function FamilyCard({ family }) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="avatar w-12 h-12 text-lg bg-primary-100 text-primary-700">
-            {family.avatar}
+            {family.avatar || family.name?.[0] || '?'}
           </div>
           <div className="text-right">
             <h3 className="font-bold text-gray-800">{family.name}</h3>
@@ -26,29 +24,12 @@ function FamilyCard({ family }) {
       <div className="mb-4">
         <div className="flex justify-between text-xs text-gray-500 mb-1.5">
           <span>התקדמות משימות</span>
-          <span className="font-medium text-gray-700">{doneTasks.length}/{familyTasks.length}</span>
+          <span className="font-medium text-gray-700">0/0</span>
         </div>
         <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
+          <div className="progress-fill" style={{ width: '0%' }} />
         </div>
-        <div className="text-xs text-gray-400 mt-1 text-left">{progress}%</div>
-      </div>
-
-      <div className="space-y-2">
-        {familyTasks.slice(0, 3).map(task => (
-          <div key={task.id} className="flex items-center gap-2 text-xs">
-            <CheckSquare
-              size={12}
-              className={task.status === 'done' ? 'text-green-500' : 'text-gray-300'}
-            />
-            <span className={task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-600'}>
-              {task.title}
-            </span>
-          </div>
-        ))}
-        {familyTasks.length > 3 && (
-          <p className="text-xs text-gray-400">+{familyTasks.length - 3} משימות נוספות</p>
-        )}
+        <div className="text-xs text-gray-400 mt-1 text-left">0%</div>
       </div>
 
       {phone && (
@@ -67,7 +48,25 @@ function FamilyCard({ family }) {
 }
 
 export default function FamiliesPage() {
-  const families = [MOCK_USERS.newFamily]
+  const [families, setFamilies] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getUsers()
+      .then(users => {
+        setFamilies(users.filter(u => u.role === 'new_family'))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="page-container rtl flex justify-center items-center py-16" dir="rtl">
+        <Loader2 size={32} className="animate-spin text-primary-400" />
+      </div>
+    )
+  }
 
   return (
     <div className="page-container rtl" dir="rtl">
@@ -79,16 +78,16 @@ export default function FamiliesPage() {
         <p className="text-sm text-gray-500 mt-0.5">{families.length} משפחות חדשות בטיפולך</p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        {families.map(family => (
-          <FamilyCard key={family.id} family={family} />
-        ))}
-      </div>
-
-      {families.length === 0 && (
+      {families.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <Users size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">אין משפחות מוקצות אליך עדיין</p>
+          <p className="font-medium">אין משפחות רשומות עדיין</p>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-4">
+          {families.map(family => (
+            <FamilyCard key={family.uid} family={family} />
+          ))}
         </div>
       )}
     </div>

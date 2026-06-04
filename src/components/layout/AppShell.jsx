@@ -52,6 +52,13 @@ const NAV_LINKS = {
   ],
 }
 
+const BOTTOM_NAV = {
+  new_family:  ['/dashboard', '/tasks', '/events', '/contact'],
+  host_family: ['/dashboard', '/families', '/events', '/contact'],
+  admin:       ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
+  super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
+}
+
 function NavLink({ to, label, icon: Icon, onClick, unread = 0 }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/dashboard' && to !== '/admin' && pathname.startsWith(to))
@@ -126,9 +133,13 @@ function UserMenu({ user, logout }) {
 
 export default function AppShell() {
   const { user, logout, isAdmin } = useAuth()
+  const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const links = NAV_LINKS[user?.role] || []
+
+  const bottomNavPaths = BOTTOM_NAV[user?.role] || []
+  const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
 
   useEffect(() => {
     if (!isAdmin) return
@@ -162,8 +173,14 @@ export default function AppShell() {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute top-0 right-0 h-full w-72 bg-primary-700 flex flex-col animate-slide-up">
+            {/* In RTL, justify-between puts the first child on the visual RIGHT and the second on the LEFT.
+                The sidebar slides in from the right, so the close button should be on the visual right (first child). */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-primary-600 bg-white">
-              <button onClick={() => setSidebarOpen(false)} className="text-primary-400 hover:text-primary-700 p-1">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                aria-label="סגור תפריט"
+                className="text-primary-400 hover:text-primary-700 p-1"
+              >
                 <X size={20} />
               </button>
               <img src="/logo.png" alt="שחף" className="h-10 w-auto" />
@@ -187,15 +204,41 @@ export default function AppShell() {
           <img src="/logo.png" alt="שחף" className="h-9 w-auto" />
           <button
             onClick={() => setSidebarOpen(true)}
+            aria-label="פתח תפריט"
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
           >
             <Menu size={20} />
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <Outlet />
         </main>
+
+        {/* Mobile bottom nav */}
+        {bottomLinks.length > 0 && (
+          <nav className="md:hidden flex items-center justify-around border-t border-gray-100 bg-white px-2 py-1 flex-shrink-0">
+            {bottomLinks.map(link => {
+              const Icon = link.icon
+              const active = pathname === link.to || (link.to !== '/dashboard' && link.to !== '/admin' && pathname.startsWith(link.to))
+              return (
+                <Link key={link.to} to={link.to}
+                  className={clsx('flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all relative',
+                    active ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600')}>
+                  <div className="relative">
+                    <Icon size={22} />
+                    {link.badge && unreadMessages > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        {unreadMessages}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px]">{link.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+        )}
       </div>
     </div>
   )

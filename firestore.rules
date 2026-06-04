@@ -22,9 +22,14 @@ service cloud.firestore {
                     && request.resource.data.role == resource.data.role;
 
       // Admins and super_admins can update any user including changing roles
+      // but only super_admins can assign the super_admin role
       allow update: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-                       in ['admin', 'super_admin'];
+                       in ['admin', 'super_admin']
+                    && (
+                      request.resource.data.role != 'super_admin'
+                      || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+                    );
     }
 
     // Tasks — admins read/write all; families read their assigned tasks
@@ -54,12 +59,11 @@ service cloud.firestore {
                       in ['admin', 'super_admin'];
     }
 
-    // Submissions — user reads/writes own; admins read all
+    // Submissions — user reads/creates own; admins read all
     match /submissions/{subId} {
-      allow read, write: if request.auth != null
-                         && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null
-                    && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
       allow read: if request.auth != null
                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                      in ['admin', 'super_admin'];

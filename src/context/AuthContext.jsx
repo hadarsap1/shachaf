@@ -14,51 +14,55 @@ import { MOCK_USERS } from '../lib/mockData'
 
 const AuthContext = createContext(null)
 
-// Demo login — bypasses Firebase, used for testing/onboarding
-const DEMO_PREFIX = '__demo__'
-
-async function fetchUserProfile(uid) {
-  const snap = await getDoc(doc(db, 'users', uid))
-  return snap.exists() ? { uid, ...snap.data() } : null
-}
-
 export function AuthProvider({ children }) {
   const [user, setUser]     = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Check for demo session first
-    const demo = localStorage.getItem('shachaf_mock_user')
-    if (demo) {
-      try { setUser(JSON.parse(demo)) } catch { localStorage.removeItem('shachaf_mock_user') }
+  const fetchUserProfile = async (firebaseUser) => {
+    try {
+      const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
+      if (snap.exists()) {
+        setUser({ uid: firebaseUser.uid, ...snap.data() })
+      } else {
+        // New user — create a basic profile with new_family role
+        const newProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          role: 'new_family',
+          avatar: '',
+          phone: '',
+          createdAt: serverTimestamp(),
+        }
+        await setDoc(doc(db, 'users', firebaseUser.uid), newProfile)
+        setUser(newProfile)
+      }
+    } catch (err) {
+      console.error('fetchUserProfile failed:', err)
+      setUser(null)
+    } finally {
       setLoading(false)
-      return
+    }
+  }
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const demo = localStorage.getItem('shachaf_mock_user')
+      if (demo) {
+        try { setUser(JSON.parse(demo)) } catch { localStorage.removeItem('shachaf_mock_user') }
+        setLoading(false)
+        return
+      }
     }
 
     // Firebase auth state
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const profile = await fetchUserProfile(firebaseUser.uid)
-        if (profile) {
-          setUser(profile)
-        } else {
-          // New user — create a basic profile with new_family role
-          const newProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-            role: 'new_family',
-            avatar: '',
-            phone: '',
-            createdAt: serverTimestamp(),
-          }
-          await setDoc(doc(db, 'users', firebaseUser.uid), newProfile)
-          setUser(newProfile)
-        }
+        await fetchUserProfile(firebaseUser)
       } else {
         setUser(null)
+        setLoading(false)
       }
-      setLoading(false)
     })
     return unsub
   }, [])
@@ -88,7 +92,11 @@ export function AuthProvider({ children }) {
       phone: '',
       createdAt: serverTimestamp(),
     }
-    await setDoc(doc(db, 'users', cred.user.uid), profile)
+    const userRef = doc(db, 'users', cred.user.uid)
+    const existing = await getDoc(userRef)
+    if (!existing.exists()) {
+      await setDoc(userRef, profile)
+    }
     setUser(profile)
     return cred
   }
@@ -96,8 +104,9 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider()
     const cred = await signInWithPopup(auth, provider)
-    const existing = await fetchUserProfile(cred.user.uid)
-    if (!existing) {
+    const userRef = doc(db, 'users', cred.user.uid)
+    const existingSnap = await getDoc(userRef)
+    if (!existingSnap.exists()) {
       const profile = {
         uid: cred.user.uid,
         email: cred.user.email,
@@ -107,8 +116,10 @@ export function AuthProvider({ children }) {
         phone: '',
         createdAt: serverTimestamp(),
       }
-      await setDoc(doc(db, 'users', cred.user.uid), profile)
+      await setDoc(userRef, profile)
       setUser(profile)
+    } else {
+      setUser({ uid: cred.user.uid, ...existingSnap.data() })
     }
     return cred
   }

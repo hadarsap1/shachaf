@@ -180,7 +180,7 @@ export default function FormFillPage() {
       (f.targetRole === user?.role || f.targetRole === 'all')
     )
     setForms(allForms)
-    setSubmissions(getSubmissions().filter(s => s.userId === user?.id))
+    setSubmissions(getSubmissions().filter(s => s.userId === user?.uid))
   }, [user])
 
   const getSubmission = (formId) => submissions.find(s => s.formId === formId)
@@ -189,13 +189,13 @@ export default function FormFillPage() {
     const sub = {
       id: 'sub-' + Date.now(),
       formId: form.id,
-      userId: user.id,
+      userId: user.uid,
       userName: user.name,
       submittedAt: new Date().toISOString(),
       data: values,
     }
     saveSubmission(sub)
-    setSubmissions(getSubmissions().filter(s => s.userId === user?.id))
+    setSubmissions(getSubmissions().filter(s => s.userId === user?.uid))
   }
 
   if (filling) {

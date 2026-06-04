@@ -159,10 +159,13 @@ export default function LoginPage() {
                 </div>
               ) : (
                 <form onSubmit={handleReset} className="space-y-4">
-                  <div className="relative">
-                    <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                      placeholder="כתובת מייל" className="input w-full pr-9 text-right" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 text-right mb-1">כתובת מייל</label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                        placeholder="כתובת מייל" className="input w-full pr-9 text-right" />
+                    </div>
                   </div>
                   {error && <p className="text-sm text-red-500 text-right">{error}</p>}
                   <button type="submit" disabled={loading === 'reset'} className="w-full btn-primary py-3 flex items-center justify-center gap-2">
@@ -199,32 +202,46 @@ export default function LoginPage() {
               <form onSubmit={mode === 'register' ? handleRegister : handleLogin} className="space-y-4">
                 {mode === 'register' && (
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 text-right mb-1">שם מלא</label>
                     <input value={name} onChange={e => setName(e.target.value)} required
                       placeholder="שם מלא" className="input w-full text-right" />
                   </div>
                 )}
-                <div className="relative">
-                  <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                    placeholder="כתובת מייל" className="input w-full pr-9 text-right" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 text-right mb-1">כתובת מייל</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                      placeholder="כתובת מייל" className="input w-full pr-9 text-right" />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
-                    placeholder="סיסמה" className="input w-full pr-9 pl-9 text-right" />
-                  <button type="button" onClick={() => setShowPass(!showPass)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 text-right mb-1">סיסמה</label>
+                  <div className="relative">
+                    <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
+                      placeholder="סיסמה" className="input w-full pr-9 pl-9 text-right" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(!showPass)}
+                      aria-label={showPass ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 {error && <p className="text-sm text-red-500 text-right">{error}</p>}
 
                 {mode === 'login' && (
-                  <div className="text-left">
-                    <button type="button" onClick={() => { setMode('reset'); setError('') }} className="text-xs text-gray-400 hover:text-primary-600">
-                      שכחת סיסמה?
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('reset'); setError('') }}
+                    className="w-full text-left py-1 text-sm text-primary-600 hover:underline"
+                  >
+                    שכחת סיסמה?
+                  </button>
                 )}
 
                 <button type="submit"

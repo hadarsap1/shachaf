@@ -67,12 +67,18 @@ events: ${JSON.stringify(events.map(e => ({ title: e.title, date: e.date, locati
 - אל תדמיין מידע שלא ניתן לך.`
 }
 
-async function callChat(messages, systemPrompt) {
+async function callChat(messages) {
+  const token = await import('../../lib/firebase').then(m => m.auth.currentUser?.getIdToken())
   const res = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, systemPrompt }),
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ messages }),
   })
+  if (res.status === 401) throw Object.assign(new Error('auth'), { status: 401 })
+  if (res.status === 429) throw Object.assign(new Error('rate_limit'), { status: 429 })
   if (!res.ok) throw new Error('chat error')
   const data = await res.json()
   return data.reply || 'אין תשובה זמינה.'
@@ -106,18 +112,19 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      const systemPrompt = buildSystemPrompt(user, MOCK_TASKS, MOCK_EVENTS)
       const reply = await callChat(
-        newMessages.filter(m => m.role !== 'assistant' || m.id !== 1),
-        systemPrompt
+        newMessages.filter(m => m.role !== 'assistant' || m.id !== 1)
       )
       setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: reply }])
       setSuggestions(getFollowups(reply))
-    } catch {
+    } catch (err) {
+      let content = 'מצטער, אירעה שגיאה. נסה שוב או פנה למשפחה המארחת.'
+      if (err.status === 401) content = 'יש להתחבר מחדש.'
+      if (err.status === 429) content = 'שלחת יותר מדי הודעות, המתן דקה.'
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'מצטער, אירעה שגיאה. נסה שוב או פנה למשפחה המארחת.',
+        content,
       }])
       setSuggestions(FOLLOWUP_POOLS.general)
     } finally {

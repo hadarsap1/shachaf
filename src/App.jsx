@@ -24,7 +24,12 @@ import AdminMessagesPage from './pages/admin/AdminMessagesPage'
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false }) {
   const { user, loading, isAdmin, isSuperAdmin, isHostFamily } = useAuth()
-  if (loading) return null
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+      <img src="/logo.png" alt="שחף" className="h-16 w-auto mb-6 opacity-80" />
+      <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
   if (!user) return <Navigate to="/login" replace />
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />

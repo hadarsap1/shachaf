@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, MILESTONES } from '../../lib/db'
+import { getTasks, saveTask, MILESTONES } from '../../lib/db'
 import TaskCard from '../../components/ui/TaskCard'
 import ProgressRing from '../../components/ui/ProgressRing'
-import { CheckSquare, Filter } from 'lucide-react'
+import { CheckSquare, Filter, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const FILTERS = [
@@ -17,9 +17,10 @@ export default function TasksPage() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState([])
   const [filter, setFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (user?.uid) getTasks(user.uid).then(setTasks)
+    if (user?.uid) getTasks(user.uid).then(data => { setTasks(data); setLoading(false) })
   }, [user])
 
   const myTasks = tasks
@@ -28,8 +29,25 @@ export default function TasksPage() {
 
   const filtered = filter === 'all' ? myTasks : myTasks.filter(t => t.status === filter)
 
-  const handleStatusChange = (taskId, newStatus) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+  const handleStatusChange = async (taskId, newStatus) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+    const updated = { ...task, status: newStatus }
+    setTasks(prev => prev.map(t => t.id === taskId ? updated : t))
+    try {
+      await saveTask(updated)
+    } catch (err) {
+      console.error('status update failed:', err)
+      setTasks(prev => prev.map(t => t.id === taskId ? task : t))
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+    )
   }
 
   return (

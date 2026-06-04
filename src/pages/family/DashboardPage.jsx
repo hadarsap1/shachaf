@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, getEvents, MILESTONES } from '../../lib/db'
+import { getTasks, saveTask, getEvents, MILESTONES } from '../../lib/db'
 import { getForms, getSubmissions } from '../../lib/formsStorage'
 import ProgressRing from '../../components/ui/ProgressRing'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
-import { CheckSquare, Calendar, MessageCircle, ArrowLeft, Sparkles, ClipboardList } from 'lucide-react'
+import { CheckSquare, Calendar, MessageCircle, ArrowLeft, Sparkles, ClipboardList, Loader2 } from 'lucide-react'
 
 export default function DashboardPage() {
   const { user, isHostFamily } = useAuth()
   const [tasks, setTasks] = useState([])
   const [events, setEvents] = useState([])
   const [pendingForms, setPendingForms] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user?.uid) return
-    getTasks(user.uid).then(setTasks)
-    getEvents().then(setEvents)
+    Promise.all([getTasks(user.uid), getEvents()]).then(([taskData, eventData]) => {
+      setTasks(taskData)
+      setEvents(eventData)
+      setLoading(false)
+    })
     const myForms = getForms().filter(f =>
       f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')
     )
@@ -33,8 +37,17 @@ export default function DashboardPage() {
   const upcomingEvents = events.slice(0, 2)
   const urgentTasks = myTasks.filter(t => t.status !== 'done' && t.priority === 'high').slice(0, 3)
 
-  const handleStatusChange = (taskId, newStatus) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+  const handleStatusChange = async (taskId, newStatus) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+    const updated = { ...task, status: newStatus }
+    setTasks(prev => prev.map(t => t.id === taskId ? updated : t))
+    try {
+      await saveTask(updated)
+    } catch (err) {
+      console.error('status update failed:', err)
+      setTasks(prev => prev.map(t => t.id === taskId ? task : t))
+    }
   }
 
   const currentMilestone = MILESTONES.find(m => {
@@ -42,6 +55,14 @@ export default function DashboardPage() {
     const msTasks = myTasks.filter(t => t.milestone === m.title).length
     return msTasksDone < msTasks
   }) || MILESTONES[MILESTONES.length - 1]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 size={32} className="animate-spin text-primary-400" />
+      </div>
+    )
+  }
 
   return (
     <div className="page-container rtl" dir="rtl">
@@ -138,11 +159,18 @@ export default function DashboardPage() {
             <ArrowLeft size={12} />
           </Link>
         </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {upcomingEvents.map(event => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </div>
+        {upcomingEvents.length === 0 ? (
+          <div className="card p-6 text-center text-gray-400">
+            <Calendar size={32} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">אין אירועים קרובים כרגע</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {upcomingEvents.map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* AI Chat CTA */}

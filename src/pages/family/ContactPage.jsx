@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { sendMessage } from '../../lib/db'
 import { MessageSquare, Send, CheckCircle2 } from 'lucide-react'
@@ -52,6 +53,9 @@ export default function ContactPage() {
             className="btn-primary py-2 px-6 text-sm">
             שלח הודעה נוספת
           </button>
+          <Link to="/dashboard" className="mt-3 block text-sm text-primary-600 text-center hover:underline">
+            חזרה לדף הבית
+          </Link>
         </div>
       ) : (
         <div className="card p-5">
