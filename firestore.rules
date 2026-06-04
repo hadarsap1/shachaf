@@ -21,10 +21,10 @@ service cloud.firestore {
                     && request.auth.uid == userId
                     && request.resource.data.role == resource.data.role;
 
-      // Super admins can update any user including changing roles
+      // Admins and super_admins can update any user including changing roles
       allow update: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-                       == 'super_admin';
+                       in ['admin', 'super_admin'];
     }
 
     // Tasks — admins read/write all; families read their assigned tasks
