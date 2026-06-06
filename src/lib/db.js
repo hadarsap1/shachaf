@@ -258,6 +258,33 @@ export async function unlinkChildFromParent(childId, parentUid) {
   await batch.commit()
 }
 
+// ── Children (parent-scoped query) ───────────────────────────────────────────
+export async function getChildrenByParent(uid) {
+  const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid), orderBy('name', 'asc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+// ── Announcements ─────────────────────────────────────────────────────────────
+export async function getAnnouncements() {
+  const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveAnnouncement(ann) {
+  const { id, ...data } = ann
+  if (id && !id.startsWith('ann-')) {
+    await updateDoc(doc(db, 'announcements', id), { ...data, updatedAt: serverTimestamp() })
+    return ann
+  }
+  const ref = await addDoc(collection(db, 'announcements'), { ...data, createdAt: serverTimestamp() })
+  return { ...ann, id: ref.id }
+}
+
+export async function deleteAnnouncement(id) {
+  await deleteDoc(doc(db, 'announcements', id))
+}
+
 // ── Committees ────────────────────────────────────────────────────────────────
 export async function getCommittees() {
   const snap = await getDocs(query(collection(db, 'committees'), orderBy('order', 'asc')))

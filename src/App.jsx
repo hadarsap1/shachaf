@@ -26,7 +26,10 @@ import AdminCalendarPage from './pages/admin/AdminCalendarPage'
 import AdminClassesPage from './pages/admin/AdminClassesPage'
 import AdminChildrenPage from './pages/admin/AdminChildrenPage'
 import AdminCommitteesPage from './pages/admin/AdminCommitteesPage'
+import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage'
 import HelpPage from './pages/HelpPage'
+import ClassPage from './pages/family/ClassPage'
+import CommitteesPage from './pages/family/CommitteesPage'
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false }) {
   const { user, loading, isAdmin, isSuperAdmin, isHostFamily } = useAuth()
@@ -69,6 +72,8 @@ export default function App() {
             <Route path="/forms" element={<FormFillPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/help" element={<HelpPage />} />
+            <Route path="/class" element={<ClassPage />} />
+            <Route path="/committees" element={<CommitteesPage />} />
           </Route>
 
           <Route element={<ProtectedShell hostOnly />}>
@@ -88,6 +93,7 @@ export default function App() {
             <Route path="/admin/classes" element={<AdminClassesPage />} />
             <Route path="/admin/children" element={<AdminChildrenPage />} />
             <Route path="/admin/committees" element={<AdminCommitteesPage />} />
+            <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
           </Route>
 
           <Route element={<ProtectedShell superOnly />}>

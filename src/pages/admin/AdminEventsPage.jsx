@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getEvents, saveEvent, deleteEvent } from '../../lib/db'
+import { getEvents, saveEvent, deleteEvent, getClasses } from '../../lib/db'
 import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -50,12 +50,13 @@ const blankEvent = () => ({
   type: 'social',
   required: false,
   targetGroups: ['all'],
+  classIds: [],
 })
 
 // ---- Event slide panel (add / edit) ----
 
-function EventPanel({ event, isNew, onSave, onClose }) {
-  const [draft, setDraft] = useState({ ...event })
+function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
+  const [draft, setDraft] = useState({ ...event, classIds: event.classIds || [] })
   const [errors, setErrors] = useState({})
 
   const set = (field, value) => {
@@ -174,6 +175,37 @@ function EventPanel({ event, isNew, onSave, onClose }) {
               className="w-4 h-4 accent-primary-600" />
             <label htmlFor="required-toggle" className="text-sm text-gray-700 cursor-pointer">כולם מוזמנים (סמן כאירוע לכולם)</label>
           </div>
+
+          {allClasses.length > 0 && (
+            <div>
+              <label className="label block mb-1 text-right">כיתות (ריק = כלל בית הספר)</label>
+              <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
+                {allClasses.map(cls => {
+                  const checked = (draft.classIds || []).includes(cls.id)
+                  return (
+                    <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
+                      <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                        {cls.name}
+                        <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
+                          style={{ backgroundColor: cls.color || '#1B3B70' }} />
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const next = checked
+                            ? (draft.classIds || []).filter(id => id !== cls.id)
+                            : [...(draft.classIds || []), cls.id]
+                          set('classIds', next)
+                        }}
+                        className="w-4 h-4 accent-primary-600"
+                      />
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="px-4 py-4 border-t border-gray-100 flex gap-2">
@@ -195,17 +227,17 @@ function EventPanel({ event, isNew, onSave, onClose }) {
 export default function AdminEventsPage() {
   const location = useLocation()
   const [events, setEvents] = useState([])
+  const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   useEffect(() => {
-    getEvents().then(e => {
-      setEvents(e)
+    Promise.all([getEvents(), getClasses()]).then(([evts, cls]) => {
+      setEvents(evts)
+      setClasses(cls)
       setLoading(false)
-      if (location.state?.editEvent) {
-        setEditing(location.state.editEvent)
-      }
+      if (location.state?.editEvent) setEditing(location.state.editEvent)
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -391,6 +423,7 @@ export default function AdminEventsPage() {
           isNew={editing.id.startsWith('event-')}
           onSave={handleSave}
           onClose={() => setEditing(null)}
+          allClasses={classes}
         />
       )}
     </div>

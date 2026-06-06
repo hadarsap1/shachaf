@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getEvents } from '../../lib/db'
+import { getEvents, getClasses, getChildrenByParent } from '../../lib/db'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -10,15 +10,38 @@ import clsx from 'clsx'
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function EventsPage() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [events, setEvents]           = useState([])
+  const [classColorMap, setClassColorMap] = useState({})
   const [loading, setLoading]         = useState(true)
   const [displayMode, setDisplayMode] = useState('calendar')
   const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
-    getEvents().then(data => { setEvents(data); setLoading(false) })
-  }, [])
+    if (!user) return
+    const load = async () => {
+      const [allEvents, classes, myChildren] = await Promise.all([
+        getEvents(),
+        getClasses(),
+        isAdmin ? Promise.resolve([]) : getChildrenByParent(user.uid),
+      ])
+
+      const colorMap = {}
+      classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
+      setClassColorMap(colorMap)
+
+      if (isAdmin) {
+        setEvents(allEvents)
+      } else {
+        const myClassIds = [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
+        setEvents(allEvents.filter(ev =>
+          !ev.classIds?.length || ev.classIds.some(cid => myClassIds.includes(cid))
+        ))
+      }
+      setLoading(false)
+    }
+    load()
+  }, [user, isAdmin])
 
   return (
     <div className="page-container rtl" dir="rtl">
@@ -72,6 +95,7 @@ export default function EventsPage() {
         <CalendarGrid
           events={events}
           filterRole={user?.role}
+          classColorMap={classColorMap}
           onEventClick={setSelectedEvent}
         />
       )}

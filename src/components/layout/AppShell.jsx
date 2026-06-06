@@ -8,15 +8,17 @@ import {
   LayoutDashboard, BookOpen, MessageCircle, Menu, X,
   LogOut, ChevronDown, Activity, FileText, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, Upload, GraduationCap,
-  Baby, HelpCircle,
+  Baby, HelpCircle, Megaphone,
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const NAV_LINKS = {
   new_family: [
     { to: '/dashboard', label: 'בית', icon: Home },
+    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
     { to: '/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/events', label: 'אירועים', icon: Calendar },
+    { to: '/committees', label: 'ועדות', icon: Users },
     { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
@@ -26,8 +28,10 @@ const NAV_LINKS = {
   ],
   host_family: [
     { to: '/dashboard', label: 'בית', icon: Home },
+    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
     { to: '/families', label: 'המשפחות שלי', icon: Users },
     { to: '/events', label: 'אירועים', icon: Calendar },
+    { to: '/committees', label: 'ועדות', icon: Users },
     { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
@@ -47,6 +51,7 @@ const NAV_LINKS = {
     { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
+    { to: '/admin/announcements', label: 'הודעות כלליות', icon: Megaphone, sub: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
   ],
   super_admin: [
@@ -61,14 +66,15 @@ const NAV_LINKS = {
     { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
+    { to: '/admin/announcements', label: 'הודעות כלליות', icon: Megaphone, sub: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/super/admins', label: 'מנהלים', icon: Shield },
   ],
 }
 
 const BOTTOM_NAV = {
-  new_family:  ['/dashboard', '/tasks', '/events', '/contact'],
-  host_family: ['/dashboard', '/families', '/events', '/contact'],
+  new_family:  ['/dashboard', '/class', '/events', '/contact'],
+  host_family: ['/dashboard', '/class', '/events', '/contact'],
   admin:       ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
   super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
 }

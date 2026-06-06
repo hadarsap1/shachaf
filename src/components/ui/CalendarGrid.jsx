@@ -6,25 +6,14 @@ import clsx from 'clsx'
 
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 
-const TYPE_CHIP = {
-  social:      'bg-primary-100 text-primary-700',
-  orientation: 'bg-secondary-100 text-secondary-700',
-  ceremony:    'bg-accent-100 text-accent-700',
-  community:   'bg-purple-100 text-purple-700',
-}
+const SCHOOL_COLOR = '#1B3B70'
 
-const TYPE_DOT = {
-  social:      'bg-primary-400',
-  orientation: 'bg-secondary-400',
-  ceremony:    'bg-accent-400',
-  community:   'bg-purple-400',
-}
-
-const TYPE_BORDER = {
-  social:      'border-primary-400',
-  orientation: 'border-secondary-400',
-  ceremony:    'border-accent-400',
-  community:   'border-purple-400',
+function getEventColor(event, classColorMap) {
+  if (!event.classIds?.length) return SCHOOL_COLOR
+  for (const cid of event.classIds) {
+    if (classColorMap[cid]) return classColorMap[cid]
+  }
+  return SCHOOL_COLOR
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -101,15 +90,13 @@ function weekRangeLabel(days) {
 
 // ── Event chip (month cell) ───────────────────────────────────────────────────
 
-function EventChip({ event, onClick }) {
-  const chip = TYPE_CHIP[event.type] || 'bg-gray-100 text-gray-600'
+function EventChip({ event, onClick, classColorMap }) {
+  const color = getEventColor(event, classColorMap)
   return (
     <button
       onClick={() => onClick(event)}
-      className={clsx(
-        'w-full text-start text-xs px-1.5 py-0.5 rounded-full truncate font-medium leading-snug',
-        chip
-      )}
+      className="w-full text-start text-xs px-1.5 py-0.5 rounded-full truncate font-medium leading-snug"
+      style={{ backgroundColor: color + '22', color }}
       title={event.title}
     >
       {event.title}
@@ -119,28 +106,27 @@ function EventChip({ event, onClick }) {
 
 // ── Event dot (mobile month cell) ────────────────────────────────────────────
 
-function EventDot({ event, onClick }) {
-  const dot = TYPE_DOT[event.type] || 'bg-gray-400'
+function EventDot({ event, onClick, classColorMap }) {
+  const color = getEventColor(event, classColorMap)
   return (
     <button
       onClick={() => onClick(event)}
       title={event.title}
-      className={clsx('w-3 h-3 rounded-full flex-shrink-0 inline-block', dot)}
+      className="w-3 h-3 rounded-full flex-shrink-0 inline-block"
+      style={{ backgroundColor: color }}
     />
   )
 }
 
 // ── Week event card ───────────────────────────────────────────────────────────
 
-function WeekEventCard({ event, onClick }) {
-  const border = TYPE_BORDER[event.type] || 'border-gray-300'
+function WeekEventCard({ event, onClick, classColorMap }) {
+  const color = getEventColor(event, classColorMap)
   return (
     <button
       onClick={() => onClick(event)}
-      className={clsx(
-        'w-full text-start border-r-2 bg-gray-50 hover:bg-gray-100 rounded-lg px-2 py-1.5 mb-1 transition-colors',
-        border
-      )}
+      className="w-full text-start border-r-2 bg-gray-50 hover:bg-gray-100 rounded-lg px-2 py-1.5 mb-1 transition-colors"
+      style={{ borderRightColor: color }}
     >
       <p className="text-xs font-semibold text-gray-800 truncate leading-snug">{event.title}</p>
       {event.time && (
@@ -152,7 +138,7 @@ function WeekEventCard({ event, onClick }) {
 
 // ── Month view ────────────────────────────────────────────────────────────────
 
-function MonthView({ year, month, eventsByDay, onEventClick, today }) {
+function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMap }) {
   const cells = buildMonthGrid(year, month)
 
   return (
@@ -197,7 +183,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
               {/* Desktop: text chips */}
               <div className="hidden sm:flex flex-col gap-0.5">
                 {visible.map(ev => (
-                  <EventChip key={ev.id} event={ev} onClick={onEventClick} />
+                  <EventChip key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap} />
                 ))}
                 {overflow && (
                   <button
@@ -212,7 +198,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
               {/* Mobile: dots only */}
               <div className="flex sm:hidden flex-wrap gap-1 justify-center">
                 {dayEvents.map(ev => (
-                  <EventDot key={ev.id} event={ev} onClick={onEventClick} />
+                  <EventDot key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap} />
                 ))}
               </div>
             </div>
@@ -225,7 +211,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
 
 // ── Week view ─────────────────────────────────────────────────────────────────
 
-function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
+function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap }) {
   return (
     <div dir="rtl">
       {/* Desktop: 7-column grid */}
@@ -253,7 +239,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
               {/* Events */}
               <div className="flex-1 p-1 overflow-y-auto">
                 {dayEvents.map(ev => (
-                  <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} />
+                  <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap} />
                 ))}
               </div>
             </div>
@@ -284,7 +270,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
               {dayEvents.length > 0 ? (
                 <div className="space-y-1">
                   {dayEvents.map(ev => (
-                    <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} />
+                    <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap} />
                   ))}
                 </div>
               ) : (
@@ -300,7 +286,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
 
 // ── CalendarGrid (main export) ────────────────────────────────────────────────
 
-export default function CalendarGrid({ events = [], filterRole, onEventClick }) {
+export default function CalendarGrid({ events = [], filterRole, classColorMap = {}, onEventClick }) {
   const [view, setView]               = useState('month')
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
@@ -409,6 +395,7 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
           eventsByDay={eventsByDay}
           onEventClick={onEventClick}
           today={today}
+          classColorMap={classColorMap}
         />
       )}
       {view === 'week' && (
@@ -417,6 +404,7 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
           eventsByDay={eventsByDay}
           onEventClick={onEventClick}
           today={today}
+          classColorMap={classColorMap}
         />
       )}
     </div>
