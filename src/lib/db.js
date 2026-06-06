@@ -2,7 +2,22 @@ import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, serverTimestamp, getDoc, writeBatch,
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { db, storage } from './firebase'
+
+// ── Storage helpers ───────────────────────────────────────────────────────────
+export async function uploadEventImage(eventId, file) {
+  const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `events/${eventId}.${ext}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  const url  = await getDownloadURL(snap.ref)
+  return { url, path }
+}
+
+export async function deleteEventImage(path) {
+  if (!path) return
+  try { await deleteObject(ref(storage, path)) } catch { /* already gone */ }
+}
 
 // ── Milestones (static config, no DB needed) ─────────────────────────────────
 export const MILESTONES = [

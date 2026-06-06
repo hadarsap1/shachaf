@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getEvents, saveEvent, deleteEvent, getClasses } from '../../lib/db'
-import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2 } from 'lucide-react'
+import { getEvents, saveEvent, deleteEvent, getClasses, uploadEventImage, deleteEventImage } from '../../lib/db'
+import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2, ImagePlus } from 'lucide-react'
 import clsx from 'clsx'
 
 function googleCalendarUrl(event) {
@@ -58,6 +58,10 @@ const blankEvent = () => ({
 function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
   const [draft, setDraft] = useState({ ...event, classIds: event.classIds || [] })
   const [errors, setErrors] = useState({})
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(event.imageUrl || null)
+  const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef(null)
 
   const set = (field, value) => {
     setDraft(d => ({ ...d, [field]: value }))
@@ -86,10 +90,29 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
     set('targetGroups', next.length ? next : ['all'])
   }
 
-  const handleSave = () => {
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const handleImageRemove = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleSave = async () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave({ ...draft, title: draft.title.trim() })
+    setSaving(true)
+    try {
+      const shouldRemove = !imagePreview && !!event.imageUrl
+      await onSave({ ...draft, title: draft.title.trim() }, imageFile, shouldRemove)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -99,6 +122,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
           <h2 className="font-bold text-gray-800">{isNew ? 'אירוע חדש' : 'עריכת אירוע'}</h2>
+          <div className="w-8" />
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -176,6 +200,39 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
             <label htmlFor="required-toggle" className="text-sm text-gray-700 cursor-pointer">כולם מוזמנים (סמן כאירוע לכולם)</label>
           </div>
 
+          {/* Image */}
+          <div>
+            <label className="label block mb-2 text-right">תמונה לאירוע</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            {imagePreview ? (
+              <div className="relative rounded-xl overflow-hidden">
+                <img src={imagePreview} alt="" className="w-full h-40 object-cover" />
+                <button
+                  type="button"
+                  onClick={handleImageRemove}
+                  className="absolute top-2 left-2 w-7 h-7 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-gray-200 hover:border-primary-300 rounded-xl py-6 flex flex-col items-center gap-2 text-gray-400 hover:text-primary-500 transition-colors"
+              >
+                <ImagePlus size={22} />
+                <span className="text-sm">הוסף תמונה</span>
+              </button>
+            )}
+          </div>
+
           {allClasses.length > 0 && (
             <div>
               <label className="label block mb-1 text-right">כיתות (ריק = כלל בית הספר)</label>
@@ -209,11 +266,11 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
         </div>
 
         <div className="px-4 py-4 border-t border-gray-100 flex gap-2">
-          <button onClick={handleSave} className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2">
-            <Check size={15} />
-            שמור
+          <button onClick={handleSave} disabled={saving} className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2">
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+            {saving ? 'שומר...' : 'שמור'}
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm">
             ביטול
           </button>
         </div>
@@ -241,23 +298,27 @@ export default function AdminEventsPage() {
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSave = async (saved) => {
-    const prev = [...events]
-    // Optimistic update
-    setEvents(cur => {
-      const idx = cur.findIndex(e => e.id === saved.id)
-      return idx >= 0 ? cur.map(e => e.id === saved.id ? saved : e) : [...cur, saved]
-    })
+  const handleSave = async (saved, newImageFile, shouldRemoveImage) => {
     setEditing(null)
     try {
-      const persisted = await saveEvent(saved)
-      // If it was a new event, replace temp id with real Firestore id
-      if (persisted.id !== saved.id) {
-        setEvents(cur => cur.map(e => e.id === saved.id ? persisted : e))
+      let persisted = await saveEvent(saved)
+
+      if (newImageFile) {
+        const { url, path } = await uploadEventImage(persisted.id, newImageFile)
+        persisted = await saveEvent({ ...persisted, imageUrl: url, imagePath: path })
+      } else if (shouldRemoveImage && saved.imagePath) {
+        await deleteEventImage(saved.imagePath)
+        persisted = await saveEvent({ ...persisted, imageUrl: null, imagePath: null })
       }
+
+      setEvents(cur => {
+        const idx = cur.findIndex(e => e.id === saved.id || e.id === persisted.id)
+        return idx >= 0
+          ? cur.map(e => (e.id === saved.id || e.id === persisted.id) ? persisted : e)
+          : [...cur, persisted]
+      })
     } catch (err) {
       console.error('saveEvent failed', err)
-      setEvents(prev)
     }
   }
 

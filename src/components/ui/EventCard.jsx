@@ -71,11 +71,14 @@ export default function EventCard({ event, onCardClick }) {
       className={clsx('card overflow-hidden transition-shadow', onCardClick ? 'cursor-pointer hover:shadow-card-hover' : 'hover:shadow-card-hover')}
       onClick={onCardClick}
     >
-      {/* Colored top strip */}
-      <div className={clsx(
-        'h-1.5',
-        event.isRequired ? 'bg-gradient-to-r from-accent-400 to-accent-500' : 'bg-gradient-to-r from-primary-400 to-secondary-400'
-      )} />
+      {event.imageUrl ? (
+        <img src={event.imageUrl} alt={event.title} className="w-full h-36 object-cover" />
+      ) : (
+        <div className={clsx(
+          'h-1.5',
+          event.isRequired ? 'bg-gradient-to-r from-accent-400 to-accent-500' : 'bg-gradient-to-r from-primary-400 to-secondary-400'
+        )} />
+      )}
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-3">

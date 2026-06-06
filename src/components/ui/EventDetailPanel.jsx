@@ -74,7 +74,16 @@ export default function EventDetailPanel({ event, onClose }) {
           <h2 className="font-bold text-gray-800">פרטי אירוע</h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto">
+          {event.imageUrl && (
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="w-full object-cover max-h-56"
+            />
+          )}
+
+          <div className="px-5 py-5 space-y-4">
           <div className="flex justify-end">
             <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
               {typeLabel}
@@ -103,6 +112,7 @@ export default function EventDetailPanel({ event, onClose }) {
                 <MapPin size={15} className="text-primary-400 flex-shrink-0" />
               </div>
             )}
+          </div>
           </div>
         </div>
 
