@@ -33,6 +33,12 @@ const formatDate = (str) => {
   return d.toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'long' })
 }
 
+const TARGET_GROUPS = [
+  { value: 'all',        label: 'כולם' },
+  { value: 'new_family', label: 'משפחות חדשות' },
+  { value: 'host_family',label: 'משפחות מארחות' },
+]
+
 const blankEvent = () => ({
   id: 'event-' + Date.now(),
   title: '',
@@ -42,6 +48,7 @@ const blankEvent = () => ({
   location: '',
   type: 'social',
   required: false,
+  targetGroups: ['all'],
 })
 
 // ---- Event slide panel (add / edit) ----
@@ -59,7 +66,22 @@ function EventPanel({ event, isNew, onSave, onClose }) {
     const e = {}
     if (!draft.title.trim()) e.title = 'שדה חובה'
     if (!draft.date) e.date = 'שדה חובה'
+    const groups = draft.targetGroups || []
+    if (groups.length === 0) e.targetGroups = 'יש לבחור לפחות קהל יעד אחד'
     return e
+  }
+
+  const toggleGroup = (value) => {
+    setErrors(e => ({ ...e, targetGroups: '' }))
+    if (value === 'all') {
+      set('targetGroups', ['all'])
+      return
+    }
+    const current = (draft.targetGroups || ['all']).filter(g => g !== 'all')
+    const next = current.includes(value)
+      ? current.filter(g => g !== value)
+      : [...current, value]
+    set('targetGroups', next.length ? next : ['all'])
   }
 
   const handleSave = () => {
@@ -119,6 +141,30 @@ function EventPanel({ event, isNew, onSave, onClose }) {
               className="input w-full text-right">
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+          </div>
+
+          <div>
+            <label className="label block mb-1 text-right">קהל יעד</label>
+            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
+              {TARGET_GROUPS.map(g => {
+                const groups = draft.targetGroups || ['all']
+                const isChecked = g.value === 'all'
+                  ? groups.includes('all')
+                  : !groups.includes('all') && groups.includes(g.value)
+                return (
+                  <label key={g.value} className="flex items-center justify-end gap-2 cursor-pointer">
+                    <span className="text-sm text-gray-700">{g.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleGroup(g.value)}
+                      className="w-4 h-4 accent-primary-600"
+                    />
+                  </label>
+                )
+              })}
+            </div>
+            {errors.targetGroups && <p className="text-xs text-red-500 mt-1 text-right">{errors.targetGroups}</p>}
           </div>
 
           <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">

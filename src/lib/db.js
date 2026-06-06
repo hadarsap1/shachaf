@@ -116,6 +116,19 @@ export async function saveSubmission(submission) {
   return { id: ref.id, ...submission }
 }
 
+// ── Pending Families ──────────────────────────────────────────────────────────
+export async function getPendingFamilies(role = null) {
+  const q = role
+    ? query(collection(db, 'pendingFamilies'), where('role', '==', role))
+    : query(collection(db, 'pendingFamilies'), orderBy('importedAt', 'desc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function deletePendingFamily(emailId) {
+  await deleteDoc(doc(db, 'pendingFamilies', emailId))
+}
+
 // ── Messages (contact us) ─────────────────────────────────────────────────────
 export async function sendMessage(msg) {
   await addDoc(collection(db, 'messages'), { ...msg, createdAt: serverTimestamp(), read: false })

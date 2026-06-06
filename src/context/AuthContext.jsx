@@ -8,7 +8,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import { MOCK_USERS } from '../lib/mockData'
 
@@ -83,21 +83,31 @@ export function AuthProvider({ children }) {
   // Real Firebase register
   const registerWithEmail = async (email, password, name) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
-    const profile = {
-      uid: cred.user.uid,
-      email,
-      name,
-      role: 'new_family',
-      avatar: '',
-      phone: '',
-      createdAt: serverTimestamp(),
-    }
     const userRef = doc(db, 'users', cred.user.uid)
     const existing = await getDoc(userRef)
     if (!existing.exists()) {
+      const emailKey = email.toLowerCase()
+      const pendingSnap = await getDoc(doc(db, 'pendingFamilies', emailKey))
+      const pending = pendingSnap.exists() ? pendingSnap.data() : null
+
+      const profile = {
+        uid: cred.user.uid,
+        email: cred.user.email.toLowerCase(),
+        name: pending?.name || name || email.split('@')[0],
+        phone: pending?.phone || '',
+        address: pending?.address || '',
+        role: pending?.role || 'new_family',
+        avatar: '',
+        createdAt: serverTimestamp(),
+      }
       await setDoc(userRef, profile)
+      if (pending) {
+        await deleteDoc(doc(db, 'pendingFamilies', emailKey))
+      }
+      setUser(profile)
+    } else {
+      setUser({ uid: cred.user.uid, ...existing.data() })
     }
-    setUser(profile)
     return cred
   }
 
@@ -107,16 +117,24 @@ export function AuthProvider({ children }) {
     const userRef = doc(db, 'users', cred.user.uid)
     const existingSnap = await getDoc(userRef)
     if (!existingSnap.exists()) {
+      const emailKey = cred.user.email.toLowerCase()
+      const pendingSnap = await getDoc(doc(db, 'pendingFamilies', emailKey))
+      const pending = pendingSnap.exists() ? pendingSnap.data() : null
+
       const profile = {
         uid: cred.user.uid,
-        email: cred.user.email,
-        name: cred.user.displayName || cred.user.email.split('@')[0],
-        role: 'new_family',
+        email: emailKey,
+        name: pending?.name || cred.user.displayName || emailKey.split('@')[0],
+        phone: pending?.phone || '',
+        address: pending?.address || '',
+        role: pending?.role || 'new_family',
         avatar: cred.user.photoURL || '',
-        phone: '',
         createdAt: serverTimestamp(),
       }
       await setDoc(userRef, profile)
+      if (pending) {
+        await deleteDoc(doc(db, 'pendingFamilies', emailKey))
+      }
       setUser(profile)
     } else {
       setUser({ uid: cred.user.uid, ...existingSnap.data() })

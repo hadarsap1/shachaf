@@ -6,7 +6,7 @@ import {
   Home, CheckSquare, Calendar, Users,
   LayoutDashboard, BookOpen, MessageCircle, Menu, X,
   LogOut, ChevronDown, Activity, FileText, SlidersHorizontal,
-  ClipboardList, Shield, MessageSquare,
+  ClipboardList, Shield, MessageSquare, Upload,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -34,8 +34,10 @@ const NAV_LINKS = {
   admin: [
     { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
+    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
+    { to: '/admin/calendar', label: 'לוח שנה', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
@@ -43,8 +45,10 @@ const NAV_LINKS = {
   super_admin: [
     { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
+    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
+    { to: '/admin/calendar', label: 'לוח שנה', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
