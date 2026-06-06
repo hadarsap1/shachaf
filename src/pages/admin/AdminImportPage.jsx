@@ -427,7 +427,8 @@ export default function AdminImportPage() {
             </div>
             <button
               type="button"
-              className="btn-primary text-sm py-2 px-5 pointer-events-none"
+              onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+              className="btn-primary text-sm py-2 px-5"
             >
               בחר קובץ
             </button>

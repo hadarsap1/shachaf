@@ -6,6 +6,7 @@ import { getForms, getSubmissions } from '../../lib/formsStorage'
 import ProgressRing from '../../components/ui/ProgressRing'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
+import EventDetailPanel from '../../components/ui/EventDetailPanel'
 import { CheckSquare, Calendar, MessageCircle, ArrowLeft, Sparkles, ClipboardList, Loader2 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -14,20 +15,22 @@ export default function DashboardPage() {
   const [events, setEvents] = useState([])
   const [pendingForms, setPendingForms] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
     if (!user?.uid) return
-    Promise.all([getTasks(user.uid), getEvents()]).then(([taskData, eventData]) => {
-      setTasks(taskData)
-      setEvents(eventData)
-      setLoading(false)
-    })
-    const myForms = getForms().filter(f =>
-      f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')
-    )
-    const mySubmissions = getSubmissions().filter(s => s.userId === user.id)
-    const pending = myForms.filter(f => !mySubmissions.find(s => s.formId === f.id))
-    setPendingForms(pending.length)
+    Promise.all([getTasks(user.uid), getEvents()])
+      .then(([taskData, eventData]) => {
+        setTasks(taskData)
+        setEvents(eventData)
+        const myForms = getForms().filter(f =>
+          f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')
+        )
+        const mySubmissions = getSubmissions().filter(s => s.userId === user.uid)
+        setPendingForms(myForms.filter(f => !mySubmissions.find(s => s.formId === f.id)).length)
+      })
+      .catch(err => { console.error('Dashboard load failed:', err) })
+      .finally(() => setLoading(false))
   }, [user])
 
   const myTasks = tasks
@@ -167,7 +170,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid sm:grid-cols-2 gap-3">
             {upcomingEvents.map(event => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} onCardClick={() => setSelectedEvent(event)} />
             ))}
           </div>
         )}
@@ -187,6 +190,10 @@ export default function DashboardPage() {
         </div>
         <ArrowLeft size={16} className="text-primary-400" />
       </Link>
+
+      {selectedEvent && (
+        <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
     </div>
   )
 }

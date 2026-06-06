@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getUsers, updateUserProfile } from '../../lib/db'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
-  Link2, Loader2, RefreshCw,
+  Link2, Loader2, RefreshCw, Upload, MapPin, Phone,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -118,9 +119,87 @@ function InvitePanel({ onClose }) {
   )
 }
 
+// ── User detail panel ────────────────────────────────────────────────────────
+
+function UserDetailPanel({ user, onClose, onRoleChange, saving }) {
+  const phone = user.phone?.replace(/\D/g, '') || ''
+  const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800">פרטי משתמש</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          <div className="flex flex-col items-center gap-3">
+            {isUrl(user.avatar)
+              ? <img src={user.avatar} alt="" className="w-16 h-16 rounded-full object-cover" />
+              : <div className="avatar w-16 h-16 text-2xl bg-primary-100 text-primary-700">{user.name?.[0] || '?'}</div>
+            }
+            <div className="text-center">
+              <div className="font-bold text-gray-800 text-base">{user.name}</div>
+              <div className="text-sm text-gray-500">{user.email}</div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {user.phone ? (
+              <div className="flex items-center gap-2 justify-end text-sm text-gray-600">
+                <span dir="ltr">{user.phone}</span>
+                <Phone size={14} className="text-gray-400 flex-shrink-0" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 justify-end text-sm text-gray-400">
+                <span>אין מספר טלפון</span>
+                <Phone size={14} className="flex-shrink-0" />
+              </div>
+            )}
+            {user.address ? (
+              <div className="flex items-center gap-2 justify-end text-sm text-gray-600">
+                <span>{user.address}</span>
+                <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 justify-end text-sm text-gray-400">
+                <span>אין כתובת</span>
+                <MapPin size={14} className="flex-shrink-0" />
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">הרשאה</label>
+            <select
+              value={user.role || 'new_family'}
+              disabled={saving === user.uid}
+              onChange={e => onRoleChange(user, e.target.value)}
+              className={clsx(
+                'text-sm px-3 py-2 rounded-xl border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 w-full disabled:opacity-50',
+                ROLE_STYLE[user.role] || ROLE_STYLE.new_family
+              )}
+            >
+              {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
+          </div>
+        </div>
+        {phone && (
+          <div className="px-5 py-4 border-t border-gray-100">
+            <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors border border-green-200">
+              <MessageCircle size={15} />
+              שלח הודעה ב-WhatsApp
+            </a>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function AdminUsersPage() {
+  const navigate = useNavigate()
   const [users, setUsers]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
@@ -128,6 +207,7 @@ export default function AdminUsersPage() {
   const [showInvite, setShowInvite] = useState(false)
   const [saving, setSaving]     = useState(null)
   const [error, setError]       = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -145,9 +225,11 @@ export default function AdminUsersPage() {
     try {
       await updateDoc(doc(db, 'users', user.uid), { role: newRole })
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, role: newRole } : u))
+      setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, role: newRole } : prev)
     } catch (err) {
       console.error('changeRole error:', err)
       setError(`שגיאה בשינוי הרשאה: ${err.code || err.message}`)
+      setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, role: user.role } : prev)
     } finally {
       setSaving(null)
     }
@@ -155,7 +237,8 @@ export default function AdminUsersPage() {
 
   const filtered = users.filter(u => {
     const matchRole   = roleFilter === 'all' || u.role === roleFilter
-    const matchSearch = !search || u.name?.includes(search) || u.email?.toLowerCase().includes(search.toLowerCase())
+    const q = search.toLowerCase()
+    const matchSearch = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
     return matchRole && matchSearch
   })
 
@@ -168,6 +251,11 @@ export default function AdminUsersPage() {
           <button onClick={() => setShowInvite(true)} className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
             <UserPlus size={16} />
             הזמן משפחה
+          </button>
+          <button onClick={() => navigate('/admin/import')}
+            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+            <Upload size={15} />
+            ייבוא
           </button>
           <button onClick={loadUsers} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500" title="רענן">
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -213,7 +301,9 @@ export default function AdminUsersPage() {
           {filtered.map(user => {
             const phone = user.phone?.replace(/\D/g, '') || ''
             return (
-              <div key={user.uid} className="card p-4 flex items-center gap-3">
+              <div key={user.uid}
+                className="card p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => setSelectedUser(user)}>
                 {isUrl(user.avatar)
                   ? <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
                   : <div className="avatar w-10 h-10 text-sm bg-primary-100 text-primary-700 flex-shrink-0">
@@ -224,7 +314,7 @@ export default function AdminUsersPage() {
                   <div className="font-semibold text-gray-800 text-sm">{user.name}</div>
                   <div className="text-xs text-gray-400 truncate">{user.email}</div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   {saving === user.uid && <Loader2 size={14} className="animate-spin text-gray-400" />}
                   <select
                     value={user.role || 'new_family'}
@@ -240,6 +330,7 @@ export default function AdminUsersPage() {
                 </div>
                 {phone && (
                   <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
                     className="p-2 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors flex-shrink-0">
                     <MessageCircle size={15} />
                   </a>
@@ -257,6 +348,14 @@ export default function AdminUsersPage() {
       )}
 
       {showInvite && <InvitePanel onClose={() => setShowInvite(false)} />}
+      {selectedUser && (
+        <UserDetailPanel
+          user={selectedUser}
+          saving={saving}
+          onRoleChange={(user, role) => changeRole(user, role)}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </div>
   )
 }

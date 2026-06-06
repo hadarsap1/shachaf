@@ -163,12 +163,12 @@ export default function SettingsPage() {
         </h2>
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="label block mb-1 text-right">שם משפחה</label>
+            <label className="label block mb-1 text-right">שם מלא</label>
             <input
               value={form.name}
               onChange={e => handleChange('name', e.target.value)}
               className="input w-full text-right"
-              placeholder="שם המשפחה"
+              placeholder="שם מלא"
             />
           </div>
           <div>
@@ -179,10 +179,11 @@ export default function SettingsPage() {
             <input
               type="email"
               value={form.email}
-              onChange={e => handleChange('email', e.target.value)}
-              className="input w-full text-right"
+              readOnly
+              className="input w-full text-right bg-gray-50 text-gray-500 cursor-not-allowed"
               placeholder="your@email.com"
             />
+            <p className="text-xs text-gray-400 mt-1 text-right">לא ניתן לשנות את כתובת האימייל</p>
           </div>
           <div>
             <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">

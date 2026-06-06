@@ -206,12 +206,18 @@ export default function AdminTasksPage() {
     }
   }
 
-  const toggleStatus = (taskId) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== taskId) return t
-      const next = { pending: 'in_progress', in_progress: 'done', done: 'pending' }
-      return { ...t, status: next[t.status] || t.status }
-    }))
+  const toggleStatus = async (taskId) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+    const nextStatus = { pending: 'in_progress', in_progress: 'done', done: 'pending' }
+    const updated = { ...task, status: nextStatus[task.status] || task.status }
+    setTasks(prev => prev.map(t => t.id === taskId ? updated : t))
+    try {
+      await saveTask(updated)
+    } catch (err) {
+      console.error('toggleStatus save failed', err)
+      setTasks(prev => prev.map(t => t.id === taskId ? task : t))
+    }
   }
 
   return (
@@ -262,11 +268,13 @@ export default function AdminTasksPage() {
       {!loading && (
         <div className="space-y-2">
           {filtered.map(task => (
-            <div key={task.id} className="card p-4">
+            <div key={task.id}
+              className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={() => { setEditing(task); setConfirmDelete(null) }}>
               <div className="flex items-start gap-3">
                 {/* Status toggle */}
                 <button
-                  onClick={() => toggleStatus(task.id)}
+                  onClick={e => { e.stopPropagation(); toggleStatus(task.id) }}
                   className={clsx(
                     'mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 transition-all',
                     task.status === 'done'
@@ -296,7 +304,7 @@ export default function AdminTasksPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => { setEditing(task); setConfirmDelete(null) }}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"

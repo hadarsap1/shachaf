@@ -34,7 +34,7 @@ function buildGoogleCalendarUrl(event) {
   const time  = event.time || '09:00'
   const start = `${event.date}T${time}`
   const [h, m] = time.split(':').map(Number)
-  const end   = `${event.date}T${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00Z'
   const params = new URLSearchParams({
     action:   'TEMPLATE',
@@ -50,7 +50,7 @@ function buildICSContent(event) {
   const time  = event.time || '09:00'
   const start = `${event.date}T${time}`
   const [h, m] = time.split(':').map(Number)
-  const end   = `${event.date}T${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 15) + '00Z'
   return [
     'BEGIN:VCALENDAR',
@@ -109,6 +109,7 @@ function EventDetailPanel({ event, onClose }) {
             {/* Link to edit in AdminEventsPage */}
             <Link
               to="/admin/events"
+              state={{ editEvent: event }}
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
               title="ערוך אירוע"

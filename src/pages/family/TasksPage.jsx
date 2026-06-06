@@ -84,7 +84,7 @@ export default function TasksPage() {
           >
             {f.label}
             {f.key !== 'all' && (
-              <span className="mr-1.5 text-xs opacity-70">
+              <span className="ms-1.5 text-xs opacity-70">
                 ({myTasks.filter(t => t.status === f.key).length})
               </span>
             )}

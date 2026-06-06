@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { getEvents, saveEvent, deleteEvent } from '../../lib/db'
 import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
@@ -7,7 +8,7 @@ function googleCalendarUrl(event) {
   const time = event.time || '09:00'
   const start = `${event.date}T${time}`
   const [h, m] = time.split(':').map(Number)
-  const end = `${event.date}T${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  const end = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   const fmt = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00Z'
   const params = new URLSearchParams({ action: 'TEMPLATE', text: event.title, dates: `${fmt(start)}/${fmt(end)}`, location: event.location || '', details: event.description || '' })
   return `https://calendar.google.com/calendar/render?${params}`
@@ -192,14 +193,21 @@ function EventPanel({ event, isNew, onSave, onClose }) {
 // ---- Main page ----
 
 export default function AdminEventsPage() {
+  const location = useLocation()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   useEffect(() => {
-    getEvents().then(e => { setEvents(e); setLoading(false) })
-  }, [])
+    getEvents().then(e => {
+      setEvents(e)
+      setLoading(false)
+      if (location.state?.editEvent) {
+        setEditing(location.state.editEvent)
+      }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (saved) => {
     const prev = [...events]
@@ -269,7 +277,9 @@ export default function AdminEventsPage() {
             const typeLabel = TYPE_OPTIONS.find(o => o.value === event.type)?.label || event.type
 
             return (
-              <div key={event.id} className="card p-4">
+              <div key={event.id}
+                className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => { setEditing(event); setConfirmDelete(null) }}>
                 <div className="flex items-start gap-3">
                   {/* Date badge */}
                   <div className="w-12 h-12 rounded-xl bg-primary-50 flex flex-col items-center justify-center flex-shrink-0">
@@ -316,7 +326,7 @@ export default function AdminEventsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                     {event.date && (
                       <a href={googleCalendarUrl(event)} target="_blank" rel="noopener noreferrer"
                         className="p-1.5 rounded-lg text-gray-400 hover:text-secondary-600 hover:bg-secondary-50 transition-colors"

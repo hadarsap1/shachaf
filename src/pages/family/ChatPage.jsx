@@ -143,6 +143,7 @@ export default function ChatPage() {
               setSuggestions(INITIAL_SUGGESTIONS)
             }}
             className="mr-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="שיחה חדשה"
             title="שיחה חדשה"
           >
             <RefreshCw size={16} />

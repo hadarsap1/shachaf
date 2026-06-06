@@ -2,9 +2,10 @@ import { Calendar, MapPin, Clock, Plus } from 'lucide-react'
 import clsx from 'clsx'
 
 const TYPE_CONFIG = {
-  social: { label: 'חברתי', color: 'badge-secondary' },
-  school: { label: 'בית ספר', color: 'badge-primary' },
-  community: { label: 'קהילה', color: 'badge-accent' },
+  social:      { label: 'חברתי',     color: 'badge-primary' },
+  orientation: { label: 'אוריינטציה', color: 'badge-secondary' },
+  ceremony:    { label: 'טקס',       color: 'badge-accent' },
+  community:   { label: 'קהילה',     color: 'badge-warning' },
 }
 
 function buildGoogleCalendarUrl({ title, start, end, location, description = '' }) {
@@ -40,12 +41,12 @@ function buildCalendarData(event) {
   const time = event.time || '09:00'
   const start = `${event.date}T${time}`
   const [h, m] = time.split(':').map(Number)
-  const endHour = String(h + 1).padStart(2, '0')
+  const endHour = String((h + 1) % 24).padStart(2, '0')
   const end = `${event.date}T${endHour}:${String(m).padStart(2, '0')}`
   return { title: event.title, start, end, location: event.location || '', description: event.description || '' }
 }
 
-export default function EventCard({ event }) {
+export default function EventCard({ event, onCardClick }) {
   const typeConfig = TYPE_CONFIG[event.type] || TYPE_CONFIG.social
   const eventDate = new Date(event.date)
   const calData = buildCalendarData(event)
@@ -66,7 +67,10 @@ export default function EventCard({ event }) {
   }
 
   return (
-    <div className="card overflow-hidden hover:shadow-card-hover transition-shadow">
+    <div
+      className={clsx('card overflow-hidden transition-shadow', onCardClick ? 'cursor-pointer hover:shadow-card-hover' : 'hover:shadow-card-hover')}
+      onClick={onCardClick}
+    >
       {/* Colored top strip */}
       <div className={clsx(
         'h-1.5',
@@ -95,26 +99,30 @@ export default function EventCard({ event }) {
               {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Clock size={13} className="text-primary-400" />
-            <span>{event.time}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <MapPin size={13} className="text-primary-400" />
-            <span>{event.location}</span>
-          </div>
+          {event.time && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Clock size={13} className="text-primary-400" />
+              <span>{event.time}</span>
+            </div>
+          )}
+          {event.location && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <MapPin size={13} className="text-primary-400" />
+              <span>{event.location}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
           <button
-            onClick={handleAddToCalendar}
+            onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
             className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-colors font-medium"
           >
             <Plus size={13} />
             Google Calendar
           </button>
           <button
-            onClick={handleDownloadICS}
+            onClick={e => { e.stopPropagation(); handleDownloadICS() }}
             className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-colors font-medium"
           >
             <Calendar size={13} />

@@ -64,7 +64,7 @@ export function getSubmissionsForUser(userId) {
 }
 
 export function hasSubmitted(userId, formId) {
-  return getSubmissions().some(s => s.userId === formId ? false : s.userId === userId && s.formId === formId)
+  return getSubmissions().some(s => s.userId === userId && s.formId === formId)
 }
 
 export function saveSubmission(submission) {

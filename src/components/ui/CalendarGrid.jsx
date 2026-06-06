@@ -119,9 +119,15 @@ function EventChip({ event, onClick }) {
 
 // ── Event dot (mobile month cell) ────────────────────────────────────────────
 
-function EventDot({ event }) {
+function EventDot({ event, onClick }) {
   const dot = TYPE_DOT[event.type] || 'bg-gray-400'
-  return <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0 inline-block', dot)} />
+  return (
+    <button
+      onClick={() => onClick(event)}
+      title={event.title}
+      className={clsx('w-3 h-3 rounded-full flex-shrink-0 inline-block', dot)}
+    />
+  )
 }
 
 // ── Week event card ───────────────────────────────────────────────────────────
@@ -204,9 +210,9 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
               </div>
 
               {/* Mobile: dots only */}
-              <div className="flex sm:hidden flex-wrap gap-0.5 justify-center">
+              <div className="flex sm:hidden flex-wrap gap-1 justify-center">
                 {dayEvents.map(ev => (
-                  <EventDot key={ev.id} event={ev} />
+                  <EventDot key={ev.id} event={ev} onClick={onEventClick} />
                 ))}
               </div>
             </div>
@@ -260,10 +266,9 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
         {weekDays.map((day, idx) => {
           const isToday   = day.key === today
           const dayEvents = eventsByDay[day.key] || []
-          if (dayEvents.length === 0) return null
 
           return (
-            <div key={day.key} className="card p-3">
+            <div key={day.key} className={clsx('card p-3', !isToday && dayEvents.length === 0 && 'opacity-60')}>
               <div className={clsx(
                 'flex items-center gap-2 mb-2',
                 isToday && 'text-primary-700'
@@ -276,11 +281,15 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
                 </span>
                 <span className="text-sm font-semibold text-gray-700">{DAY_NAMES[idx]}</span>
               </div>
-              <div className="space-y-1">
-                {dayEvents.map(ev => (
-                  <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} />
-                ))}
-              </div>
+              {dayEvents.length > 0 ? (
+                <div className="space-y-1">
+                  {dayEvents.map(ev => (
+                    <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">אין אירועים</p>
+              )}
             </div>
           )
         })}
@@ -336,7 +345,28 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
     <div className="w-full" dir="rtl">
       {/* ── Calendar header ── */}
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-        {/* Left: today + view toggle */}
+        {/* Right (DOM-first in RTL): prev arrow · title · next arrow */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={goPrev}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            aria-label="הקודם"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <h2 className="font-bold text-gray-800 text-base min-w-24 text-center">
+            {headerLabel}
+          </h2>
+          <button
+            onClick={goNext}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            aria-label="הבא"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        </div>
+
+        {/* Left (DOM-last in RTL): view toggle + today */}
         <div className="flex items-center gap-1">
           <div className="flex items-center rounded-full border border-gray-200 overflow-hidden">
             <button
@@ -367,31 +397,6 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
             className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
             היום
-          </button>
-        </div>
-
-        {/* Center: month/week label */}
-        <h2 className="font-bold text-gray-800 text-base text-center flex-1 min-w-0 truncate">
-          {headerLabel}
-        </h2>
-
-        {/* Right: prev/next */}
-        <div className="flex items-center gap-1">
-          {/* In RTL layout the visual "next" (forward in time) is on the right side,
-              but since container is dir=rtl, ChevronLeft visually points right */}
-          <button
-            onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-            aria-label="הבא"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-            aria-label="הקודם"
-          >
-            <ChevronRight size={18} />
           </button>
         </div>
       </div>

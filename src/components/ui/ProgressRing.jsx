@@ -4,7 +4,14 @@ export default function ProgressRing({ percent = 0, size = 80, strokeWidth = 7, 
   const offset = circ - (percent / 100) * circ
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      role="progressbar"
+      aria-valuenow={percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2} cy={size / 2} r={r}

@@ -37,7 +37,7 @@ export default function AdminMessagesPage() {
 
   if (loading) {
     return (
-      <div className="page-container flex items-center justify-center py-20">
+      <div className="page-container rtl flex items-center justify-center py-20" dir="rtl">
         <Loader2 size={32} className="animate-spin text-primary-400" />
       </div>
     )

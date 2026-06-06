@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getMessages } from '../../lib/db'
+import InstallBanner from '../ui/InstallBanner'
 import {
-  Home, CheckSquare, Calendar, Users,
+  Home, CheckSquare, Calendar, CalendarDays, Users,
   LayoutDashboard, BookOpen, MessageCircle, Menu, X,
   LogOut, ChevronDown, Activity, FileText, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, Upload,
@@ -34,10 +35,10 @@ const NAV_LINKS = {
   admin: [
     { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload },
+    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload, sub: true },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/calendar', label: 'לוח שנה', icon: Calendar },
+    { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
@@ -45,10 +46,10 @@ const NAV_LINKS = {
   super_admin: [
     { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload },
+    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload, sub: true },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/calendar', label: 'לוח שנה', icon: Calendar },
+    { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
@@ -63,7 +64,7 @@ const BOTTOM_NAV = {
   super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
 }
 
-function NavLink({ to, label, icon: Icon, onClick, unread = 0 }) {
+function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/dashboard' && to !== '/admin' && pathname.startsWith(to))
 
@@ -72,13 +73,16 @@ function NavLink({ to, label, icon: Icon, onClick, unread = 0 }) {
       to={to}
       onClick={onClick}
       className={clsx(
-        'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+        'flex items-center gap-3 rounded-xl font-medium transition-all duration-150',
+        sub
+          ? 'px-3 py-2 text-xs me-4'
+          : 'px-3 py-2.5 text-sm',
         active
-          ? 'bg-primary-600 text-white shadow-sm'
-          : 'text-primary-100 hover:bg-primary-600/50 hover:text-white'
+          ? sub ? 'bg-primary-500/60 text-white' : 'bg-primary-600 text-white shadow-sm'
+          : sub ? 'text-primary-200 hover:bg-primary-600/40 hover:text-white' : 'text-primary-100 hover:bg-primary-600/50 hover:text-white'
       )}
     >
-      <Icon size={18} className="flex-shrink-0" />
+      <Icon size={sub ? 14 : 18} className="flex-shrink-0" />
       <span className="flex-1">{label}</span>
       {unread > 0 && (
         <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
@@ -153,7 +157,7 @@ export default function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-primary-700 text-white flex-shrink-0">
+      <aside className="hidden md:flex flex-col w-64 bg-primary-700 text-white flex-shrink-0" dir="rtl">
         {/* Logo */}
         <div className="px-4 py-4 border-b border-primary-600 bg-white">
           <img src="/logo.png" alt="שחף" className="h-12 w-auto mx-auto" />
@@ -162,7 +166,7 @@ export default function AppShell() {
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {links.map(link => (
-            <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} />
+            <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} />
           ))}
         </nav>
 
@@ -176,7 +180,7 @@ export default function AppShell() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute top-0 right-0 h-full w-72 bg-primary-700 flex flex-col animate-slide-up">
+          <aside className="absolute top-0 right-0 h-full w-72 bg-primary-700 flex flex-col animate-slide-up" dir="rtl">
             {/* In RTL, justify-between puts the first child on the visual RIGHT and the second on the LEFT.
                 The sidebar slides in from the right, so the close button should be on the visual right (first child). */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-primary-600 bg-white">
@@ -191,7 +195,7 @@ export default function AppShell() {
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {links.map(link => (
-                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} onClick={() => setSidebarOpen(false)} />
+                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
             <div className="px-3 py-4 border-t border-primary-600">
@@ -205,7 +209,6 @@ export default function AppShell() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile topbar */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm">
-          <img src="/logo.png" alt="שחף" className="h-9 w-auto" />
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="פתח תפריט"
@@ -213,15 +216,18 @@ export default function AppShell() {
           >
             <Menu size={20} />
           </button>
+          <img src="/logo.png" alt="שחף" className="h-9 w-auto" />
         </header>
 
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <Outlet />
         </main>
 
+        <InstallBanner />
+
         {/* Mobile bottom nav */}
         {bottomLinks.length > 0 && (
-          <nav className="md:hidden flex items-center justify-around border-t border-gray-100 bg-white px-2 py-1 flex-shrink-0">
+          <nav className="md:hidden flex items-center justify-around border-t border-gray-100 bg-white px-2 py-1 pb-[env(safe-area-inset-bottom)] flex-shrink-0">
             {bottomLinks.map(link => {
               const Icon = link.icon
               const active = pathname === link.to || (link.to !== '/dashboard' && link.to !== '/admin' && pathname.startsWith(link.to))

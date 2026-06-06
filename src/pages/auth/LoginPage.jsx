@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
@@ -13,9 +13,58 @@ const DEMO_ROLES = [
 
 const ROLE_PATH = { newFamily: '/dashboard', hostFamily: '/dashboard', admin: '/admin', superAdmin: '/admin' }
 
+const GOOGLE_PENDING_KEY = 'shachaf_google_pending'
+const GOOGLE_PENDING_TTL = 2 * 60 * 1000 // 2 minutes
+
+function isIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+function isStandalone() {
+  return (
+    window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches
+  )
+}
+
+function consumeStaleGooglePending() {
+  const ts = localStorage.getItem(GOOGLE_PENDING_KEY)
+  if (!ts) return false
+  if (Date.now() - Number(ts) > GOOGLE_PENDING_TTL) {
+    localStorage.removeItem(GOOGLE_PENDING_KEY)
+    return false
+  }
+  return true
+}
+
 export default function LoginPage() {
-  const { loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword } = useAuth()
+  const { user, loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword } = useAuth()
   const navigate = useNavigate()
+
+  // Redirect when user becomes authenticated (handles iOS redirect return)
+  useEffect(() => {
+    if (user) {
+      localStorage.removeItem(GOOGLE_PENDING_KEY)
+      setAwaitingGoogleReturn(false)
+      navigate(
+        user.role === 'admin' || user.role === 'super_admin' ? '/admin' : '/dashboard',
+        { replace: true }
+      )
+    }
+  }, [user])
+
+  // iOS (both standalone and Safari): when user returns from Google auth in Safari,
+  // reload so Firebase re-reads IndexedDB.
+  // On iOS 16.4+ the PWA and Safari share the same origin's IndexedDB, so after
+  // completing Google auth in Safari the standalone app picks up the session on reload.
+  useEffect(() => {
+    if (!isIOS() || !localStorage.getItem(GOOGLE_PENDING_KEY)) return
+    const onVisible = () => {
+      if (!document.hidden) window.location.reload()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const [mode, setMode]           = useState('login')   // 'login' | 'register' | 'reset' | 'demo'
   const [email, setEmail]         = useState('')
@@ -26,15 +75,32 @@ export default function LoginPage() {
   const [error, setError]         = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [awaitingGoogleReturn, setAwaitingGoogleReturn] = useState(
+    () => isIOS() && consumeStaleGooglePending()
+  )
+
+  // Called by the standalone anchor tag's onClick — sets state but lets the
+  // default anchor navigation open Safari (window.open is blocked in WKWebView)
+  const handleGoogleStandaloneClick = () => {
+    localStorage.setItem(GOOGLE_PENDING_KEY, String(Date.now()))
+    setAwaitingGoogleReturn(true)
+  }
 
   const handleGoogle = async () => {
     setError('')
     setGoogleLoading(true)
     try {
+      if (isIOS()) {
+        localStorage.setItem(GOOGLE_PENDING_KEY, String(Date.now()))
+        setAwaitingGoogleReturn(true)
+      }
       await loginWithGoogle()
       navigate('/dashboard')
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') setError(firebaseError(err.code))
+      localStorage.removeItem(GOOGLE_PENDING_KEY)
+      setAwaitingGoogleReturn(false)
+      const msg = firebaseError(err.code)
+      if (msg) setError(msg)
     } finally {
       setGoogleLoading(false)
     }
@@ -184,14 +250,48 @@ export default function LoginPage() {
               </p>
 
               {/* Google */}
-              <button type="button" onClick={handleGoogle} disabled={googleLoading || loading !== null}
-                className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4">
-                {googleLoading
-                  ? <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  : <GoogleIcon />
-                }
-                המשך עם Google
-              </button>
+              {awaitingGoogleReturn ? (
+                <div className="w-full flex flex-col items-center gap-2 border border-primary-200 bg-primary-50 rounded-xl py-3 px-4 text-sm text-primary-700 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="font-medium">ממתין לכניסה ב-Google...</span>
+                  </div>
+                  <p className="text-xs text-primary-500 text-center">
+                    {isStandalone()
+                      ? 'השלם כניסה עם Google בדפדפן שנפתח — לאחר מכן חזור לאפליקציה'
+                      : 'חזור לאפליקציה לאחר הכניסה בדפדפן'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { localStorage.removeItem(GOOGLE_PENDING_KEY); setAwaitingGoogleReturn(false) }}
+                    className="text-xs text-primary-400 hover:text-primary-600 underline mt-1"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              ) : isStandalone() ? (
+                // window.open is blocked in standalone WKWebView.
+                // A real <a target="_blank"> tap IS honored by iOS and opens in Safari.
+                <a
+                  href={window.location.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={handleGoogleStandaloneClick}
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 no-underline"
+                >
+                  <GoogleIcon />
+                  המשך עם Google
+                </a>
+              ) : (
+                <button type="button" onClick={handleGoogle} disabled={googleLoading || loading !== null}
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4">
+                  {googleLoading
+                    ? <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    : <GoogleIcon />
+                  }
+                  המשך עם Google
+                </button>
+              )}
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px bg-gray-200" />
@@ -294,13 +394,18 @@ function GoogleIcon() {
 
 function firebaseError(code) {
   const map = {
-    'auth/user-not-found':     'מייל או סיסמה שגויים',
-    'auth/wrong-password':     'מייל או סיסמה שגויים',
-    'auth/invalid-credential': 'מייל או סיסמה שגויים',
-    'auth/email-already-in-use': 'כתובת המייל כבר בשימוש',
-    'auth/weak-password':      'הסיסמה חלשה מדי (מינימום 6 תווים)',
-    'auth/invalid-email':      'כתובת מייל לא תקינה',
-    'auth/too-many-requests':  'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
+    'auth/user-not-found':        'מייל או סיסמה שגויים',
+    'auth/wrong-password':        'מייל או סיסמה שגויים',
+    'auth/invalid-credential':    'מייל או סיסמה שגויים',
+    'auth/email-already-in-use':  'כתובת המייל כבר בשימוש',
+    'auth/weak-password':         'הסיסמה חלשה מדי (מינימום 6 תווים)',
+    'auth/invalid-email':         'כתובת מייל לא תקינה',
+    'auth/too-many-requests':     'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
+    'auth/popup-blocked':         'הדפדפן חסם את חלון Google — אפשר חלונות קופצים ונסה שוב',
+    'auth/unauthorized-domain':   'הדומיין לא מורשה ב-Firebase — פנה למנהל',
+    'auth/cancelled-popup-request': null, // silently ignore
+    'auth/network-request-failed': 'בעיית רשת — בדוק את החיבור לאינטרנט',
   }
-  return map[code] || 'שגיאה, נסה שוב'
+  if (code in map) return map[code]  // null = silent
+  return `שגיאה (${code || 'unknown'})`
 }

@@ -11,10 +11,9 @@ service cloud.firestore {
                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                      in ['admin', 'super_admin'];
 
-      // New accounts can only be created with role=new_family
+      // Users can create their own profile (role is set from pending import or defaults to new_family)
       allow create: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.role == 'new_family';
+                    && request.auth.uid == userId;
 
       // Users can update their own profile but cannot change their own role
       allow update: if request.auth != null

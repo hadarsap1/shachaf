@@ -7,6 +7,9 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  updateProfile,
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
@@ -20,23 +23,36 @@ export function AuthProvider({ children }) {
 
   const fetchUserProfile = async (firebaseUser) => {
     try {
-      const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
+      const userRef = doc(db, 'users', firebaseUser.uid)
+      const snap = await getDoc(userRef)
       if (snap.exists()) {
         setUser({ uid: firebaseUser.uid, ...snap.data() })
-      } else {
-        // New user — create a basic profile with new_family role
-        const newProfile = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-          role: 'new_family',
-          avatar: '',
-          phone: '',
-          createdAt: serverTimestamp(),
-        }
-        await setDoc(doc(db, 'users', firebaseUser.uid), newProfile)
-        setUser(newProfile)
+        return
       }
+      // New user — check for a pending imported record first
+      const emailKey = (firebaseUser.email || '').toLowerCase()
+      let pending = null
+      if (emailKey) {
+        try {
+          const ps = await getDoc(doc(db, 'pendingFamilies', emailKey))
+          if (ps.exists()) pending = ps.data()
+        } catch { /* no pending record or permission denied — fine */ }
+      }
+      const newProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || emailKey,
+        name: pending?.name || firebaseUser.displayName || emailKey.split('@')[0],
+        role: pending?.role || 'new_family',
+        avatar: firebaseUser.photoURL || '',
+        phone: pending?.phone || '',
+        address: pending?.address || '',
+        createdAt: serverTimestamp(),
+      }
+      await setDoc(userRef, newProfile)
+      if (pending) {
+        try { await deleteDoc(doc(db, 'pendingFamilies', emailKey)) } catch {}
+      }
+      setUser(newProfile)
     } catch (err) {
       console.error('fetchUserProfile failed:', err)
       setUser(null)
@@ -55,8 +71,15 @@ export function AuthProvider({ children }) {
       }
     }
 
-    // Firebase auth state
+    // Handle iOS redirect result on page load
+    getRedirectResult(auth).catch(err => {
+      if (err?.code !== 'auth/null-user') console.error('redirect result error:', err)
+    })
+
+    // Firebase auth state — set loading=true on every change so ProtectedShell
+    // shows a spinner instead of flashing back to /login during profile fetch
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true)
       if (firebaseUser) {
         await fetchUserProfile(firebaseUser)
       } else {
@@ -80,66 +103,27 @@ export function AuthProvider({ children }) {
   const loginWithEmail = (email, password) =>
     signInWithEmailAndPassword(auth, email, password)
 
-  // Real Firebase register
+  // Real Firebase register — set displayName so fetchUserProfile can use it
   const registerWithEmail = async (email, password, name) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
-    const userRef = doc(db, 'users', cred.user.uid)
-    const existing = await getDoc(userRef)
-    if (!existing.exists()) {
-      const emailKey = email.toLowerCase()
-      const pendingSnap = await getDoc(doc(db, 'pendingFamilies', emailKey))
-      const pending = pendingSnap.exists() ? pendingSnap.data() : null
-
-      const profile = {
-        uid: cred.user.uid,
-        email: cred.user.email.toLowerCase(),
-        name: pending?.name || name || email.split('@')[0],
-        phone: pending?.phone || '',
-        address: pending?.address || '',
-        role: pending?.role || 'new_family',
-        avatar: '',
-        createdAt: serverTimestamp(),
-      }
-      await setDoc(userRef, profile)
-      if (pending) {
-        await deleteDoc(doc(db, 'pendingFamilies', emailKey))
-      }
-      setUser(profile)
-    } else {
-      setUser({ uid: cred.user.uid, ...existing.data() })
-    }
+    if (name) await updateProfile(cred.user, { displayName: name })
+    // onAuthStateChanged → fetchUserProfile handles profile creation
     return cred
   }
 
+  // Google sign-in
+  // • iOS (any context): use redirect — popup is blocked or fails in WebView/standalone.
+  //   The redirect completes in Safari which writes auth to the shared IndexedDB.
+  //   LoginPage handles the return via visibilitychange + page reload.
+  // • Everything else: popup works fine.
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider()
-    const cred = await signInWithPopup(auth, provider)
-    const userRef = doc(db, 'users', cred.user.uid)
-    const existingSnap = await getDoc(userRef)
-    if (!existingSnap.exists()) {
-      const emailKey = cred.user.email.toLowerCase()
-      const pendingSnap = await getDoc(doc(db, 'pendingFamilies', emailKey))
-      const pending = pendingSnap.exists() ? pendingSnap.data() : null
-
-      const profile = {
-        uid: cred.user.uid,
-        email: emailKey,
-        name: pending?.name || cred.user.displayName || emailKey.split('@')[0],
-        phone: pending?.phone || '',
-        address: pending?.address || '',
-        role: pending?.role || 'new_family',
-        avatar: cred.user.photoURL || '',
-        createdAt: serverTimestamp(),
-      }
-      await setDoc(userRef, profile)
-      if (pending) {
-        await deleteDoc(doc(db, 'pendingFamilies', emailKey))
-      }
-      setUser(profile)
-    } else {
-      setUser({ uid: cred.user.uid, ...existingSnap.data() })
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (isIOS) {
+      await signInWithRedirect(auth, provider)
+      return
     }
-    return cred
+    return signInWithPopup(auth, provider)
   }
 
   const resetPassword = (email) => sendPasswordResetEmail(auth, email)
