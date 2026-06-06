@@ -1,0 +1,275 @@
+import { useState, useEffect } from 'react'
+import { getCommittees, saveCommittee, deleteCommittee } from '../../lib/db'
+import { COMMITTEE_ICONS, CLASS_COLORS } from '../../lib/classColors'
+import {
+  Users, Plus, Edit2, Trash2, X, Check, Loader2,
+  Heart, Star, Music, Book, Globe, Zap, Gift, Coffee,
+  Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
+} from 'lucide-react'
+import clsx from 'clsx'
+
+const ICON_MAP = {
+  Users, Heart, Star, Music, Book, Globe, Zap, Gift,
+  Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
+}
+
+function CommitteeIcon({ name, size = 20, className }) {
+  const Icon = ICON_MAP[name] || Users
+  return <Icon size={size} className={className} />
+}
+
+const blankCommittee = (order) => ({
+  id: 'committee-' + Date.now(),
+  name: '',
+  description: '',
+  members: [],
+  icon: 'Users',
+  color: CLASS_COLORS[0],
+  order,
+})
+
+const blankMember = () => ({ name: '', phone: '', email: '', title: '' })
+
+// ── Edit panel ────────────────────────────────────────────────────────────────
+
+function CommitteePanel({ committee, isNew, onSave, onClose }) {
+  const [draft, setDraft]   = useState({ ...committee })
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState('')
+
+  const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
+
+  const updateMember = (i, field, val) =>
+    setDraft(d => ({ ...d, members: d.members.map((m, idx) => idx === i ? { ...m, [field]: val } : m) }))
+  const removeMember = (i) =>
+    setDraft(d => ({ ...d, members: d.members.filter((_, idx) => idx !== i) }))
+  const addMember = () =>
+    setDraft(d => ({ ...d, members: [...d.members, blankMember()] }))
+
+  const handleSave = async () => {
+    if (!draft.name?.trim()) { setError('שם הוועדה הוא שדה חובה'); return }
+    setSaving(true)
+    try {
+      await onSave({ ...draft, name: draft.name.trim() })
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800">{isNew ? 'ועדה חדשה' : 'עריכת ועדה'}</h2>
+          <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 btn-primary text-sm py-1.5 px-3">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+            שמור
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</div>}
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="label">שם הוועדה</label>
+              <input value={draft.name || ''} onChange={e => set('name', e.target.value)}
+                placeholder="לדוגמה: ועד הורים" className="input w-full" />
+            </div>
+            <div className="w-16 text-center">
+              <label className="label">סדר</label>
+              <input type="number" min="1" value={draft.order || 1}
+                onChange={e => set('order', Number(e.target.value))}
+                className="input w-full text-center" />
+            </div>
+          </div>
+
+          <div>
+            <label className="label">תיאור</label>
+            <textarea value={draft.description || ''} onChange={e => set('description', e.target.value)}
+              placeholder="מה הוועדה עושה?" rows={3} className="input w-full resize-none text-sm" />
+          </div>
+
+          <div>
+            <label className="label">אייקון</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {COMMITTEE_ICONS.map(icon => (
+                <button key={icon} type="button" onClick={() => set('icon', icon)}
+                  className={clsx(
+                    'w-9 h-9 rounded-xl flex items-center justify-center border-2 transition-all',
+                    draft.icon === icon
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
+                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                  )}>
+                  <CommitteeIcon name={icon} size={16} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="label">צבע</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {CLASS_COLORS.map(c => (
+                <button key={c} type="button" onClick={() => set('color', c)}
+                  className={clsx(
+                    'w-7 h-7 rounded-full border-2 transition-transform',
+                    draft.color === c ? 'border-gray-800 scale-110' : 'border-transparent hover:scale-105'
+                  )}
+                  style={{ backgroundColor: c }} />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="label mb-3">חברי הוועדה</label>
+            <div className="space-y-3">
+              {(draft.members || []).map((m, i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <input value={m.name} onChange={e => updateMember(i, 'name', e.target.value)}
+                      placeholder="שם" className="input flex-1 text-sm py-1.5" />
+                    <input value={m.title || ''} onChange={e => updateMember(i, 'title', e.target.value)}
+                      placeholder="תפקיד" className="input w-28 text-sm py-1.5" />
+                    <button onClick={() => removeMember(i)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <input value={m.phone || ''} onChange={e => updateMember(i, 'phone', e.target.value)}
+                      placeholder="טלפון" className="input flex-1 text-sm py-1.5" dir="ltr" />
+                    <input value={m.email || ''} onChange={e => updateMember(i, 'email', e.target.value)}
+                      placeholder="מייל" className="input flex-1 text-sm py-1.5" dir="ltr" />
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={addMember}
+                className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium">
+                <Plus size={14} />
+                הוסף חבר/ת ועדה
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export default function AdminCommitteesPage() {
+  const [committees, setCommittees] = useState([])
+  const [selected, setSelected]     = useState(null)
+  const [isNew, setIsNew]           = useState(false)
+  const [loading, setLoading]       = useState(true)
+  const [deleting, setDeleting]     = useState(null)
+  const [error, setError]           = useState('')
+
+  useEffect(() => {
+    getCommittees()
+      .then(setCommittees)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async (c) => {
+    const saved = await saveCommittee(c)
+    setCommittees(prev => {
+      const idx = prev.findIndex(x => x.id === saved.id)
+      const next = idx >= 0 ? prev.map(x => x.id === saved.id ? saved : x) : [...prev, saved]
+      return [...next].sort((a, b) => (a.order || 0) - (b.order || 0))
+    })
+    setSelected(null)
+    setIsNew(false)
+  }
+
+  const handleDelete = async (id) => {
+    setDeleting(id)
+    try {
+      await deleteCommittee(id)
+      setCommittees(prev => prev.filter(c => c.id !== id))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">ניהול ועדות</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{committees.length} ועדות</p>
+        </div>
+        <button
+          onClick={() => { setSelected(blankCommittee(committees.length + 1)); setIsNew(true) }}
+          className="btn-primary flex items-center gap-2"
+        >
+          <Plus size={16} />
+          ועדה חדשה
+        </button>
+      </div>
+
+      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : committees.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <Users size={40} className="mx-auto mb-3 opacity-40" />
+          <p className="font-medium">אין ועדות עדיין</p>
+          <p className="text-sm mt-1">לחץ על "ועדה חדשה" כדי להתחיל</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {committees.map(c => (
+            <div key={c.id}
+              className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: c.color + '20' }}>
+                <CommitteeIcon name={c.icon} size={22} className="opacity-90"
+                  style={{ color: c.color }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-800">{c.name}</div>
+                {c.description && (
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.description}</p>
+                )}
+                {c.members?.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">{c.members.length} חברים</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => { setSelected(c); setIsNew(false) }}
+                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl">
+                  <Edit2 size={15} />
+                </button>
+                <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl">
+                  {deleting === c.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <CommitteePanel
+          committee={selected}
+          isNew={isNew}
+          onSave={handleSave}
+          onClose={() => { setSelected(null); setIsNew(false) }}
+        />
+      )}
+    </div>
+  )
+}

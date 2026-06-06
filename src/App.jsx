@@ -23,6 +23,10 @@ import SuperAdminPage from './pages/superadmin/SuperAdminPage'
 import AdminMessagesPage from './pages/admin/AdminMessagesPage'
 import AdminImportPage from './pages/admin/AdminImportPage'
 import AdminCalendarPage from './pages/admin/AdminCalendarPage'
+import AdminClassesPage from './pages/admin/AdminClassesPage'
+import AdminChildrenPage from './pages/admin/AdminChildrenPage'
+import AdminCommitteesPage from './pages/admin/AdminCommitteesPage'
+import HelpPage from './pages/HelpPage'
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false }) {
   const { user, loading, isAdmin, isSuperAdmin, isHostFamily } = useAuth()
@@ -64,6 +68,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/forms" element={<FormFillPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/help" element={<HelpPage />} />
           </Route>
 
           <Route element={<ProtectedShell hostOnly />}>
@@ -80,6 +85,9 @@ export default function App() {
             <Route path="/admin/messages" element={<AdminMessagesPage />} />
             <Route path="/admin/import" element={<AdminImportPage />} />
             <Route path="/admin/calendar" element={<AdminCalendarPage />} />
+            <Route path="/admin/classes" element={<AdminClassesPage />} />
+            <Route path="/admin/children" element={<AdminChildrenPage />} />
+            <Route path="/admin/committees" element={<AdminCommitteesPage />} />
           </Route>
 
           <Route element={<ProtectedShell superOnly />}>

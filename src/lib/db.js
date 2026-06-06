@@ -1,6 +1,6 @@
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
-  query, where, orderBy, serverTimestamp, getDoc,
+  query, where, orderBy, serverTimestamp, getDoc, writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
 
@@ -141,4 +141,139 @@ export async function getMessages() {
 
 export async function markMessageRead(id) {
   await updateDoc(doc(db, 'messages', id), { read: true })
+}
+
+// ── Classes ───────────────────────────────────────────────────────────────────
+export async function getClasses() {
+  const snap = await getDocs(query(collection(db, 'classes'), orderBy('name', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveClass(cls) {
+  const { id, ...data } = cls
+  if (id && !id.startsWith('class-')) {
+    await updateDoc(doc(db, 'classes', id), { ...data, updatedAt: serverTimestamp() })
+    return cls
+  }
+  const ref = await addDoc(collection(db, 'classes'), { ...data, createdAt: serverTimestamp() })
+  return { ...cls, id: ref.id }
+}
+
+export async function deleteClass(id) {
+  await deleteDoc(doc(db, 'classes', id))
+}
+
+export async function assignClassAdmin(classId, uid) {
+  const batch = writeBatch(db)
+  const cls = await getDoc(doc(db, 'classes', classId))
+  if (cls.exists()) {
+    const adminUids = [...new Set([...(cls.data().adminUids || []), uid])]
+    batch.update(doc(db, 'classes', classId), { adminUids })
+  }
+  const userSnap = await getDoc(doc(db, 'users', uid))
+  if (userSnap.exists()) {
+    const classAdminFor = [...new Set([...(userSnap.data().classAdminFor || []), classId])]
+    batch.update(doc(db, 'users', uid), { classAdminFor })
+  }
+  await batch.commit()
+}
+
+export async function removeClassAdmin(classId, uid) {
+  const batch = writeBatch(db)
+  const cls = await getDoc(doc(db, 'classes', classId))
+  if (cls.exists()) {
+    batch.update(doc(db, 'classes', classId), {
+      adminUids: (cls.data().adminUids || []).filter(u => u !== uid),
+    })
+  }
+  const userSnap = await getDoc(doc(db, 'users', uid))
+  if (userSnap.exists()) {
+    batch.update(doc(db, 'users', uid), {
+      classAdminFor: (userSnap.data().classAdminFor || []).filter(c => c !== classId),
+    })
+  }
+  await batch.commit()
+}
+
+// ── Children ──────────────────────────────────────────────────────────────────
+export async function getChildren(classId = null) {
+  const q = classId
+    ? query(collection(db, 'children'), where('classId', '==', classId), orderBy('name', 'asc'))
+    : query(collection(db, 'children'), orderBy('name', 'asc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveChild(child) {
+  const { id, ...data } = child
+  if (id && !id.startsWith('child-')) {
+    await updateDoc(doc(db, 'children', id), { ...data, updatedAt: serverTimestamp() })
+    return child
+  }
+  const ref = await addDoc(collection(db, 'children'), { ...data, createdAt: serverTimestamp() })
+  return { ...child, id: ref.id }
+}
+
+export async function deleteChild(id) {
+  await deleteDoc(doc(db, 'children', id))
+}
+
+export async function bulkImportChildren(children) {
+  const batch = writeBatch(db)
+  children.forEach(child => {
+    const ref = doc(collection(db, 'children'))
+    batch.set(ref, { ...child, parentUids: [], createdAt: serverTimestamp() })
+  })
+  await batch.commit()
+}
+
+export async function linkChildToParent(childId, parentUid) {
+  const childSnap = await getDoc(doc(db, 'children', childId))
+  if (!childSnap.exists()) return
+  const current = childSnap.data().parentUids || []
+  if (current.includes(parentUid)) return
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'children', childId), { parentUids: [...current, parentUid] })
+  const userSnap = await getDoc(doc(db, 'users', parentUid))
+  if (userSnap.exists()) {
+    const childIds = [...new Set([...(userSnap.data().childIds || []), childId])]
+    batch.update(doc(db, 'users', parentUid), { childIds })
+  }
+  await batch.commit()
+}
+
+export async function unlinkChildFromParent(childId, parentUid) {
+  const childSnap = await getDoc(doc(db, 'children', childId))
+  if (!childSnap.exists()) return
+  const batch = writeBatch(db)
+  batch.update(doc(db, 'children', childId), {
+    parentUids: (childSnap.data().parentUids || []).filter(u => u !== parentUid),
+  })
+  const userSnap = await getDoc(doc(db, 'users', parentUid))
+  if (userSnap.exists()) {
+    batch.update(doc(db, 'users', parentUid), {
+      childIds: (userSnap.data().childIds || []).filter(c => c !== childId),
+    })
+  }
+  await batch.commit()
+}
+
+// ── Committees ────────────────────────────────────────────────────────────────
+export async function getCommittees() {
+  const snap = await getDocs(query(collection(db, 'committees'), orderBy('order', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveCommittee(committee) {
+  const { id, ...data } = committee
+  if (id && !id.startsWith('committee-')) {
+    await updateDoc(doc(db, 'committees', id), { ...data, updatedAt: serverTimestamp() })
+    return committee
+  }
+  const ref = await addDoc(collection(db, 'committees'), { ...data, createdAt: serverTimestamp() })
+  return { ...committee, id: ref.id }
+}
+
+export async function deleteCommittee(id) {
+  await deleteDoc(doc(db, 'committees', id))
 }

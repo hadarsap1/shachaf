@@ -7,7 +7,8 @@ import {
   Home, CheckSquare, Calendar, CalendarDays, Users,
   LayoutDashboard, BookOpen, MessageCircle, Menu, X,
   LogOut, ChevronDown, Activity, FileText, SlidersHorizontal,
-  ClipboardList, Shield, MessageSquare, Upload,
+  ClipboardList, Shield, MessageSquare, Upload, GraduationCap,
+  Baby, HelpCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -20,6 +21,7 @@ const NAV_LINKS = {
     { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
     { to: '/contact', label: 'צור קשר', icon: MessageSquare },
+    { to: '/help', label: 'עזרה', icon: HelpCircle },
     { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   host_family: [
@@ -30,12 +32,16 @@ const NAV_LINKS = {
     { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
     { to: '/contact', label: 'צור קשר', icon: MessageSquare },
+    { to: '/help', label: 'עזרה', icon: HelpCircle },
     { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   admin: [
     { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
     { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload, sub: true },
+    { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
+    { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
+    { to: '/admin/committees', label: 'ועדות', icon: Shield },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
@@ -47,6 +53,9 @@ const NAV_LINKS = {
     { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
     { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload, sub: true },
+    { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
+    { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
+    { to: '/admin/committees', label: 'ועדות', icon: Shield },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
