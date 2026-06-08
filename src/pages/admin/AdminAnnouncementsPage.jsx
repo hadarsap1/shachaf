@@ -109,7 +109,7 @@ const formatDate = (ts) => {
   return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export default function AdminAnnouncementsPage() {
+export default function AdminAnnouncementsPage({ embedded = false }) {
   const [announcements, setAnnouncements] = useState([])
   const [classes, setClasses] = useState([])
   const [selected, setSelected] = useState(null)
@@ -121,7 +121,7 @@ export default function AdminAnnouncementsPage() {
   useEffect(() => {
     Promise.all([getAnnouncements(), getClasses()])
       .then(([anns, cls]) => { setAnnouncements(anns); setClasses(cls) })
-      .catch(e => setError(e.message))
+      .catch(err => { console.error('AdminAnnouncementsPage load failed', err); setError('שגיאה בטעינת הנתונים') })
       .finally(() => setLoading(false))
   }, [])
 
@@ -143,19 +143,23 @@ export default function AdminAnnouncementsPage() {
       await deleteAnnouncement(id)
       setAnnouncements(prev => prev.filter(a => a.id !== id))
     } catch (e) {
-      setError(e.message)
+      console.error('deleteAnnouncement failed', e)
+      setError('שגיאה במחיקה, נסה שוב')
     } finally {
       setDeleting(null)
     }
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto" dir="rtl">
+    <div className={embedded ? '' : 'p-4 md:p-6 max-w-3xl mx-auto'} dir="rtl">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">הודעות</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{announcements.length} הודעות</p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">הודעות כלליות</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{announcements.length} הודעות</p>
+          </div>
+        )}
+        {embedded && <p className="text-sm text-gray-500">{announcements.length} הודעות</p>}
         <button
           onClick={() => { setSelected(blankAnn()); setIsNew(true) }}
           className="btn-primary flex items-center gap-2"

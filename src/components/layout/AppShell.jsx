@@ -4,10 +4,10 @@ import { useAuth } from '../../context/AuthContext'
 import { getMessages } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
 import {
-  Home, CheckSquare, Calendar, CalendarDays, Users,
+  Home, CheckSquare, Calendar, Users,
   LayoutDashboard, BookOpen, MessageCircle, Menu, X,
-  LogOut, ChevronDown, Activity, FileText, SlidersHorizontal,
-  ClipboardList, Shield, MessageSquare, Upload, GraduationCap,
+  LogOut, ChevronDown, Activity, SlidersHorizontal,
+  ClipboardList, Shield, MessageSquare, GraduationCap,
   Baby, HelpCircle, Megaphone,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -40,34 +40,30 @@ const NAV_LINKS = {
     { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   admin: [
-    { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
+    { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload, sub: true },
     { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
     { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
     { to: '/admin/committees', label: 'ועדות', icon: Shield },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
-    { to: '/admin/announcements', label: 'הודעות כלליות', icon: Megaphone, sub: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
+    { to: '/help', label: 'עזרה', icon: HelpCircle },
   ],
   super_admin: [
-    { to: '/admin', label: 'לוח בקרה', icon: LayoutDashboard },
+    { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload, sub: true },
     { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
     { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
     { to: '/admin/committees', label: 'ועדות', icon: Shield },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/calendar', label: 'לוח שנה', icon: CalendarDays },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
-    { to: '/admin/announcements', label: 'הודעות כלליות', icon: Megaphone, sub: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
+    { to: '/help', label: 'עזרה', icon: HelpCircle },
     { to: '/super/admins', label: 'מנהלים', icon: Shield },
   ],
 }

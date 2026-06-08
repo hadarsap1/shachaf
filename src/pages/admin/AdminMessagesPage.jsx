@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getMessages, markMessageRead } from '../../lib/db'
 import { MessageSquare, Check, Loader2, User, Mail } from 'lucide-react'
 import clsx from 'clsx'
+import AdminAnnouncementsPage from './AdminAnnouncementsPage'
 
 const ROLE_LABELS = {
   new_family:  'משפחה חדשה',
@@ -17,12 +18,16 @@ function formatDate(ts) {
 }
 
 export default function AdminMessagesPage() {
+  const [tab, setTab] = useState('messages')
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
-    getMessages().then(m => { setMessages(m); setLoading(false) })
+    getMessages()
+      .then(m => setMessages(m))
+      .catch(err => console.error('AdminMessagesPage load failed', err))
+      .finally(() => setLoading(false))
   }, [])
 
   async function handleSelect(msg) {
@@ -35,27 +40,45 @@ export default function AdminMessagesPage() {
 
   const unread = messages.filter(m => !m.read).length
 
-  if (loading) {
-    return (
-      <div className="page-container rtl flex items-center justify-center py-20" dir="rtl">
-        <Loader2 size={32} className="animate-spin text-primary-400" />
-      </div>
-    )
-  }
-
   return (
     <div className="page-container rtl" dir="rtl">
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3">
         <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
           <MessageSquare size={22} />
           הודעות
         </h1>
-        {unread > 0 && (
+        {unread > 0 && tab === 'messages' && (
           <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{unread}</span>
         )}
       </div>
 
-      {messages.length === 0 ? (
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto">
+        {[{ id: 'messages', label: 'פניות' }, { id: 'announcements', label: 'הודעות כלליות' }].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={clsx(
+              'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
+              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Announcements tab */}
+      {tab === 'announcements' && <AdminAnnouncementsPage embedded />}
+
+      {/* Messages tab */}
+      {tab === 'messages' && loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={32} className="animate-spin text-primary-400" />
+        </div>
+      )}
+
+      {tab === 'messages' && !loading && (messages.length === 0 ? (
         <div className="card p-10 text-center text-gray-400">
           <MessageSquare size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">אין הודעות עדיין</p>
@@ -119,7 +142,7 @@ export default function AdminMessagesPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
     </div>
   )
 }

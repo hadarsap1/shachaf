@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getEvents, saveEvent, deleteEvent, getClasses, uploadEventImage, deleteEventImage } from '../../lib/db'
-import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2, ImagePlus } from 'lucide-react'
+import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
+import CalendarGrid from '../../components/ui/CalendarGrid'
+import { useAuth } from '../../context/AuthContext'
 
 function googleCalendarUrl(event) {
   const time = event.time || '09:00'
@@ -13,6 +15,11 @@ function googleCalendarUrl(event) {
   const params = new URLSearchParams({ action: 'TEMPLATE', text: event.title, dates: `${fmt(start)}/${fmt(end)}`, location: event.location || '', details: event.description || '' })
   return `https://calendar.google.com/calendar/render?${params}`
 }
+
+const FAMILY_CARDS = [
+  { value: 'new_family',  label: 'משפחות חדשות', color: '#1B3B70', bg: '#EBF1FA' },
+  { value: 'host_family', label: 'משפחות מארחות', color: '#065f46', bg: '#d1fae5' },
+]
 
 const TYPE_OPTIONS = [
   { value: 'social',      label: 'חברתי' },
@@ -53,9 +60,77 @@ const blankEvent = () => ({
   classIds: [],
 })
 
+// ---- Class multi-select dropdown ----
+
+function ClassPicker({ classes, selected, onChange, restricted }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const toggle = (id) => {
+    onChange(selected.includes(id) ? selected.filter(c => c !== id) : [...selected, id])
+  }
+
+  const selectedClasses = classes.filter(c => selected.includes(c.id))
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="label block mb-1 text-right">
+        כיתות
+        {!restricted && <span className="text-xs text-gray-400 me-1"> — ריק = כלל בית הספר</span>}
+      </label>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="input w-full flex items-center justify-between gap-2 min-h-[42px] text-right"
+      >
+        <ChevronDown size={16} className={clsx('text-gray-400 flex-shrink-0 transition-transform', open && 'rotate-180')} />
+        <div className="flex flex-wrap gap-1 justify-end flex-1">
+          {selectedClasses.length === 0 ? (
+            <span className="text-gray-400 text-sm">{restricted ? 'בחר כיתה' : 'כלל בית הספר'}</span>
+          ) : selectedClasses.map(cls => (
+            <span key={cls.id} className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={{ backgroundColor: (cls.color || '#1B3B70') + '22', color: cls.color || '#1B3B70' }}>
+              {cls.name}
+            </span>
+          ))}
+        </div>
+      </button>
+      {open && (
+        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {classes.map(cls => {
+            const checked = selected.includes(cls.id)
+            return (
+              <label key={cls.id} className="flex items-center justify-end gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors">
+                <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                  {cls.name}
+                  <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
+                    style={{ backgroundColor: cls.color || '#1B3B70' }} />
+                </span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(cls.id)}
+                  className="w-4 h-4 accent-primary-600"
+                />
+              </label>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- Event slide panel (add / edit) ----
 
-function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
+function EventPanel({ event, isNew, onSave, onClose, allClasses = [], restricted = false }) {
   const [draft, setDraft] = useState({ ...event, classIds: event.classIds || [] })
   const [errors, setErrors] = useState({})
   const [imageFile, setImageFile] = useState(null)
@@ -80,14 +155,20 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
   const toggleGroup = (value) => {
     setErrors(e => ({ ...e, targetGroups: '' }))
     if (value === 'all') {
-      set('targetGroups', ['all'])
+      setDraft(d => ({ ...d, targetGroups: ['all'] }))
       return
     }
     const current = (draft.targetGroups || ['all']).filter(g => g !== 'all')
     const next = current.includes(value)
       ? current.filter(g => g !== value)
       : [...current, value]
-    set('targetGroups', next.length ? next : ['all'])
+    const newGroups = next.length ? next : ['all']
+    // when switching to specific family types, class selection no longer applies
+    setDraft(d => ({
+      ...d,
+      targetGroups: newGroups,
+      classIds: newGroups.includes('all') ? d.classIds : [],
+    }))
   }
 
   const handleImageSelect = (e) => {
@@ -193,6 +274,15 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
             {errors.targetGroups && <p className="text-xs text-red-500 mt-1 text-right">{errors.targetGroups}</p>}
           </div>
 
+          {allClasses.length > 0 && (draft.targetGroups || ['all']).includes('all') && (
+            <ClassPicker
+              classes={allClasses}
+              selected={draft.classIds || []}
+              onChange={(ids) => set('classIds', ids)}
+              restricted={restricted}
+            />
+          )}
+
           <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
             <input type="checkbox" id="required-toggle" checked={!!draft.required}
               onChange={e => set('required', e.target.checked)}
@@ -233,36 +323,6 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
             )}
           </div>
 
-          {allClasses.length > 0 && (
-            <div>
-              <label className="label block mb-1 text-right">כיתות (ריק = כלל בית הספר)</label>
-              <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
-                {allClasses.map(cls => {
-                  const checked = (draft.classIds || []).includes(cls.id)
-                  return (
-                    <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
-                      <span className="text-sm text-gray-700 flex items-center gap-1.5">
-                        {cls.name}
-                        <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
-                          style={{ backgroundColor: cls.color || '#1B3B70' }} />
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          const next = checked
-                            ? (draft.classIds || []).filter(id => id !== cls.id)
-                            : [...(draft.classIds || []), cls.id]
-                          set('classIds', next)
-                        }}
-                        className="w-4 h-4 accent-primary-600"
-                      />
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="px-4 py-4 border-t border-gray-100 flex gap-2">
@@ -283,19 +343,52 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [] }) {
 
 export default function AdminEventsPage() {
   const location = useLocation()
+  const { user } = useAuth()
+  const [tab, setTab] = useState('events')
   const [events, setEvents] = useState([])
   const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [familyFilter, setFamilyFilter] = useState(['new_family', 'host_family'])
+  const [activeClasses, setActiveClasses] = useState(null) // null = all (before classes load)
+
+  const classAdminFor = user?.classAdminFor || []
+  const isRestricted = classAdminFor.length > 0 && user?.role !== 'super_admin'
+  const visibleClasses = isRestricted
+    ? classes.filter(c => classAdminFor.includes(c.id))
+    : classes
+
+  const classColorMap = Object.fromEntries(classes.map(c => [c.id, c.color || '#1B3B70']))
+  const allClassIds = classes.map(c => c.id)
+  const effectiveClasses = activeClasses ?? allClassIds
+  const calendarEvents = events.filter(ev => {
+    if (familyFilter.length < 2) {
+      const groups = ev.targetGroups || ['all']
+      if (!groups.includes('all') && !groups.some(g => familyFilter.includes(g))) return false
+    }
+    if (effectiveClasses.length < allClassIds.length) {
+      const eIds = ev.classIds || []
+      if (eIds.length > 0 && !eIds.some(id => effectiveClasses.includes(id))) return false
+    }
+    return true
+  })
+
+  const newBlankEvent = () => ({
+    ...blankEvent(),
+    classIds: isRestricted ? visibleClasses.map(c => c.id) : [],
+  })
 
   useEffect(() => {
-    Promise.all([getEvents(), getClasses()]).then(([evts, cls]) => {
-      setEvents(evts)
-      setClasses(cls)
-      setLoading(false)
-      if (location.state?.editEvent) setEditing(location.state.editEvent)
-    })
+    Promise.all([getEvents(), getClasses()])
+      .then(([evts, cls]) => {
+        setEvents(evts)
+        setClasses(cls)
+        setActiveClasses(cls.map(c => c.id))
+        if (location.state?.editEvent) setEditing(location.state.editEvent)
+      })
+      .catch(err => console.error('AdminEventsPage load failed', err))
+      .finally(() => setLoading(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (saved, newImageFile, shouldRemoveImage) => {
@@ -338,9 +431,9 @@ export default function AdminEventsPage() {
 
   return (
     <div className="page-container rtl" dir="rtl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => setEditing(blankEvent())}
+          onClick={() => setEditing(newBlankEvent())}
           className="btn-primary flex items-center gap-2 text-sm py-2 px-4"
         >
           <Plus size={16} />
@@ -355,15 +448,112 @@ export default function AdminEventsPage() {
         </div>
       </div>
 
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto">
+        {[{ id: 'events', label: 'אירועים' }, { id: 'calendar', label: 'לוח שנה' }].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={clsx(
+              'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
+              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Calendar tab */}
+      {tab === 'calendar' && (
+        <>
+          {/* Family-type cards */}
+          <div className="flex gap-3 mb-4">
+            {FAMILY_CARDS.map(({ value, label, color, bg }) => {
+              const active = familyFilter.includes(value)
+              return (
+                <button
+                  key={value}
+                  onClick={() => setFamilyFilter(cur =>
+                    cur.includes(value) ? cur.filter(t => t !== value) : [...cur, value]
+                  )}
+                  className={clsx(
+                    'flex-1 rounded-2xl py-3 px-4 text-center font-semibold text-sm transition-all border-2',
+                    active ? '' : 'bg-gray-50 border-gray-200 text-gray-400'
+                  )}
+                  style={active ? { backgroundColor: bg, borderColor: color, color } : {}}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Class filter chips — all active by default, click to deselect */}
+          {classes.length > 0 && (
+            <div className="flex gap-2 mb-4 flex-wrap items-center">
+              <button
+                onClick={() => setActiveClasses(allClassIds)}
+                className={clsx(
+                  'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+                  effectiveClasses.length === allClassIds.length
+                    ? 'bg-gray-700 text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                )}
+              >
+                כל הכיתות
+              </button>
+              {(isRestricted ? visibleClasses : classes).map(cls => {
+                const active = effectiveClasses.includes(cls.id)
+                const color = cls.color || '#1B3B70'
+                return (
+                  <button
+                    key={cls.id}
+                    onClick={() => setActiveClasses(cur => {
+                      const current = cur ?? allClassIds
+                      return current.includes(cls.id)
+                        ? current.filter(id => id !== cls.id)
+                        : [...current, cls.id]
+                    })}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5',
+                      active ? 'text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                    )}
+                    style={active ? { backgroundColor: color, border: `2px solid ${color}` } : {}}
+                  >
+                    {!active && (
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    )}
+                    {cls.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <Loader2 size={32} className="animate-spin text-primary-400" />
+            </div>
+          ) : (
+            <CalendarGrid
+              events={calendarEvents}
+              classColorMap={classColorMap}
+              onEventClick={(event) => setEditing(event)}
+            />
+          )}
+        </>
+      )}
+
       {/* Loading spinner */}
-      {loading && (
+      {tab === 'events' && loading && (
         <div className="flex justify-center items-center py-16">
           <Loader2 size={32} className="animate-spin text-primary-400" />
         </div>
       )}
 
       {/* Events list */}
-      {!loading && (
+      {tab === 'events' && !loading && (
         <div className="space-y-3">
           {sorted.map(event => {
             const typeConf = TYPE_COLOR[event.type]
@@ -468,11 +658,11 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {!loading && events.length === 0 && (
+      {tab === 'events' && !loading && events.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <Calendar size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין אירועים מתוכננים</p>
-          <button onClick={() => setEditing(blankEvent())} className="mt-3 text-sm text-primary-600 hover:underline">
+          <button onClick={() => setEditing(newBlankEvent())} className="mt-3 text-sm text-primary-600 hover:underline">
             הוסף אירוע ראשון
           </button>
         </div>
@@ -484,7 +674,8 @@ export default function AdminEventsPage() {
           isNew={editing.id.startsWith('event-')}
           onSave={handleSave}
           onClose={() => setEditing(null)}
-          allClasses={classes}
+          allClasses={visibleClasses}
+          restricted={isRestricted}
         />
       )}
     </div>
