@@ -10,23 +10,64 @@ import clsx from 'clsx'
 
 const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי']
 
-// ── Center hours table ────────────────────────────────────────────────────────
+const SCHEDULE_DAYS    = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳']
+const SCHEDULE_PERIODS = [
+  { id: 'morning', label: 'מפגש בוקר' },
+  { id: '1',       label: '1' },
+  { id: '2',       label: '2' },
+  { id: 'break1',  label: 'הפסקה', isBreak: true },
+  { id: '3',       label: '3' },
+  { id: '4',       label: '4' },
+  { id: 'break2',  label: 'הפסקה', isBreak: true },
+  { id: '5',       label: '5' },
+  { id: '6',       label: '6' },
+]
 
-function CenterHours({ hours }) {
-  const active = (hours || []).filter(h => h.active)
-  if (!active.length) return (
-    <p className="text-sm text-gray-400 py-2">שעות לא הוגדרו</p>
-  )
+// ── Weekly schedule (read-only) ───────────────────────────────────────────────
+
+function ScheduleView({ schedule }) {
+  const hasData = Object.values(schedule || {}).some(v => v?.trim())
+  if (!hasData) return <p className="text-sm text-gray-400 py-2">מערכת שעות לא הוגדרה עדיין</p>
+
   return (
-    <div className="divide-y divide-gray-50">
-      {active.map(h => (
-        <div key={h.day} className="flex items-center justify-between py-2.5">
-          <span className="text-sm font-medium text-gray-500 w-16">{h.day}</span>
-          <span className="text-sm font-semibold text-gray-800" dir="ltr">
-            {h.start} – {h.end}
-          </span>
-        </div>
-      ))}
+    <div className="overflow-x-auto -mx-1">
+      <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
+        <thead>
+          <tr className="border-b border-gray-100">
+            <th className="sticky right-0 z-10 bg-white w-14 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100" />
+            {SCHEDULE_DAYS.map(d => (
+              <th key={d} className="px-1 py-1.5 text-center text-gray-500 font-semibold min-w-[60px]">{d}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {SCHEDULE_PERIODS.map(period => {
+            if (period.isBreak) return (
+              <tr key={period.id}>
+                <td colSpan={SCHEDULE_DAYS.length + 1}
+                  className="py-0.5 px-2 text-[10px] text-gray-300 text-center italic">
+                  — {period.label} —
+                </td>
+              </tr>
+            )
+            return (
+              <tr key={period.id} className="border-t border-gray-50">
+                <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-400 font-semibold text-center border-l border-gray-100 text-[11px]">
+                  {period.label}
+                </td>
+                {SCHEDULE_DAYS.map((_, di) => {
+                  const val = (schedule || {})[`${di}-${period.id}`]
+                  return (
+                    <td key={di} className="px-1 py-1 text-center text-gray-700">
+                      {val || <span className="text-gray-200">—</span>}
+                    </td>
+                  )
+                })}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -206,10 +247,10 @@ export default function ClassPage() {
       )}
 
       <div className="space-y-4">
-        {/* Center hours */}
-        {cls?.centerHours?.some(h => h.active) && (
+        {/* Schedule */}
+        {cls && (
           <Section title="מערכת שעות" icon={Clock} color={cls.color || '#1B3B70'}>
-            <CenterHours hours={cls.centerHours} />
+            <ScheduleView schedule={cls.schedule} />
           </Section>
         )}
 
