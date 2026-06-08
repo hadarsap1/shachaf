@@ -39,6 +39,15 @@ const NAV_LINKS = {
     { to: '/help', label: 'עזרה', icon: HelpCircle },
     { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
+  community: [
+    { to: '/dashboard', label: 'בית',           icon: Home },
+    { to: '/events',    label: 'אירועים',         icon: Calendar },
+    { to: '/resources', label: 'מידע שימושי',    icon: BookOpen },
+    { to: '/chat',      label: 'עוזר חכם',       icon: MessageCircle },
+    { to: '/contact',   label: 'צור קשר',        icon: MessageSquare },
+    { to: '/help',      label: 'עזרה',            icon: HelpCircle },
+    { to: '/settings',  label: 'הגדרות',          icon: SlidersHorizontal },
+  ],
   admin: [
     { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
@@ -71,6 +80,7 @@ const NAV_LINKS = {
 const BOTTOM_NAV = {
   new_family:  ['/dashboard', '/class', '/events', '/contact'],
   host_family: ['/dashboard', '/class', '/events', '/contact'],
+  community:   ['/dashboard', '/events', '/resources', '/contact'],
   admin:       ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
   super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
 }
@@ -110,6 +120,7 @@ function UserMenu({ user, logout }) {
   const roleLabel = {
     new_family:  'משפחה חדשה',
     host_family: 'משפחה מארחת',
+    community:   'קהילה',
     admin:       'מנהל',
     super_admin: 'מנהל ראשי',
   }[user?.role] || ''

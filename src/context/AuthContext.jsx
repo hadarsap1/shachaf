@@ -139,12 +139,13 @@ export function AuthProvider({ children }) {
   const isSuperAdmin = user?.role === 'super_admin'
   const isHostFamily = user?.role === 'host_family'
   const isNewFamily  = user?.role === 'new_family'
+  const isCommunity  = user?.role === 'community'
 
   return (
     <AuthContext.Provider value={{
       user, loading,
       loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout,
-      isAdmin, isSuperAdmin, isHostFamily, isNewFamily,
+      isAdmin, isSuperAdmin, isHostFamily, isNewFamily, isCommunity,
     }}>
       {children}
     </AuthContext.Provider>

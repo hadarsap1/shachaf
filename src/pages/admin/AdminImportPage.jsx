@@ -20,6 +20,7 @@ const COLUMN_ALIASES = {
 const TABS = [
   { key: 'new_family', label: 'משפחות חדשות' },
   { key: 'host_family', label: 'משפחות מארחות' },
+  { key: 'community', label: 'קהילה' },
 ]
 
 // ── Parse spreadsheet/CSV buffer → normalized rows ────────────────────────────

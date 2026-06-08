@@ -229,7 +229,7 @@ function ClassAdminsTab({ classId, adminUids, allUsers, onAdd, onRemove, saving 
 
 const TABS = [
   { id: 'basic',    label: 'בסיסי' },
-  { id: 'hours',    label: 'שעות מסגרת' },
+  { id: 'hours',    label: 'מערכת שעות' },
   { id: 'staff',    label: 'צוות' },
   { id: 'committee',label: 'ועד כיתה' },
   { id: 'admins',   label: 'מנהלי כיתה' },

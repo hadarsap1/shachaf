@@ -208,7 +208,7 @@ export default function ClassPage() {
       <div className="space-y-4">
         {/* Center hours */}
         {cls?.centerHours?.some(h => h.active) && (
-          <Section title="שעות מסגרת" icon={Clock} color={cls.color || '#1B3B70'}>
+          <Section title="מערכת שעות" icon={Clock} color={cls.color || '#1B3B70'}>
             <CenterHours hours={cls.centerHours} />
           </Section>
         )}
