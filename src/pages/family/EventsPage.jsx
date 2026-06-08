@@ -34,9 +34,13 @@ export default function EventsPage() {
         setEvents(allEvents)
       } else {
         const myClassIds = [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
-        setEvents(allEvents.filter(ev =>
-          !ev.classIds?.length || ev.classIds.some(cid => myClassIds.includes(cid))
-        ))
+        const userRole = user?.role
+        setEvents(allEvents.filter(ev => {
+          const tg = ev.targetGroups || []
+          const roleMatch = !tg.length || tg.includes('all') || tg.includes(userRole)
+          if (!roleMatch) return false
+          return !ev.classIds?.length || ev.classIds.some(cid => myClassIds.includes(cid))
+        }))
       }
       setLoading(false)
     }

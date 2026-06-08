@@ -22,7 +22,11 @@ export default function DashboardPage() {
     Promise.all([getTasks(user.uid), getEvents()])
       .then(([taskData, eventData]) => {
         setTasks(taskData)
-        setEvents(eventData)
+        const role = user.role
+        setEvents(eventData.filter(ev => {
+          const tg = ev.targetGroups || []
+          return !tg.length || tg.includes('all') || tg.includes(role)
+        }))
         const myForms = getForms().filter(f =>
           f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')
         )

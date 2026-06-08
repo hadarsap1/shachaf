@@ -319,6 +319,7 @@ export default function AdminFormsPage() {
   const [view, setView] = useState('list') // 'list' | 'builder'
   const [editingForm, setEditingForm] = useState(null)
   const [viewingSubmissions, setViewingSubmissions] = useState(null)
+  const [targetFilter, setTargetFilter] = useState('all')
 
   useEffect(() => { setForms(getForms()) }, [])
 
@@ -327,7 +328,7 @@ export default function AdminFormsPage() {
       id: newFormId(),
       title: '',
       description: '',
-      targetRole: 'new_family',
+      targetRole: 'all',
       status: 'draft',
       createdAt: new Date().toISOString().slice(0, 10),
       fields: [],
@@ -397,8 +398,23 @@ export default function AdminFormsPage() {
             </div>
           </div>
 
+          {/* Audience filter */}
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
+            {TARGET_OPTIONS.map(opt => (
+              <button key={opt.value} onClick={() => setTargetFilter(opt.value)}
+                className={clsx(
+                  'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+                  targetFilter === opt.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                )}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-3">
-            {forms.map(form => {
+            {forms.filter(f => targetFilter === 'all' || f.targetRole === targetFilter).map(form => {
               const subs = getSubmissionsForForm(form.id)
               return (
                 <div key={form.id} className="card p-4">

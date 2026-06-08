@@ -3,6 +3,12 @@ import { getTasks, saveTask, deleteTask, getUsers, MILESTONES } from '../../lib/
 import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
+const FAMILY_CHIPS = [
+  { value: 'all',         label: 'הכל' },
+  { value: 'new_family',  label: 'משפחות חדשות' },
+  { value: 'host_family', label: 'משפחות מארחות' },
+]
+
 const STATUS_OPTIONS = [
   { value: 'pending',     label: 'ממתין' },
   { value: 'in_progress', label: 'בתהליך' },
@@ -158,6 +164,7 @@ export default function AdminTasksPage() {
   const [assignableUsers, setAssignableUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [familyFilter, setFamilyFilter] = useState('all')
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
@@ -172,7 +179,13 @@ export default function AdminTasksPage() {
       .catch(err => { console.error(err); setLoading(false) })
   }, [])
 
-  const filtered = statusFilter === 'all' ? tasks : tasks.filter(t => t.status === statusFilter)
+  const userRoleMap = Object.fromEntries(assignableUsers.map(u => [u.uid, u.role]))
+
+  const filtered = tasks.filter(t => {
+    const matchStatus = statusFilter === 'all' || t.status === statusFilter
+    const matchFamily = familyFilter === 'all' || userRoleMap[t.assignedTo] === familyFilter
+    return matchStatus && matchFamily
+  })
 
   const handleSave = async (saved) => {
     const prev = [...tasks]
@@ -237,6 +250,21 @@ export default function AdminTasksPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5 text-right">{tasks.length} משימות</p>
         </div>
+      </div>
+
+      {/* Family filter */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+        {FAMILY_CHIPS.map(c => (
+          <button key={c.value} onClick={() => setFamilyFilter(c.value)}
+            className={clsx(
+              'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+              familyFilter === c.value
+                ? 'bg-primary-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+            )}>
+            {c.label}
+          </button>
+        ))}
       </div>
 
       {/* Status filter */}
