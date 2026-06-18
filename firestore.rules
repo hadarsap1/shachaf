@@ -74,11 +74,17 @@ service cloud.firestore {
                       in ['admin', 'super_admin'];
     }
 
-    // Submissions — user reads/creates own; admins read all
+    // Submissions — owner or co-parent can read/update; admins read all
     match /submissions/{subId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.uid in resource.data.get('coParentUids', [])
+      );
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.uid in resource.data.get('coParentUids', [])
+      );
       allow read: if request.auth != null
                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                      in ['admin', 'super_admin'];
@@ -87,15 +93,27 @@ service cloud.firestore {
     // Messages (contact us) — any auth user can create; only admins can read/update
     match /messages/{msgId} {
       allow create: if request.auth != null
-                    && request.resource.data.userId == request.auth.uid;
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.get('subject', '').size() <= 200
+                    && request.resource.data.get('body', '').size() <= 5000;
       allow read, update: if request.auth != null
                           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                              in ['admin', 'super_admin'];
     }
 
-    // AI usage counters — each user can only read/write their own
+    // AI usage counters — each user can only read/write their own.
+    // Write rule prevents resetting the count: on the same date the count
+    // may only increase (prevents a user from zeroing their counter to bypass
+    // the daily limit). A new date resets to any value (server sets it to 1).
     match /aiUsage/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && (
+                     !exists(/databases/$(database)/documents/aiUsage/$(uid))
+                     || request.resource.data.date != resource.data.date
+                     || request.resource.data.count >= resource.data.count
+                   );
     }
 
     // Pending imported families — admins manage; each user can read/delete their own record
@@ -116,13 +134,54 @@ service cloud.firestore {
                       || classId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []));
     }
 
-    // Children — all authenticated users can read; admins and class admins write
+    // Children — readable only by a linked parent, by admins, or by a parent/
+    // class-admin of the SAME class (for the class roster). Not globally readable.
+    // `classIds` on the user profile is maintained client-side (syncUserClassIds).
+    // a linked parent can add another parent (update parentUids only)
     match /children/{childId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && (
+        request.auth.uid in resource.data.get('parentUids', [])
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+             in ['admin', 'super_admin']
+        || resource.data.get('classId', '')
+             in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', [])
+        || resource.data.get('classId', '')
+             in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
+      );
       allow write: if request.auth != null
                    && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                           in ['admin', 'super_admin']
                       || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []).size() > 0);
+      allow update: if request.auth != null
+                    && request.auth.uid in resource.data.parentUids
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet']);
+    }
+
+    // Admin notes — admin-only read/write, invisible to families
+    match /adminNotes/{childId} {
+      allow read, write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+           in ['admin', 'super_admin'];
+    }
+
+    // Child notes — each parent can only read/write their own notes
+    match /childNotes/{noteId} {
+      allow read, delete: if request.auth != null
+        && resource.data.parentId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.parentId == request.auth.uid
+        && request.resource.data.get('content', '').size() <= 10000;
+      allow update: if request.auth != null
+        && resource.data.parentId == request.auth.uid
+        && request.resource.data.get('content', '').size() <= 10000;
+    }
+
+    // Resources — all authenticated users can read; only admins write
+    match /resources/{resourceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                      in ['admin', 'super_admin'];
     }
 
     // Committees — all authenticated users can read; only admins write
@@ -139,6 +198,19 @@ service cloud.firestore {
       allow write: if request.auth != null
                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                       in ['admin', 'super_admin'];
+    }
+
+    // Committee messages — any auth user can send; admins can read/update all;
+    // sender can read their own messages
+    match /committeeMessages/{msgId} {
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.get('body', '').size() <= 2000;
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+      allow read, update: if request.auth != null
+                          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                             in ['admin', 'super_admin'];
     }
 
     // Deny everything else

@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { getCommittees } from '../../lib/db'
-import { COMMITTEE_ICONS } from '../../lib/classColors'
+import { getCommittees, sendCommitteeMessage } from '../../lib/db'
+import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
   Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
-  Phone, Mail, Loader2,
+  Phone, Mail, Loader2, MessageSquare, Send, CheckCircle2,
 } from 'lucide-react'
-import clsx from 'clsx'
 
 const ICON_MAP = {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -52,9 +51,27 @@ function MemberCard({ member }) {
   )
 }
 
-function CommitteeCard({ committee }) {
+function CommitteeCard({ committee, userName }) {
+  const { user } = useAuth()
   const [expanded, setExpanded] = useState(false)
+  const [msgOpen, setMsgOpen] = useState(false)
+  const [body, setBody] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
   const hasMembers = committee.members?.length > 0
+
+  const handleSend = async () => {
+    if (!body.trim()) return
+    setSending(true)
+    try {
+      await sendCommitteeMessage(committee.id, user.uid, user.name || '', body.trim())
+      setSent(true)
+      setBody('')
+      setTimeout(() => { setSent(false); setMsgOpen(false) }, 2500)
+    } catch { /* ignore */ } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
@@ -76,16 +93,25 @@ function CommitteeCard({ committee }) {
           </div>
         </div>
 
-        {hasMembers && (
+        <div className="mt-4 flex items-center gap-3 flex-wrap">
+          {hasMembers && (
+            <button
+              onClick={() => setExpanded(e => !e)}
+              className="text-sm font-medium flex items-center gap-1.5"
+              style={{ color: committee.color || '#1B3B70' }}
+            >
+              <Users size={14} />
+              {expanded ? 'הסתר חברים' : `הצג ${committee.members.length} חברים`}
+            </button>
+          )}
           <button
-            onClick={() => setExpanded(e => !e)}
-            className="mt-4 text-sm font-medium flex items-center gap-1.5"
-            style={{ color: committee.color || '#1B3B70' }}
+            onClick={() => setMsgOpen(o => !o)}
+            className="text-sm font-medium flex items-center gap-1.5 text-gray-500 hover:text-gray-700"
           >
-            <Users size={14} />
-            {expanded ? 'הסתר חברים' : `הצג ${committee.members.length} חברים`}
+            <MessageSquare size={14} />
+            {msgOpen ? 'סגור' : 'שלח הודעה לוועדה'}
           </button>
-        )}
+        </div>
       </div>
 
       {expanded && hasMembers && (
@@ -95,11 +121,43 @@ function CommitteeCard({ committee }) {
           ))}
         </div>
       )}
+
+      {msgOpen && (
+        <div className="px-5 pb-5 border-t border-gray-50 pt-4">
+          {sent ? (
+            <div className="flex items-center gap-2 text-green-600 text-sm justify-center py-2">
+              <CheckCircle2 size={16} />
+              ההודעה נשלחה לוועדה
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-gray-400 mb-2 text-right">הודעתך תגיע למנהלי הוועדה</p>
+              <textarea
+                value={body}
+                onChange={e => setBody(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                className="input w-full resize-none text-sm text-right"
+                placeholder="כתוב הודעתך לוועדה..."
+              />
+              <button
+                onClick={handleSend}
+                disabled={sending || !body.trim()}
+                className="mt-2 w-full py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                שלח
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 export default function CommitteesPage() {
+  const { user } = useAuth()
   const [committees, setCommittees] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -125,8 +183,9 @@ export default function CommitteesPage() {
         </div>
       ) : committees.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <Users size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">אין ועדות פעילות כרגע</p>
+          <Users size={44} className="mx-auto mb-4 opacity-25" />
+          <p className="font-semibold text-gray-500">אין ועדות פעילות כרגע</p>
+          <p className="text-sm mt-1">הועדות של הקהילה יופיעו כאן</p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -1,9 +1,12 @@
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
-  query, where, orderBy, serverTimestamp, getDoc, writeBatch,
+  query, where, orderBy, serverTimestamp, getDoc, setDoc, writeBatch,
+  getFirestore,
 } from 'firebase/firestore'
+import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfile, sendPasswordResetEmail } from 'firebase/auth'
+import { initializeApp, deleteApp } from 'firebase/app'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { db, storage } from './firebase'
+import { db, storage, firebaseConfig } from './firebase'
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 export async function uploadEventImage(eventId, file) {
@@ -77,7 +80,10 @@ export async function getUsers() {
   return snap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }))
 }
 
-const ALLOWED_PROFILE_FIELDS = ['name', 'phone', 'address', 'avatar']
+const ALLOWED_PROFILE_FIELDS = [
+  'name', 'phone', 'address', 'avatar',
+  'workplace', 'profession', 'hobbies', 'temporaryStatus',
+]
 
 export async function updateUserProfile(uid, data) {
   const safe = Object.fromEntries(
@@ -85,6 +91,14 @@ export async function updateUserProfile(uid, data) {
   )
   if (Object.keys(safe).length === 0) return
   await updateDoc(doc(db, 'users', uid), safe)
+}
+
+export async function updateChildProfile(childId, data) {
+  const safe = Object.fromEntries(
+    Object.entries(data).filter(([k]) => ['hobbies', 'pet'].includes(k))
+  )
+  if (Object.keys(safe).length === 0) return
+  await updateDoc(doc(db, 'children', childId), safe)
 }
 
 // ── Forms ────────────────────────────────────────────────────────────────────
@@ -116,19 +130,47 @@ export async function getSubmissions(userId = null) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveSubmission(submission) {
-  const q = query(
-    collection(db, 'submissions'),
-    where('userId', '==', submission.userId),
-    where('formId', '==', submission.formId)
-  )
-  const snap = await getDocs(q)
-  if (!snap.empty) {
-    await updateDoc(snap.docs[0].ref, { ...submission, updatedAt: serverTimestamp() })
-    return { id: snap.docs[0].id, ...submission }
+// Returns all submissions visible to a user — their own + any where they are a co-parent
+export async function getSubmissionsForFamily(userId) {
+  const [ownSnap, coSnap] = await Promise.all([
+    getDocs(query(collection(db, 'submissions'), where('userId', '==', userId))),
+    getDocs(query(collection(db, 'submissions'), where('coParentUids', 'array-contains', userId))),
+  ])
+  const seen = new Set()
+  const all = []
+  for (const snap of [ownSnap, coSnap]) {
+    for (const d of snap.docs) {
+      if (!seen.has(d.id)) { seen.add(d.id); all.push({ id: d.id, ...d.data() }) }
+    }
   }
-  const ref = await addDoc(collection(db, 'submissions'), { ...submission, submittedAt: serverTimestamp() })
-  return { id: ref.id, ...submission }
+  return all
+}
+
+export async function getSubmissionsForForm(formId) {
+  const q = query(collection(db, 'submissions'), where('formId', '==', formId))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveSubmission(submission) {
+  const { id, ...data } = submission
+  // If editing an existing doc (e.g. co-parent updating), update in place
+  if (id) {
+    await updateDoc(doc(db, 'submissions', id), { ...data, updatedAt: serverTimestamp() })
+    return { id, ...data }
+  }
+  // Otherwise, upsert by userId + formId
+  const snap = await getDocs(query(
+    collection(db, 'submissions'),
+    where('userId', '==', data.userId),
+    where('formId', '==', data.formId)
+  ))
+  if (!snap.empty) {
+    await updateDoc(snap.docs[0].ref, { ...data, updatedAt: serverTimestamp() })
+    return { id: snap.docs[0].id, ...data }
+  }
+  const ref = await addDoc(collection(db, 'submissions'), { ...data, submittedAt: serverTimestamp() })
+  return { id: ref.id, ...data }
 }
 
 // ── Pending Families ──────────────────────────────────────────────────────────
@@ -245,16 +287,31 @@ export async function bulkImportChildren(children) {
 export async function linkChildToParent(childId, parentUid) {
   const childSnap = await getDoc(doc(db, 'children', childId))
   if (!childSnap.exists()) return
-  const current = childSnap.data().parentUids || []
+  const child = childSnap.data()
+  const current = child.parentUids || []
   if (current.includes(parentUid)) return
   const batch = writeBatch(db)
   batch.update(doc(db, 'children', childId), { parentUids: [...current, parentUid] })
   const userSnap = await getDoc(doc(db, 'users', parentUid))
   if (userSnap.exists()) {
     const childIds = [...new Set([...(userSnap.data().childIds || []), childId])]
-    batch.update(doc(db, 'users', parentUid), { childIds })
+    // Keep classIds in sync so the children read rule grants this parent
+    // access to their child's class roster.
+    const classIds = child.classId
+      ? [...new Set([...(userSnap.data().classIds || []), child.classId])]
+      : (userSnap.data().classIds || [])
+    batch.update(doc(db, 'users', parentUid), { childIds, classIds })
   }
   await batch.commit()
+}
+
+// Recompute users/{uid}.classIds from the children currently linked to them.
+// Used to backfill existing users and to repair stale membership after unlink.
+export async function syncUserClassIds(uid) {
+  const kids = await getChildrenByParent(uid)
+  const classIds = [...new Set(kids.map(c => c.classId).filter(Boolean))]
+  await updateDoc(doc(db, 'users', uid), { classIds })
+  return classIds
 }
 
 export async function unlinkChildFromParent(childId, parentUid) {
@@ -271,6 +328,8 @@ export async function unlinkChildFromParent(childId, parentUid) {
     })
   }
   await batch.commit()
+  // Recompute class membership from remaining children (may have dropped a class).
+  try { await syncUserClassIds(parentUid) } catch { /* non-critical */ }
 }
 
 // ── Children (parent-scoped query) ───────────────────────────────────────────
@@ -278,6 +337,30 @@ export async function getChildrenByParent(uid) {
   const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid), orderBy('name', 'asc'))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+// ── Child notes (private per-parent) ─────────────────────────────────────────
+export async function getChildNote(childId, parentId) {
+  const snap = await getDoc(doc(db, 'childNotes', `${parentId}_${childId}`))
+  return snap.exists() ? (snap.data().content || '') : ''
+}
+
+export async function saveChildNote(childId, parentId, content) {
+  await setDoc(doc(db, 'childNotes', `${parentId}_${childId}`), {
+    parentId, childId, content, updatedAt: serverTimestamp(),
+  })
+}
+
+// ── Admin notes (admin-only per-child) ────────────────────────────────────────
+export async function getAdminNote(childId) {
+  const snap = await getDoc(doc(db, 'adminNotes', childId))
+  return snap.exists() ? (snap.data().notes || '') : ''
+}
+
+export async function saveAdminNote(childId, notes) {
+  await setDoc(doc(db, 'adminNotes', childId), {
+    childId, notes, updatedAt: serverTimestamp(),
+  })
 }
 
 // ── Announcements ─────────────────────────────────────────────────────────────
@@ -318,4 +401,104 @@ export async function saveCommittee(committee) {
 
 export async function deleteCommittee(id) {
   await deleteDoc(doc(db, 'committees', id))
+}
+
+// ── Committee messages ────────────────────────────────────────────────────────
+export async function sendCommitteeMessage(committeeId, userId, userName, body) {
+  await addDoc(collection(db, 'committeeMessages'), {
+    committeeId, userId, userName,
+    body: String(body).slice(0, 2000),
+    createdAt: serverTimestamp(),
+    read: false,
+  })
+}
+
+export async function getCommitteeMessages(committeeId = null) {
+  const q = committeeId
+    ? query(collection(db, 'committeeMessages'), where('committeeId', '==', committeeId), orderBy('createdAt', 'desc'))
+    : query(collection(db, 'committeeMessages'), orderBy('createdAt', 'desc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function markCommitteeMessageRead(id) {
+  await updateDoc(doc(db, 'committeeMessages', id), { read: true })
+}
+
+// ── Resources ─────────────────────────────────────────────────────────────────
+export async function getResources() {
+  const snap = await getDocs(query(collection(db, 'resources'), orderBy('category'), orderBy('order', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveResource(resource) {
+  const { id, ...data } = resource
+  if (id && !id.startsWith('resource-')) {
+    await updateDoc(doc(db, 'resources', id), { ...data, updatedAt: serverTimestamp() })
+    return resource
+  }
+  const ref = await addDoc(collection(db, 'resources'), { ...data, createdAt: serverTimestamp() })
+  return { ...resource, id: ref.id }
+}
+
+export async function deleteResource(id) {
+  await deleteDoc(doc(db, 'resources', id))
+}
+
+// ── Co-parent registration ────────────────────────────────────────────────────
+// Creates a Firebase Auth account + Firestore profile for a co-parent without
+// signing out the current user (uses a secondary app instance).
+export async function registerCoParent(currentUser, { name, phone, email }) {
+  const appName = `co-parent-${Date.now()}`
+  const secondaryApp = initializeApp(firebaseConfig, appName)
+  const secondaryAuth = getAuth(secondaryApp)
+  const secondaryDb = getFirestore(secondaryApp)
+
+  try {
+    // Temp password — co-parent sets their own via the reset email we send
+    const tempPw = `_Sh${Math.random().toString(36).slice(2, 10)}!`
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPw)
+    await updateFBProfile(cred.user, { displayName: name })
+    const newUid = cred.user.uid
+
+    // Create Firestore profile under secondary auth (request.auth.uid === newUid) ✓
+    // classIds mirrors the inviting parent so the co-parent can read the class
+    // roster immediately; it self-heals on their first login regardless.
+    await setDoc(doc(secondaryDb, 'users', newUid), {
+      name, email, phone: phone || '',
+      role: currentUser.role,
+      childIds: currentUser.childIds || [],
+      classIds: currentUser.classIds || [],
+      createdAt: serverTimestamp(),
+    })
+
+    // Link co-parent to every child already linked to current user
+    const childIds = currentUser.childIds || []
+    if (childIds.length > 0) {
+      const batch = writeBatch(db)
+      for (const childId of childIds) {
+        const snap = await getDoc(doc(db, 'children', childId))
+        if (snap.exists()) {
+          const current = snap.data().parentUids || []
+          if (!current.includes(newUid)) {
+            batch.update(doc(db, 'children', childId), { parentUids: [...current, newUid] })
+          }
+        }
+      }
+      await batch.commit()
+    }
+
+    // Save co-parent info on current user's profile so SettingsPage can show it
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      coParent: { uid: newUid, name, email, phone: phone || '' },
+    })
+
+    // Send password reset so co-parent can choose their own password
+    await sendPasswordResetEmail(secondaryAuth, email)
+
+    return { uid: newUid, name, email, phone: phone || '' }
+  } finally {
+    try { await secondaryAuth.signOut() } catch {}
+    try { await deleteApp(secondaryApp) } catch {}
+  }
 }

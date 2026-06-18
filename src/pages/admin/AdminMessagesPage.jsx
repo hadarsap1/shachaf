@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getMessages, markMessageRead } from '../../lib/db'
-import { MessageSquare, Check, Loader2, User, Mail } from 'lucide-react'
+import { getMessages, markMessageRead, getCommitteeMessages, markCommitteeMessageRead, getCommittees } from '../../lib/db'
+import { MessageSquare, Loader2, User, Mail, Network } from 'lucide-react'
 import clsx from 'clsx'
 import AdminAnnouncementsPage from './AdminAnnouncementsPage'
 
@@ -22,6 +22,10 @@ export default function AdminMessagesPage() {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [committeeMessages, setCommitteeMessages] = useState([])
+  const [committeeNames, setCommitteeNames] = useState({}) // committeeId → name
+  const [loadingCommittee, setLoadingCommittee] = useState(false)
+  const [selectedCMsg, setSelectedCMsg] = useState(null)
 
   useEffect(() => {
     getMessages()
@@ -29,6 +33,18 @@ export default function AdminMessagesPage() {
       .catch(err => console.error('AdminMessagesPage load failed', err))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (tab !== 'committees' || committeeMessages.length > 0) return
+    setLoadingCommittee(true)
+    Promise.all([getCommitteeMessages(), getCommittees()])
+      .then(([msgs, committees]) => {
+        setCommitteeMessages(msgs)
+        setCommitteeNames(Object.fromEntries(committees.map(c => [c.id, c.name])))
+      })
+      .catch(err => console.error('committee messages load failed', err))
+      .finally(() => setLoadingCommittee(false))
+  }, [tab])
 
   async function handleSelect(msg) {
     setSelected(msg)
@@ -54,7 +70,7 @@ export default function AdminMessagesPage() {
 
       {/* Tab switcher */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto">
-        {[{ id: 'messages', label: 'פניות' }, { id: 'announcements', label: 'הודעות כלליות' }].map(t => (
+        {[{ id: 'messages', label: 'פניות' }, { id: 'committees', label: 'הודעות לוועדות' }, { id: 'announcements', label: 'הודעות כלליות' }].map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -70,6 +86,76 @@ export default function AdminMessagesPage() {
 
       {/* Announcements tab */}
       {tab === 'announcements' && <AdminAnnouncementsPage embedded />}
+
+      {/* Committee messages tab */}
+      {tab === 'committees' && loadingCommittee && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={32} className="animate-spin text-primary-400" />
+        </div>
+      )}
+      {tab === 'committees' && !loadingCommittee && (committeeMessages.length === 0 ? (
+        <div className="card p-10 text-center text-gray-400">
+          <Network size={40} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm">אין הודעות לוועדות עדיין</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-4 items-start">
+          <div className="space-y-2">
+            {committeeMessages.map(msg => (
+              <button
+                key={msg.id}
+                onClick={async () => {
+                  setSelectedCMsg(msg)
+                  if (!msg.read) {
+                    await markCommitteeMessageRead(msg.id)
+                    setCommitteeMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))
+                  }
+                }}
+                className={clsx(
+                  'w-full text-right card p-4 border-2 transition-all',
+                  selectedCMsg?.id === msg.id
+                    ? 'border-primary-500 bg-primary-50'
+                    : msg.read
+                      ? 'border-transparent hover:border-gray-200'
+                      : 'border-primary-200 bg-blue-50 hover:border-primary-400'
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {!msg.read && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />}
+                      <span className="font-semibold text-sm text-gray-800 truncate">
+                        {committeeNames[msg.committeeId] || 'ועדה'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                      <User size={11} />
+                      {msg.userName}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(msg.createdAt)}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 line-clamp-2">{msg.body}</p>
+              </button>
+            ))}
+          </div>
+          {selectedCMsg && (
+            <div className="card p-5 space-y-4">
+              <div>
+                <h2 className="font-bold text-gray-800 text-base">
+                  {committeeNames[selectedCMsg.committeeId] || 'ועדה'}
+                </h2>
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><User size={12} />{selectedCMsg.userName}</span>
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">{formatDate(selectedCMsg.createdAt)}</div>
+              </div>
+              <hr />
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedCMsg.body}</p>
+            </div>
+          )}
+        </div>
+      ))}
 
       {/* Messages tab */}
       {tab === 'messages' && loading && (

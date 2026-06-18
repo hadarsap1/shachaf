@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import AppShell from './components/layout/AppShell'
@@ -10,28 +11,31 @@ import ResourcesPage from './pages/family/ResourcesPage'
 import ChatPage from './pages/family/ChatPage'
 import SettingsPage from './pages/family/SettingsPage'
 import FamiliesPage from './pages/host/FamiliesPage'
-
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminUsersPage from './pages/admin/AdminUsersPage'
-import AdminTasksPage from './pages/admin/AdminTasksPage'
-import AdminEventsPage from './pages/admin/AdminEventsPage'
-import AdminActivityPage from './pages/admin/AdminActivityPage'
-import AdminFormsPage from './pages/admin/AdminFormsPage'
 import FormFillPage from './pages/family/FormFillPage'
 import ContactPage from './pages/family/ContactPage'
-import SuperAdminPage from './pages/superadmin/SuperAdminPage'
-import AdminMessagesPage from './pages/admin/AdminMessagesPage'
-import AdminImportPage from './pages/admin/AdminImportPage'
-import AdminClassesPage from './pages/admin/AdminClassesPage'
-import AdminChildrenPage from './pages/admin/AdminChildrenPage'
-import AdminCommitteesPage from './pages/admin/AdminCommitteesPage'
-import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage'
 import HelpPage from './pages/HelpPage'
 import ClassPage from './pages/family/ClassPage'
 import CommitteesPage from './pages/family/CommitteesPage'
+import ClassRosterPage from './pages/family/ClassRosterPage'
 
-function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false }) {
-  const { user, loading, isAdmin, isSuperAdmin, isHostFamily } = useAuth()
+// Admin/super pages are lazy-loaded — families never download this code.
+const AdminDashboard        = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminUsersPage        = lazy(() => import('./pages/admin/AdminUsersPage'))
+const AdminTasksPage        = lazy(() => import('./pages/admin/AdminTasksPage'))
+const AdminEventsPage       = lazy(() => import('./pages/admin/AdminEventsPage'))
+const AdminActivityPage     = lazy(() => import('./pages/admin/AdminActivityPage'))
+const AdminFormsPage        = lazy(() => import('./pages/admin/AdminFormsPage'))
+const SuperAdminPage        = lazy(() => import('./pages/superadmin/SuperAdminPage'))
+const AdminMessagesPage     = lazy(() => import('./pages/admin/AdminMessagesPage'))
+const AdminImportPage       = lazy(() => import('./pages/admin/AdminImportPage'))
+const AdminClassesPage      = lazy(() => import('./pages/admin/AdminClassesPage'))
+const AdminChildrenPage     = lazy(() => import('./pages/admin/AdminChildrenPage'))
+const AdminCommitteesPage   = lazy(() => import('./pages/admin/AdminCommitteesPage'))
+const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'))
+const AdminResourcesPage    = lazy(() => import('./pages/admin/AdminResourcesPage'))
+
+function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
+  const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin } = useAuth()
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
       <img src="/logo.png" alt="שחף" className="h-16 w-auto mb-6 opacity-80" />
@@ -39,7 +43,7 @@ function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false
     </div>
   )
   if (!user) return <Navigate to="/login" replace />
-  if (adminOnly && !isAdmin) return <Navigate to="/" replace />
+  if (adminOnly && !isAdmin && !(classAdminOk && isClassAdmin)) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />
   if (hostOnly && !isHostFamily && !isAdmin) return <Navigate to="/" replace />
   return <AppShell />
@@ -53,10 +57,19 @@ function RootRedirect() {
   return <Navigate to="/dashboard" replace />
 }
 
+function RouteFallback() {
+  return (
+    <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<RootRedirect />} />
@@ -72,6 +85,7 @@ export default function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/class" element={<ClassPage />} />
+            <Route path="/class-roster" element={<ClassRosterPage />} />
             <Route path="/committees" element={<CommitteesPage />} />
           </Route>
 
@@ -87,11 +101,15 @@ export default function App() {
             <Route path="/admin/activity" element={<AdminActivityPage />} />
             <Route path="/admin/forms" element={<AdminFormsPage />} />
             <Route path="/admin/messages" element={<AdminMessagesPage />} />
-            <Route path="/admin/import" element={<AdminImportPage />} />
             <Route path="/admin/classes" element={<AdminClassesPage />} />
             <Route path="/admin/children" element={<AdminChildrenPage />} />
             <Route path="/admin/committees" element={<AdminCommitteesPage />} />
             <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
+            <Route path="/admin/resources" element={<AdminResourcesPage />} />
+          </Route>
+          {/* Class admins (non-global-admin users with classAdminFor) can import families */}
+          <Route element={<ProtectedShell adminOnly classAdminOk />}>
+            <Route path="/admin/import" element={<AdminImportPage />} />
           </Route>
 
           <Route element={<ProtectedShell superOnly />}>
@@ -100,6 +118,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

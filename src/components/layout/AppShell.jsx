@@ -5,48 +5,48 @@ import { getMessages } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
 import {
   Home, CheckSquare, Calendar, Users,
-  LayoutDashboard, BookOpen, MessageCircle, Menu, X,
+  LayoutDashboard, BookOpen, Menu, X,
   LogOut, ChevronDown, Activity, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, GraduationCap,
-  Baby, HelpCircle, Megaphone,
+  Baby, HelpCircle, Network, Upload,
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const NAV_LINKS = {
   new_family: [
-    { to: '/dashboard', label: 'בית', icon: Home },
-    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
-    { to: '/tasks', label: 'משימות', icon: CheckSquare },
-    { to: '/events', label: 'אירועים', icon: Calendar },
-    { to: '/committees', label: 'ועדות', icon: Users },
-    { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
-    { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
-    { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
-    { to: '/contact', label: 'צור קשר', icon: MessageSquare },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
-    { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
+    { to: '/dashboard',    label: 'בית',          icon: Home },
+    { to: '/class',        label: 'הכיתה שלי',    icon: GraduationCap },
+    { to: '/class-roster', label: 'ספריית כיתה',  icon: Users },
+    { to: '/tasks',        label: 'משימות',        icon: CheckSquare },
+    { to: '/events',       label: 'אירועים',       icon: Calendar },
+    { to: '/committees',   label: 'ועדות',         icon: Network },
+    { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
+    { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
+    { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
+    { to: '/help',         label: 'עזרה',          icon: HelpCircle },
+    { to: '/settings',     label: 'הגדרות',        icon: SlidersHorizontal },
   ],
   host_family: [
-    { to: '/dashboard', label: 'בית', icon: Home },
-    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
-    { to: '/families', label: 'המשפחות שלי', icon: Users },
-    { to: '/events', label: 'אירועים', icon: Calendar },
-    { to: '/committees', label: 'ועדות', icon: Users },
-    { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
-    { to: '/resources', label: 'מידע שימושי', icon: BookOpen },
-    { to: '/chat', label: 'עוזר חכם', icon: MessageCircle },
-    { to: '/contact', label: 'צור קשר', icon: MessageSquare },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
-    { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
+    { to: '/dashboard',    label: 'בית',          icon: Home },
+    { to: '/class',        label: 'הכיתה שלי',    icon: GraduationCap },
+    { to: '/class-roster', label: 'ספריית כיתה',  icon: Users },
+    { to: '/families',     label: 'המשפחות שלי',  icon: Users },
+    { to: '/events',       label: 'אירועים',       icon: Calendar },
+    { to: '/committees',   label: 'ועדות',         icon: Network },
+    { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
+    { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
+    { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
+    { to: '/help',         label: 'עזרה',          icon: HelpCircle },
+    { to: '/settings',     label: 'הגדרות',        icon: SlidersHorizontal },
   ],
   community: [
-    { to: '/dashboard', label: 'בית',           icon: Home },
-    { to: '/events',    label: 'אירועים',         icon: Calendar },
-    { to: '/resources', label: 'מידע שימושי',    icon: BookOpen },
-    { to: '/chat',      label: 'עוזר חכם',       icon: MessageCircle },
-    { to: '/contact',   label: 'צור קשר',        icon: MessageSquare },
-    { to: '/help',      label: 'עזרה',            icon: HelpCircle },
-    { to: '/settings',  label: 'הגדרות',          icon: SlidersHorizontal },
+    { to: '/dashboard',  label: 'בית',          icon: Home },
+    { to: '/events',     label: 'אירועים',       icon: Calendar },
+    { to: '/committees', label: 'ועדות',         icon: Network },
+    { to: '/resources',  label: 'מידע שימושי',  icon: BookOpen },
+    { to: '/contact',    label: 'צור קשר',      icon: MessageSquare },
+    { to: '/help',       label: 'עזרה',          icon: HelpCircle },
+    { to: '/settings',   label: 'הגדרות',        icon: SlidersHorizontal },
   ],
   admin: [
     { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
@@ -57,6 +57,7 @@ const NAV_LINKS = {
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
+    { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
@@ -70,6 +71,7 @@ const NAV_LINKS = {
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
+    { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
@@ -78,8 +80,8 @@ const NAV_LINKS = {
 }
 
 const BOTTOM_NAV = {
-  new_family:  ['/dashboard', '/class', '/events', '/contact'],
-  host_family: ['/dashboard', '/class', '/events', '/contact'],
+  new_family:  ['/dashboard', '/class', '/events', '/forms'],
+  host_family: ['/dashboard', '/class', '/events', '/families'],
   community:   ['/dashboard', '/events', '/resources', '/contact'],
   admin:       ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
   super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
@@ -120,7 +122,7 @@ function UserMenu({ user, logout }) {
   const roleLabel = {
     new_family:  'משפחה חדשה',
     host_family: 'משפחה מארחת',
-    community:   'קהילה',
+    community:   'חבר קהילה',
     admin:       'מנהל',
     super_admin: 'מנהל ראשי',
   }[user?.role] || ''
@@ -162,14 +164,23 @@ function UserMenu({ user, logout }) {
 }
 
 export default function AppShell() {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout, isAdmin, isClassAdmin } = useAuth()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
-  const links = NAV_LINKS[user?.role] || []
+  const baseLinks = NAV_LINKS[user?.role] || []
+  // Class admins who are not global admins get an import link injected
+  const links = isClassAdmin
+    ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload }]
+    : baseLinks
 
   const bottomNavPaths = BOTTOM_NAV[user?.role] || []
   const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
+
+  const activeLink = links.find(l =>
+    pathname === l.to || (l.to !== '/dashboard' && l.to !== '/admin' && pathname.startsWith(l.to))
+  )
+  const pageTitle = activeLink?.label || ''
 
   useEffect(() => {
     if (!isAdmin) return
@@ -181,8 +192,10 @@ export default function AppShell() {
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-primary-700 text-white flex-shrink-0" dir="rtl">
         {/* Logo */}
-        <div className="px-4 py-4 border-b border-primary-600 bg-white">
-          <img src="/logo.png" alt="שחף" className="h-12 w-auto mx-auto" />
+        <div className="px-3 py-3 border-b border-primary-600">
+          <div className="bg-white/95 rounded-2xl px-4 py-2.5">
+            <img src="/logo.png" alt="שחף" className="h-10 w-auto mx-auto" />
+          </div>
         </div>
 
         {/* Nav links */}
@@ -205,15 +218,17 @@ export default function AppShell() {
           <aside className="absolute top-0 right-0 h-full w-72 bg-primary-700 flex flex-col animate-slide-up" dir="rtl">
             {/* In RTL, justify-between puts the first child on the visual RIGHT and the second on the LEFT.
                 The sidebar slides in from the right, so the close button should be on the visual right (first child). */}
-            <div className="flex items-center justify-between px-4 py-4 border-b border-primary-600 bg-white">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-primary-600">
               <button
                 onClick={() => setSidebarOpen(false)}
                 aria-label="סגור תפריט"
-                className="text-primary-400 hover:text-primary-700 p-1"
+                className="p-1.5 rounded-lg text-primary-200 hover:text-white hover:bg-primary-600/50"
               >
                 <X size={20} />
               </button>
-              <img src="/logo.png" alt="שחף" className="h-10 w-auto" />
+              <div className="bg-white/95 rounded-xl px-3 py-1.5">
+                <img src="/logo.png" alt="שחף" className="h-8 w-auto" />
+              </div>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {links.map(link => (
@@ -230,7 +245,7 @@ export default function AppShell() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile topbar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm" dir="rtl">
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="פתח תפריט"
@@ -238,10 +253,15 @@ export default function AppShell() {
           >
             <Menu size={20} />
           </button>
-          <img src="/logo.png" alt="שחף" className="h-9 w-auto" />
+          {pageTitle ? (
+            <span className="font-bold text-gray-800 text-sm">{pageTitle}</span>
+          ) : (
+            <img src="/logo.png" alt="שחף" className="h-8 w-auto" />
+          )}
+          <div className="w-9" />
         </header>
 
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in">
           <Outlet />
         </main>
 
@@ -255,17 +275,19 @@ export default function AppShell() {
               const active = pathname === link.to || (link.to !== '/dashboard' && link.to !== '/admin' && pathname.startsWith(link.to))
               return (
                 <Link key={link.to} to={link.to}
-                  className={clsx('flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all relative',
-                    active ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600')}>
+                  className={clsx(
+                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all relative',
+                    active
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-400 hover:text-gray-600'
+                  )}>
                   <div className="relative">
                     <Icon size={22} />
                     {link.badge && unreadMessages > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                        {unreadMessages}
-                      </span>
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
                     )}
                   </div>
-                  <span className="text-[10px]">{link.label}</span>
+                  <span className="text-[11px] font-medium">{link.label}</span>
                 </Link>
               )
             })}

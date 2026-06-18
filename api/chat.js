@@ -34,7 +34,7 @@ async function getDailyCount(uid, idToken, projectId) {
     if (docDate !== todayStr()) return { date: todayStr(), count: 0 }
     return { date: docDate, count: docCount }
   } catch {
-    return null // fail open — don't block users if Firestore is unavailable
+    return null // signals caller to fail closed (503)
   }
 }
 
@@ -61,7 +61,13 @@ async function incrementDailyCount(uid, idToken, projectId, date, newCount) {
 
 const systemPrompt = `אתה עוזר קליטה של בית הספר שחף. תפקידך לעזור למשפחות חדשות בתהליך הקליטה — משימות, אירועים, ושאלות על בית הספר. ענה בשפה שבה המשתמש פונה אליך. אל תסטה מנושא הקליטה לבית הספר.`
 
+const APP_ORIGIN = 'https://shachaf.vercel.app'
+
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', APP_ORIGIN)
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (req.method === 'OPTIONS') return res.status(204).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const contentType = req.headers['content-type'] || ''
@@ -100,14 +106,16 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Rate limit exceeded', code: 'rate_limit' })
   }
 
-  // Daily limit (Firestore)
+  // Daily limit (Firestore) — authoritative. Fail CLOSED: if the counter can't be
+  // read, refuse rather than allowing unlimited (cost-abuse protection).
   const projectId = process.env.FIREBASE_PROJECT_ID
-  let usage = null
-  if (projectId) {
-    usage = await getDailyCount(uid, idToken, projectId)
-    if (usage && usage.count >= DAILY_LIMIT) {
-      return res.status(429).json({ error: 'Daily limit reached', code: 'daily_limit' })
-    }
+  if (!projectId) return res.status(500).json({ error: 'Server misconfigured' })
+  const usage = await getDailyCount(uid, idToken, projectId)
+  if (usage === null) {
+    return res.status(503).json({ error: 'Usage check unavailable, try again', code: 'usage_unavailable' })
+  }
+  if (usage.count >= DAILY_LIMIT) {
+    return res.status(429).json({ error: 'Daily limit reached', code: 'daily_limit' })
   }
 
   // Validate body
@@ -117,7 +125,7 @@ export default async function handler(req, res) {
   }
 
   const cappedMessages = messages.slice(0, 20).map(m => ({
-    role: m.role,
+    role: ['user', 'assistant'].includes(m.role) ? m.role : 'user',
     content: String(m.content).slice(0, 2000),
   }))
 
@@ -125,7 +133,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'AI not configured' })
 
   const upstream = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,9 +151,7 @@ export default async function handler(req, res) {
   const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין תשובה זמינה.'
 
   // Increment daily counter after successful response
-  if (projectId && usage) {
-    await incrementDailyCount(uid, idToken, projectId, usage.date, usage.count + 1)
-  }
+  await incrementDailyCount(uid, idToken, projectId, usage.date, usage.count + 1)
 
   res.status(200).json({ reply })
 }
