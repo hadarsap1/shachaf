@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, saveTask, MILESTONES } from '../../lib/db'
+import { getTasks, saveTask, getChildrenByParent, MILESTONES } from '../../lib/db'
 import TaskCard from '../../components/ui/TaskCard'
 import ProgressRing from '../../components/ui/ProgressRing'
-import { CheckSquare, Filter, Loader2 } from 'lucide-react'
+import { CheckSquare, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const FILTERS = [
@@ -20,7 +20,20 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (user?.uid) getTasks(user.uid).then(data => { setTasks(data); setLoading(false) })
+    if (!user?.uid) return
+    Promise.all([getTasks(), getChildrenByParent(user.uid)])
+      .then(([allTasks, children]) => {
+        const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
+        const role = user.role
+        setTasks(allTasks.filter(t => {
+          const tg = t.targetGroups || ['all']
+          if (tg.includes('all') || tg.includes(role)) return true
+          if (tg.includes('class')) return (t.classIds || []).some(id => myClassIds.includes(id))
+          return false
+        }))
+        setLoading(false)
+      })
+      .catch(err => { console.error('tasks load failed:', err); setLoading(false) })
   }, [user])
 
   const myTasks = tasks
@@ -127,9 +140,14 @@ export default function TasksPage() {
       })}
 
       {filtered.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">אין משימות להצגה</p>
+        <div className="text-center py-16 text-gray-400">
+          <CheckSquare size={44} className="mx-auto mb-4 opacity-25" />
+          <p className="font-semibold text-gray-500">
+            {filter === 'all' ? 'אין משימות פעילות כרגע' : 'אין משימות בסטטוס זה'}
+          </p>
+          <p className="text-sm mt-1">
+            {filter === 'all' ? 'המשימות שלך יופיעו כאן כשהמנהל יוסיף אותן' : 'נסה לשנות את הסינון'}
+          </p>
         </div>
       )}
     </div>

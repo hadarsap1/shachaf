@@ -63,12 +63,13 @@ export default function ContactPage() {
             <div>
               <label className="label block mb-1 text-right">נושא</label>
               <input value={subject} onChange={e => setSubject(e.target.value)} required
+                maxLength={200}
                 className="input w-full text-right" placeholder="במה נוכל לעזור?" />
             </div>
             <div>
               <label className="label block mb-1 text-right">הודעה</label>
               <textarea value={body} onChange={e => setBody(e.target.value)} required
-                rows={5} className="input w-full text-right resize-none"
+                rows={5} maxLength={5000} className="input w-full text-right resize-none"
                 placeholder="כתבו את הודעתכם כאן..." />
             </div>
             {error && <p className="text-sm text-red-500 text-right">{error}</p>}

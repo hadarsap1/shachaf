@@ -64,20 +64,21 @@ export default {
         '2xl': '1.5rem',
       },
       boxShadow: {
-        'card': '0 2px 8px rgba(27, 59, 112, 0.12)',
-        'card-hover': '0 4px 16px rgba(27, 59, 112, 0.2)',
+        'card': '0 1px 3px rgba(27,59,112,0.06), 0 4px 12px rgba(27,59,112,0.10)',
+        'card-hover': '0 4px 6px rgba(27,59,112,0.08), 0 8px 24px rgba(27,59,112,0.18)',
         'modal': '0 20px 60px rgba(0,0,0,0.15)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
+        'fade-in': 'fadeIn 0.25s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-dot': 'pulseDot 2s infinite',
         'slide-from-right': 'slideFromRight 0.25s ease-out',
+        'check-done': 'checkDone 0.6s ease-out',
       },
       keyframes: {
         fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         slideUp: {
           '0%': { transform: 'translateY(16px)', opacity: '0' },
@@ -90,6 +91,12 @@ export default {
         slideFromRight: {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0)' },
+        },
+        checkDone: {
+          '0%':   { transform: 'scale(1)' },
+          '30%':  { transform: 'scale(1.4)' },
+          '60%':  { transform: 'scale(0.9)' },
+          '100%': { transform: 'scale(1)' },
         },
       },
     },

@@ -338,7 +338,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => { setMode('reset'); setError('') }}
-                    className="w-full text-left py-1 text-sm text-primary-600 hover:underline"
+                    className="w-full text-right py-1 text-sm text-primary-600 hover:underline"
                   >
                     שכחת סיסמה?
                   </button>

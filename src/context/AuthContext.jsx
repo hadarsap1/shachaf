@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
+import { syncUserClassIds } from '../lib/db'
 import { MOCK_USERS } from '../lib/mockData'
 
 const AuthContext = createContext(null)
@@ -26,7 +27,16 @@ export function AuthProvider({ children }) {
       const userRef = doc(db, 'users', firebaseUser.uid)
       const snap = await getDoc(userRef)
       if (snap.exists()) {
-        setUser({ uid: firebaseUser.uid, ...snap.data() })
+        const data = snap.data()
+        setUser({ uid: firebaseUser.uid, ...data })
+        // Backfill classIds for users created before class-scoped read rules.
+        // Runs once (only when the field is absent); keeps the class roster working.
+        if (data.classIds === undefined) {
+          try {
+            const classIds = await syncUserClassIds(firebaseUser.uid)
+            setUser(prev => prev ? { ...prev, classIds } : prev)
+          } catch { /* non-critical — rule still grants parent + admin reads */ }
+        }
         return
       }
       // New user — check for a pending imported record first
@@ -139,12 +149,14 @@ export function AuthProvider({ children }) {
   const isSuperAdmin = user?.role === 'super_admin'
   const isHostFamily = user?.role === 'host_family'
   const isNewFamily  = user?.role === 'new_family'
+  const isCommunity  = user?.role === 'community'
+  const isClassAdmin = !isAdmin && (user?.classAdminFor || []).length > 0
 
   return (
     <AuthContext.Provider value={{
       user, loading,
       loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout,
-      isAdmin, isSuperAdmin, isHostFamily, isNewFamily,
+      isAdmin, isSuperAdmin, isHostFamily, isNewFamily, isCommunity, isClassAdmin,
     }}>
       {children}
     </AuthContext.Provider>

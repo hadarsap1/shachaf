@@ -12,15 +12,21 @@ import clsx from 'clsx'
 const INVITE_URL = typeof window !== 'undefined' ? `${window.location.origin}/login` : ''
 
 const DEFAULT_MESSAGES = {
-  new_family: `היי! 👋
+  new_family: `היי, קהילת שחף 👋
 בית הספר שחף מזמין אתכם להצטרף לפלטפורמת הקליטה שלנו.
 כאן תמצאו את כל המשימות, האירועים והמידע שתצטרכו לקראת תחילת הלימודים.
 
 להרשמה:
 ${INVITE_URL}`,
-  host_family: `היי! 👋
+  host_family: `היי, קהילת שחף 👋
 בית הספר שחף מזמין אותך להצטרף לפלטפורמת הקליטה כמשפחה מארחת.
 דרכה תוכלו לעקוב אחר המשפחות שבאחריותכם ולהישאר מעודכנים.
+
+להרשמה:
+${INVITE_URL}`,
+  community: `היי, קהילת שחף 👋
+בית הספר שחף מזמין אתכם להצטרף לפלטפורמת הקהילה שלנו.
+כאן תמצאו אירועים, מידע שימושי ועדכונים מהקהילה.
 
 להרשמה:
 ${INVITE_URL}`,
@@ -29,6 +35,7 @@ ${INVITE_URL}`,
 const ROLES = [
   { value: 'new_family',  label: 'משפחה חדשה' },
   { value: 'host_family', label: 'משפחה מארחת' },
+  { value: 'community',   label: 'קהילה' },
   { value: 'admin',       label: 'מנהל' },
   { value: 'super_admin', label: 'מנהל ראשי' },
 ]
@@ -36,6 +43,7 @@ const ROLES = [
 const ROLE_STYLE = {
   new_family:  'bg-primary-50 text-primary-700 border-primary-200',
   host_family: 'bg-secondary-50 text-secondary-700 border-secondary-200',
+  community:   'bg-amber-50 text-amber-700 border-amber-200',
   admin:       'bg-gray-100 text-gray-600 border-gray-200',
   super_admin: 'bg-red-50 text-red-700 border-red-200',
 }
@@ -73,7 +81,7 @@ function InvitePanel({ onClose }) {
         </div>
 
         <div className="flex border-b border-gray-100">
-          {[{ key: 'new_family', label: 'משפחה חדשה' }, { key: 'host_family', label: 'משפחה מארחת' }].map(t => (
+          {[{ key: 'new_family', label: 'משפחה חדשה' }, { key: 'host_family', label: 'משפחה מארחת' }, { key: 'community', label: 'קהילה' }].map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); setCopied(false); setMsgCopied(false) }}
               className={clsx('flex-1 py-3 text-sm font-medium transition-all border-b-2',
                 tab === t.key ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700')}>
@@ -121,9 +129,29 @@ function InvitePanel({ onClose }) {
 
 // ── User detail panel ────────────────────────────────────────────────────────
 
-function UserDetailPanel({ user, onClose, onRoleChange, saving }) {
-  const phone = user.phone?.replace(/\D/g, '') || ''
+function UserDetailPanel({ user, onClose, onRoleChange, saving, onProfileSaved }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState({ name: user.name || '', phone: user.phone || '', address: user.address || '' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
+
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
+  const rawDigits = (user.phone || '').replace(/\D/g, '')
+  const waPhone = rawDigits.length > 3 ? (rawDigits.startsWith('972') ? rawDigits : '972' + rawDigits.replace(/^0/, '')) : null
+
+  const handleSaveProfile = async () => {
+    setProfileSaving(true)
+    try {
+      await updateUserProfile(user.uid, { name: draft.name.trim(), phone: draft.phone.trim(), address: draft.address.trim() })
+      setProfileSaved(true)
+      setEditing(false)
+      onProfileSaved({ ...user, ...draft })
+      setTimeout(() => setProfileSaved(false), 2500)
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
@@ -131,42 +159,100 @@ function UserDetailPanel({ user, onClose, onRoleChange, saving }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
           <h2 className="font-bold text-gray-800">פרטי משתמש</h2>
+          <button
+            onClick={() => { setEditing(e => !e); setDraft({ name: user.name || '', phone: user.phone || '', address: user.address || '' }) }}
+            className={clsx('text-xs px-2.5 py-1 rounded-lg border transition-colors font-medium', editing ? 'bg-gray-100 text-gray-600 border-gray-200' : 'bg-primary-50 text-primary-600 border-primary-200 hover:bg-primary-100')}
+          >
+            {editing ? 'ביטול' : 'עריכה'}
+          </button>
         </div>
+
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          {/* Avatar + name */}
           <div className="flex flex-col items-center gap-3">
             {isUrl(user.avatar)
               ? <img src={user.avatar} alt="" className="w-16 h-16 rounded-full object-cover" />
-              : <div className="avatar w-16 h-16 text-2xl bg-primary-100 text-primary-700">{user.name?.[0] || '?'}</div>
+              : <div className="avatar w-16 h-16 text-2xl bg-primary-100 text-primary-700">{(draft.name || user.name)?.[0] || '?'}</div>
             }
             <div className="text-center">
-              <div className="font-bold text-gray-800 text-base">{user.name}</div>
+              <div className="font-bold text-gray-800 text-base">{editing ? draft.name || '—' : user.name}</div>
               <div className="text-sm text-gray-500">{user.email}</div>
             </div>
           </div>
-          <div className="space-y-2">
-            {user.phone ? (
-              <div className="flex items-center gap-2 justify-end text-sm text-gray-600">
-                <span dir="ltr">{user.phone}</span>
-                <Phone size={14} className="text-gray-400 flex-shrink-0" />
+
+          {/* Edit form */}
+          {editing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1 text-right">שם מלא</label>
+                <input
+                  value={draft.name}
+                  onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+                  className="input w-full text-right text-sm"
+                  placeholder="שם מלא"
+                />
               </div>
-            ) : (
-              <div className="flex items-center gap-2 justify-end text-sm text-gray-400">
-                <span>אין מספר טלפון</span>
-                <Phone size={14} className="flex-shrink-0" />
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1 text-right flex items-center gap-1.5 justify-end">
+                  <Phone size={12} />טלפון
+                </label>
+                <input
+                  type="tel"
+                  value={draft.phone}
+                  onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))}
+                  className="input w-full text-right text-sm"
+                  placeholder="050-0000000"
+                  dir="ltr"
+                />
               </div>
-            )}
-            {user.address ? (
-              <div className="flex items-center gap-2 justify-end text-sm text-gray-600">
-                <span>{user.address}</span>
-                <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1 text-right flex items-center gap-1.5 justify-end">
+                  <MapPin size={12} />כתובת
+                </label>
+                <input
+                  value={draft.address}
+                  onChange={e => setDraft(d => ({ ...d, address: e.target.value }))}
+                  className="input w-full text-right text-sm"
+                  placeholder="רחוב, עיר"
+                />
               </div>
-            ) : (
-              <div className="flex items-center gap-2 justify-end text-sm text-gray-400">
-                <span>אין כתובת</span>
-                <MapPin size={14} className="flex-shrink-0" />
-              </div>
-            )}
-          </div>
+              <button
+                onClick={handleSaveProfile}
+                disabled={profileSaving}
+                className="w-full py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors"
+              >
+                {profileSaving ? <Loader2 size={14} className="animate-spin" /> : profileSaved ? <Check size={14} /> : null}
+                {profileSaving ? 'שומר...' : profileSaved ? 'נשמר!' : 'שמור שינויים'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {user.phone ? (
+                <div className="flex items-center gap-2 justify-end text-sm text-gray-600">
+                  <span dir="ltr">{user.phone}</span>
+                  <Phone size={14} className="text-gray-400 flex-shrink-0" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 justify-end text-sm text-gray-400">
+                  <span>אין מספר טלפון</span>
+                  <Phone size={14} className="flex-shrink-0" />
+                </div>
+              )}
+              {user.address ? (
+                <div className="flex items-center gap-2 justify-end text-sm text-gray-600">
+                  <span>{user.address}</span>
+                  <MapPin size={14} className="text-gray-400 flex-shrink-0" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 justify-end text-sm text-gray-400">
+                  <span>אין כתובת</span>
+                  <MapPin size={14} className="flex-shrink-0" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Role */}
           <div>
             <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">הרשאה</label>
             <select
@@ -182,9 +268,11 @@ function UserDetailPanel({ user, onClose, onRoleChange, saving }) {
             </select>
           </div>
         </div>
-        {phone && (
+
+        {/* WhatsApp — only when there's an actual phone number */}
+        {waPhone && (
           <div className="px-5 py-4 border-t border-gray-100">
-            <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+            <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors border border-green-200">
               <MessageCircle size={15} />
               שלח הודעה ב-WhatsApp
@@ -283,7 +371,7 @@ export default function AdminUsersPage() {
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="חיפוש..." className="input w-full pr-9 text-right py-2 text-sm" />
         </div>
-        {['all', 'new_family', 'host_family', 'admin'].map(r => (
+        {['all', 'new_family', 'host_family', 'community', 'admin'].map(r => (
           <button key={r} onClick={() => setRoleFilter(r)}
             className={clsx('px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
               roleFilter === r ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300')}>
@@ -299,7 +387,7 @@ export default function AdminUsersPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map(user => {
-            const phone = user.phone?.replace(/\D/g, '') || ''
+            const phone = (() => { const d = (user.phone || '').replace(/\D/g, ''); return d.startsWith('972') ? d : '972' + d.replace(/^0/, '') })()
             return (
               <div key={user.uid}
                 className="card p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -354,6 +442,10 @@ export default function AdminUsersPage() {
           saving={saving}
           onRoleChange={(user, role) => changeRole(user, role)}
           onClose={() => setSelectedUser(null)}
+          onProfileSaved={(updated) => {
+            setUsers(prev => prev.map(u => u.uid === updated.uid ? { ...u, ...updated } : u))
+            setSelectedUser(prev => ({ ...prev, ...updated }))
+          }}
         />
       )}
     </div>

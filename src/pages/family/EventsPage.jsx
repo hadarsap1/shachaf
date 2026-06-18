@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getEvents } from '../../lib/db'
+import { getEvents, getClasses, getChildrenByParent } from '../../lib/db'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -7,23 +7,71 @@ import { useAuth } from '../../context/AuthContext'
 import { Calendar, List, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
+const BASE_FILTERS = [
+  { value: 'all',        label: 'הכל' },
+  { value: 'new_family', label: 'משפחות חדשות' },
+  { value: 'host_family',label: 'משפחות מארחות' },
+]
+
+function matchesFilter(ev, filterValue) {
+  if (filterValue === 'all') return true
+  if (filterValue === 'new_family' || filterValue === 'host_family') {
+    const groups = ev.targetGroups || ['all']
+    return groups.includes('all') || groups.includes(filterValue)
+  }
+  // class ID filter
+  const groups = ev.targetGroups || ['all']
+  if (groups.includes('all')) return true
+  if (groups.includes('class')) return (ev.classIds || []).includes(filterValue)
+  return false
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function EventsPage() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [events, setEvents]           = useState([])
+  const [classColorMap, setClassColorMap] = useState({})
+  const [filterOptions, setFilterOptions] = useState(BASE_FILTERS)
   const [loading, setLoading]         = useState(true)
   const [displayMode, setDisplayMode] = useState('calendar')
+  const [filterValue, setFilterValue] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
-    getEvents().then(data => { setEvents(data); setLoading(false) })
-  }, [])
+    if (!user) return
+    const load = async () => {
+      const [allEvents, classes, myChildren] = await Promise.all([
+        getEvents(),
+        getClasses(),
+        isAdmin ? Promise.resolve([]) : getChildrenByParent(user.uid),
+      ])
+
+      const colorMap = {}
+      classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
+      setClassColorMap(colorMap)
+
+      const myClassIds = isAdmin
+        ? []
+        : [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
+
+      const classFilters = classes
+        .filter(cls => isAdmin || myClassIds.includes(cls.id))
+        .map(cls => ({ value: cls.id, label: cls.name || cls.id }))
+
+      setFilterOptions([...BASE_FILTERS, ...classFilters])
+      setEvents(allEvents)
+      setLoading(false)
+    }
+    load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
+  }, [user, isAdmin])
+
+  const filteredEvents = events.filter(ev => matchesFilter(ev, filterValue))
 
   return (
     <div className="page-container rtl" dir="rtl">
       {/* ── Page header ── */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center rounded-full border border-gray-200 overflow-hidden">
           <button
             onClick={() => setDisplayMode('calendar')}
@@ -56,9 +104,29 @@ export default function EventsPage() {
             <Calendar size={22} />
             אירועים קרובים
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{events.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
+          <p className="text-sm text-gray-500 mt-0.5">{filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
         </div>
       </div>
+
+      {/* ── Filter chips ── */}
+      {!loading && (
+        <div className="flex gap-2 mb-5 flex-wrap">
+          {filterOptions.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setFilterValue(opt.value)}
+              className={clsx(
+                'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
+                filterValue === opt.value
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Loading ── */}
       {loading && (
@@ -70,8 +138,9 @@ export default function EventsPage() {
       {/* ── Calendar view ── */}
       {!loading && displayMode === 'calendar' && (
         <CalendarGrid
-          events={events}
-          filterRole={user?.role}
+          events={filteredEvents}
+          filterRole="all"
+          classColorMap={classColorMap}
           onEventClick={setSelectedEvent}
         />
       )}
@@ -80,25 +149,27 @@ export default function EventsPage() {
       {!loading && displayMode === 'list' && (
         <>
           <div className="grid sm:grid-cols-2 gap-4">
-            {events.map(event => (
+            {filteredEvents.map(event => (
               <EventCard key={event.id} event={event} onCardClick={() => setSelectedEvent(event)} />
             ))}
           </div>
 
-          {events.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <Calendar size={40} className="mx-auto mb-3 opacity-30" />
-              <p className="font-medium">אין אירועים קרובים</p>
+          {filteredEvents.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <Calendar size={44} className="mx-auto mb-4 opacity-25" />
+              <p className="font-semibold text-gray-500">אין אירועים קרובים</p>
+              <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
             </div>
           )}
         </>
       )}
 
       {/* ── Empty calendar state ── */}
-      {!loading && displayMode === 'calendar' && events.length === 0 && (
-        <div className="text-center py-12 text-gray-400 mt-4">
-          <Calendar size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">אין אירועים קרובים</p>
+      {!loading && displayMode === 'calendar' && filteredEvents.length === 0 && (
+        <div className="text-center py-16 text-gray-400 mt-4">
+          <Calendar size={44} className="mx-auto mb-4 opacity-25" />
+          <p className="font-semibold text-gray-500">אין אירועים קרובים</p>
+          <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
         </div>
       )}
 

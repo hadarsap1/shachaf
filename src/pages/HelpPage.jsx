@@ -1,0 +1,298 @@
+import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+import {
+  HelpCircle, ChevronDown, ChevronUp, MessageSquare,
+  Calendar, Users, CheckSquare, BookOpen, GraduationCap,
+  Home, Star, ClipboardList, Search,
+} from 'lucide-react'
+import clsx from 'clsx'
+import { Link } from 'react-router-dom'
+
+const SECTIONS = [
+  {
+    id: 'getting-started',
+    icon: Home,
+    title: 'תחילת עבודה',
+    color: 'text-primary-600',
+    bg: 'bg-primary-50',
+    roles: ['all'],
+    faqs: [
+      {
+        q: 'איך נרשמים לאפליקציה?',
+        a: 'ניתן להירשם עם חשבון Google או עם כתובת מייל וסיסמה. לחצו על "כניסה לחשבון" בעמוד הכניסה ובחרו את האפשרות המתאימה.',
+      },
+      {
+        q: 'האם האפליקציה עובדת על הטלפון?',
+        a: 'כן! ניתן להתקין את האפליקציה על מסך הבית של הטלפון (PWA). ב-iPhone: לחצו על כפתור השיתוף → "הוסף למסך הבית". ב-Android: תפריט שלוש נקודות → "הוסף למסך הבית". האפליקציה תיפתח בלי פס דפדפן, כמו אפליקציה רגילה.',
+      },
+      {
+        q: 'שכחתי סיסמה — מה עושים?',
+        a: 'בעמוד הכניסה, לחצו על "שכחת סיסמה" והזינו את כתובת המייל. תקבלו הוראות לאיפוס הסיסמה תוך דקות ספורות.',
+      },
+      {
+        q: 'איך משנים פרטים אישיים?',
+        a: 'ניתן לעדכן שם, טלפון וכתובת בדף ההגדרות (הגדרות בתפריט). כתובת המייל מקושרת לחשבון ולא ניתנת לשינוי ישירות.',
+      },
+      {
+        q: 'האם שני הורים יכולים להיכנס לאותו חשבון?',
+        a: 'לא נכנסים לאותו חשבון — כל הורה יוצר חשבון נפרד עם המייל שלו. בדף ההגדרות ניתן להוסיף הורה שני — פשוט הזינו את פרטיו ויישלח לו לינק להגדרת סיסמה. שני ההורים יראו את אותם ילדים, משימות ואירועים.',
+      },
+    ],
+  },
+  {
+    id: 'onboarding',
+    icon: CheckSquare,
+    title: 'תהליך קליטה ומשימות',
+    color: 'text-secondary-600',
+    bg: 'bg-secondary-50',
+    roles: ['new_family', 'host_family'],
+    faqs: [
+      {
+        q: 'איך עוקבים אחר התקדמות המשימות?',
+        a: 'בדף "משימות" תמצאו את כל משימות הקליטה מסודרות לפי אבני דרך. לחצו על עיגול הסטטוס לצד המשימה לסימון התקדמות: ממתין → בתהליך → הושלם. ניתן לראות את ההתקדמות הכוללת בדשבורד.',
+      },
+      {
+        q: 'סימנתי משימה כהושלמה בטעות — איך מחזירים?',
+        a: 'משימה שסומנה כ"הושלם" לא ניתנת לביטול ישירות. פנו למנהל דרך "צור קשר" ובקשו לאפס את סטטוס המשימה.',
+      },
+      {
+        q: 'מה זו משפחה מארחת?',
+        a: 'משפחה מארחת היא משפחה ותיקה בשחף שמתנדבת ללוות משפחה חדשה בתהליך הקליטה. הם יכולים לעזור עם שאלות, להכיר את הקהילה ולהיות נקודת הקשר הראשונה.',
+      },
+      {
+        q: 'איך יוצרים קשר עם המשפחה המארחת?',
+        a: 'בדף "בית" תמצאו את פרטי הקשר של המשפחה המארחת. ניתן לפנות אליהם ישירות בטלפון או בוואטסאפ. בחלק מהמשימות יש כפתור "שלח וואטסאפ" ישיר.',
+      },
+      {
+        q: 'מה קורה אחרי שמסיימים את תהליך הקליטה?',
+        a: 'לאחר השלמת תהליך הקליטה, כל תכונות האפליקציה הקהילתית זמינות — דף הכיתה, הוועדות, אירועים ועוד.',
+      },
+    ],
+  },
+  {
+    id: 'forms',
+    icon: ClipboardList,
+    title: 'טפסים',
+    color: 'text-orange-600',
+    bg: 'bg-orange-50',
+    roles: ['new_family', 'host_family', 'community'],
+    faqs: [
+      {
+        q: 'איפה רואים את הטפסים שצריך למלא?',
+        a: 'בדף "הטפסים שלי" תמצאו את כל הטפסים הפעילים שמיועדים אליכם. טפסים שממתינים למילוי מסומנים בגבול כחול. טפסים שהוגשו — בגבול ירוק.',
+      },
+      {
+        q: 'האם ניתן לערוך טופס אחרי שהגשתי?',
+        a: 'כן. לחצו על כפתור "צפה בתשובות / ערוך" בטופס שהוגש, עדכנו את הפרטים ולחצו "הגש טופס" שוב.',
+      },
+      {
+        q: 'הורה שני כבר מילא טופס — מה אני רואה?',
+        a: 'הטופס יוצג כ"הוגש" עם שם ההורה שמילא ותאריך ההגשה. תוכלו ללחוץ "צפה ועדכן" לראות את התשובות ולערוך אותן — הגרסה החדשה תחליף את הקודמת.',
+      },
+      {
+        q: 'הטופס לא מופיע אצלי — מדוע?',
+        a: 'ייתכן שהטופס מיועד לכיתה ספציפית שילדכם אינו שייך אליה, או שהטופס עדיין לא פורסם. פנו למנהל לבירור.',
+      },
+    ],
+  },
+  {
+    id: 'class',
+    icon: GraduationCap,
+    title: 'דף הכיתה',
+    color: 'text-accent-600',
+    bg: 'bg-accent-50',
+    roles: ['all'],
+    faqs: [
+      {
+        q: 'איך רואים את שעות המסגרת של הכיתה?',
+        a: 'בדף הכיתה תמצאו את שעות המסגרת לכל יום בשבוע. אם ילדכם לומד ביותר מכיתה אחת, ניתן לעבור בין הכיתות בלשוניות בראש הדף.',
+      },
+      {
+        q: 'מה ההבדל בין אירועי כיתה לאירועי בית ספר?',
+        a: 'אירועי בית ספר מיועדים לכלל ההורים. אירועי כיתה מיועדים לכיתה הספציפית של ילדכם.',
+      },
+      {
+        q: 'איך יוצרים קשר עם המחנך/ת?',
+        a: 'פרטי הקשר מופיעים בכרטיס "צוות הכיתה" בדף הכיתה. לחצו ישירות על מספר הטלפון להתקשרות.',
+      },
+      {
+        q: 'מי הם מנהלי הכיתה?',
+        a: 'הורים שמונו לנהל את תוכן הכיתה — הם יכולים לעדכן הודעות ואירועים ספציפיים לכיתה.',
+      },
+    ],
+  },
+  {
+    id: 'events',
+    icon: Calendar,
+    title: 'אירועים ולוח שנה',
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+    roles: ['all'],
+    faqs: [
+      {
+        q: 'מה המשמעות של הצבעים השונים בלוח השנה?',
+        a: 'כל כיתה מזוהה בצבע ייחודי. אירועי בית הספר הכלליים מוצגים בצבע הנייבי הכחול.',
+      },
+      {
+        q: 'איך מוסיפים אירוע ליומן Google?',
+        a: 'בכרטיס האירוע לחצו "Google Calendar" — ייפתח יומן Google עם כל הפרטים. לחלופין, "יומן (.ics)" מוריד קובץ תואם לכל יומן.',
+      },
+      {
+        q: 'למה כפתורי הוספה ליומן לא מופיעים?',
+        a: 'אירועים שעברו מציגים "האירוע הסתיים" ואין אפשרות להוסיפם ליומן.',
+      },
+      {
+        q: 'למה אני לא רואה אירוע מסוים?',
+        a: 'ייתכן שהאירוע מיועד לכיתה אחרת או לקבוצת תפקידים שאינה שלכם.',
+      },
+    ],
+  },
+  {
+    id: 'committees',
+    icon: Users,
+    title: 'ועדות',
+    color: 'text-pink-600',
+    bg: 'bg-pink-50',
+    roles: ['all'],
+    faqs: [
+      {
+        q: 'מה נמצא בעמוד הוועדות?',
+        a: 'כל הוועדות הפעילות בשחף — ועד הורים, ועדת תרבות, ועדות כיתה ועוד. כל ועדה מוצגת עם תיאור, רשימת חברים ופרטי קשר.',
+      },
+      {
+        q: 'איך אפשר להצטרף לוועדה?',
+        a: 'פנו ישירות לחברי הוועדה המופיעים בכרטיס, או צרו קשר עם בית הספר דרך "צור קשר".',
+      },
+    ],
+  },
+  {
+    id: 'resources',
+    icon: BookOpen,
+    title: 'מידע שימושי',
+    color: 'text-teal-600',
+    bg: 'bg-teal-50',
+    roles: ['all'],
+    faqs: [
+      {
+        q: 'מה נמצא בדף מידע שימושי?',
+        a: 'קישורים ומסמכים חשובים שנאספו עבורכם — תקנונים, מפות, לינקים לאתרים רלוונטיים ועוד. התוכן מעודכן על ידי צוות בית הספר.',
+      },
+    ],
+  },
+]
+
+function FAQItem({ q, a }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={clsx(
+      'border-b border-gray-100 last:border-0 transition-colors',
+      open && 'bg-gray-50/50'
+    )}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-start justify-between gap-3 py-3.5 px-1 text-right"
+      >
+        <span className="text-sm font-medium text-gray-800 flex-1">{q}</span>
+        {open
+          ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
+          : <ChevronDown size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />}
+      </button>
+      {open && (
+        <div className="pb-4 px-1">
+          <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function HelpPage() {
+  const { user, isAdmin } = useAuth()
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const q = searchQuery.trim().toLowerCase()
+
+  const visibleSections = SECTIONS
+    .filter(s =>
+      s.roles.includes('all') ||
+      s.roles.includes(user?.role) ||
+      (isAdmin && s.roles.includes('admin'))
+    )
+    .map(s => ({
+      ...s,
+      faqs: q
+        ? s.faqs.filter(f =>
+            f.q.toLowerCase().includes(q) ||
+            f.a.toLowerCase().includes(q)
+          )
+        : s.faqs,
+    }))
+    .filter(s => !q || s.faqs.length > 0 || s.title.toLowerCase().includes(q))
+
+  return (
+    <div className="page-container rtl" dir="rtl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <HelpCircle size={24} className="text-primary-600" />
+          עזרה ושאלות נפוצות
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          כל מה שצריך לדעת על האפליקציה
+        </p>
+      </div>
+
+      {/* ── Search ── */}
+      <div className="relative mb-6">
+        <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="חיפוש בשאלות ותשובות..."
+          className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-right placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition"
+        />
+      </div>
+
+      {q && visibleSections.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          <Search size={36} className="mx-auto mb-3 opacity-30" />
+          <p className="font-semibold text-gray-500">לא נמצאו תוצאות</p>
+          <p className="text-sm mt-1">נסו מילת חיפוש אחרת</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {visibleSections.map(section => {
+          const Icon = section.icon
+          return (
+            <div key={section.id} className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+              <div className={clsx('flex items-center gap-3 px-5 py-4', section.bg)}>
+                <div className={clsx('p-2 rounded-xl bg-white/60', section.color)}>
+                  <Icon size={18} />
+                </div>
+                <h2 className={clsx('font-semibold text-base', section.color)}>{section.title}</h2>
+              </div>
+              <div className="px-5 divide-y divide-gray-50">
+                {section.faqs.map((faq, i) => (
+                  <FAQItem key={i} q={faq.q} a={faq.a} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-6 bg-primary-50 rounded-2xl p-5 text-center">
+        <Star size={20} className="mx-auto text-primary-400 mb-2" />
+        <p className="font-semibold text-primary-800 text-sm">לא מצאתם תשובה?</p>
+        <p className="text-xs text-primary-600 mt-0.5 mb-3">
+          צרו קשר עם צוות בית הספר ונשמח לעזור
+        </p>
+        <Link to="/contact" className="btn-primary text-sm py-2 px-5 inline-flex items-center gap-2">
+          <MessageSquare size={14} />
+          צור קשר
+        </Link>
+      </div>
+    </div>
+  )
+}

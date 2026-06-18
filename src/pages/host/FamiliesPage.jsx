@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getUsers, getTasks } from '../../lib/db'
+import { getNewFamilies, getTasks } from '../../lib/db'
 import { Users, MessageCircle, Loader2, X, Phone, MapPin, Mail } from 'lucide-react'
 
 function FamilyDetailPanel({ family, onClose }) {
-  const phone = family.phone?.replace(/\D/g, '') || ''
+  const phone = (() => { const d = (family.phone || '').replace(/\D/g, ''); return d.startsWith('972') ? d : '972' + d.replace(/^0/, '') })()
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
@@ -70,7 +70,7 @@ function FamilyDetailPanel({ family, onClose }) {
 const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
 
 function FamilyCard({ family, taskCounts, onClick }) {
-  const phone = family.phone?.replace(/\D/g, '') || ''
+  const phone = (() => { const d = (family.phone || '').replace(/\D/g, ''); return d.startsWith('972') ? d : '972' + d.replace(/^0/, '') })()
   const { done = 0, total = 0 } = taskCounts || {}
   const pct = total ? Math.round((done / total) * 100) : 0
 
@@ -124,9 +124,8 @@ export default function FamiliesPage() {
   const [selectedFamily, setSelectedFamily] = useState(null)
 
   useEffect(() => {
-    Promise.all([getUsers(), getTasks()])
-      .then(([users, allTasks]) => {
-        const newFamilies = users.filter(u => u.role === 'new_family')
+    Promise.all([getNewFamilies(), getTasks()])
+      .then(([newFamilies, allTasks]) => {
         setFamilies(newFamilies)
         const counts = {}
         newFamilies.forEach(f => {
@@ -158,9 +157,10 @@ export default function FamiliesPage() {
       </div>
 
       {families.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <Users size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">אין משפחות רשומות עדיין</p>
+        <div className="text-center py-16 text-gray-400">
+          <Users size={44} className="mx-auto mb-4 opacity-25" />
+          <p className="font-semibold text-gray-500">עדיין לא שויכו אליך משפחות</p>
+          <p className="text-sm mt-1">המנהל ישייך אליך משפחות חדשות בקרוב</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">

@@ -6,25 +6,14 @@ import clsx from 'clsx'
 
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 
-const TYPE_CHIP = {
-  social:      'bg-primary-100 text-primary-700',
-  orientation: 'bg-secondary-100 text-secondary-700',
-  ceremony:    'bg-accent-100 text-accent-700',
-  community:   'bg-purple-100 text-purple-700',
-}
+const SCHOOL_COLOR = '#1B3B70'
 
-const TYPE_DOT = {
-  social:      'bg-primary-400',
-  orientation: 'bg-secondary-400',
-  ceremony:    'bg-accent-400',
-  community:   'bg-purple-400',
-}
-
-const TYPE_BORDER = {
-  social:      'border-primary-400',
-  orientation: 'border-secondary-400',
-  ceremony:    'border-accent-400',
-  community:   'border-purple-400',
+function getEventColor(event, classColorMap) {
+  if (!event.classIds?.length) return SCHOOL_COLOR
+  for (const cid of event.classIds) {
+    if (classColorMap[cid]) return classColorMap[cid]
+  }
+  return SCHOOL_COLOR
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -101,15 +90,13 @@ function weekRangeLabel(days) {
 
 // ── Event chip (month cell) ───────────────────────────────────────────────────
 
-function EventChip({ event, onClick }) {
-  const chip = TYPE_CHIP[event.type] || 'bg-gray-100 text-gray-600'
+function EventChip({ event, onClick, classColorMap }) {
+  const color = getEventColor(event, classColorMap)
   return (
     <button
       onClick={() => onClick(event)}
-      className={clsx(
-        'w-full text-start text-xs px-1.5 py-0.5 rounded-full truncate font-medium leading-snug',
-        chip
-      )}
+      className="w-full text-start text-xs px-1.5 py-0.5 rounded-full truncate font-medium leading-snug"
+      style={{ backgroundColor: color + '22', color }}
       title={event.title}
     >
       {event.title}
@@ -119,30 +106,35 @@ function EventChip({ event, onClick }) {
 
 // ── Event dot (mobile month cell) ────────────────────────────────────────────
 
-function EventDot({ event, onClick }) {
-  const dot = TYPE_DOT[event.type] || 'bg-gray-400'
+function EventDot({ event, onClick, classColorMap, isConflict }) {
+  const color = isConflict ? '#f97316' : getEventColor(event, classColorMap)
   return (
     <button
       onClick={() => onClick(event)}
       title={event.title}
-      className={clsx('w-3 h-3 rounded-full flex-shrink-0 inline-block', dot)}
+      className="w-3 h-3 rounded-full flex-shrink-0 inline-block"
+      style={{ backgroundColor: color }}
     />
   )
 }
 
 // ── Week event card ───────────────────────────────────────────────────────────
 
-function WeekEventCard({ event, onClick }) {
-  const border = TYPE_BORDER[event.type] || 'border-gray-300'
+function WeekEventCard({ event, onClick, classColorMap, isConflict }) {
+  const color = isConflict ? '#f97316' : getEventColor(event, classColorMap)
   return (
     <button
       onClick={() => onClick(event)}
       className={clsx(
-        'w-full text-start border-r-2 bg-gray-50 hover:bg-gray-100 rounded-lg px-2 py-1.5 mb-1 transition-colors',
-        border
+        'w-full text-start border-r-2 rounded-lg px-2 py-1.5 mb-1 transition-colors',
+        isConflict ? 'bg-orange-50 hover:bg-orange-100' : 'bg-gray-50 hover:bg-gray-100'
       )}
+      style={{ borderRightColor: color }}
     >
-      <p className="text-xs font-semibold text-gray-800 truncate leading-snug">{event.title}</p>
+      <p className="text-xs font-semibold text-gray-800 truncate leading-snug flex items-center gap-1">
+        {isConflict && <span className="text-orange-500 flex-shrink-0" title="ניגוד זמנים">⚠</span>}
+        {event.title}
+      </p>
       {event.time && (
         <p className="text-xs text-gray-400 leading-none mt-0.5">{formatTime(event.time)}</p>
       )}
@@ -152,7 +144,7 @@ function WeekEventCard({ event, onClick }) {
 
 // ── Month view ────────────────────────────────────────────────────────────────
 
-function MonthView({ year, month, eventsByDay, onEventClick, today }) {
+function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMap, conflictDates, conflictEventIds }) {
   const cells = buildMonthGrid(year, month)
 
   return (
@@ -183,7 +175,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
               )}
             >
               {/* Day number */}
-              <div className="flex justify-center mb-1">
+              <div className="flex justify-center mb-1 relative">
                 <span className={clsx(
                   'text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full leading-none',
                   isToday
@@ -192,12 +184,16 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
                 )}>
                   {cell.date.getDate()}
                 </span>
+                {conflictDates.has(cell.key) && (
+                  <span className="absolute top-0 end-0 w-2 h-2 bg-orange-400 rounded-full"
+                    title="ניגוד זמנים ביום זה" />
+                )}
               </div>
 
               {/* Desktop: text chips */}
               <div className="hidden sm:flex flex-col gap-0.5">
                 {visible.map(ev => (
-                  <EventChip key={ev.id} event={ev} onClick={onEventClick} />
+                  <EventChip key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap} />
                 ))}
                 {overflow && (
                   <button
@@ -212,7 +208,8 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
               {/* Mobile: dots only */}
               <div className="flex sm:hidden flex-wrap gap-1 justify-center">
                 {dayEvents.map(ev => (
-                  <EventDot key={ev.id} event={ev} onClick={onEventClick} />
+                  <EventDot key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
+                    isConflict={conflictEventIds.has(ev.id)} />
                 ))}
               </div>
             </div>
@@ -225,7 +222,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today }) {
 
 // ── Week view ─────────────────────────────────────────────────────────────────
 
-function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
+function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, conflictEventIds }) {
   return (
     <div dir="rtl">
       {/* Desktop: 7-column grid */}
@@ -253,7 +250,8 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
               {/* Events */}
               <div className="flex-1 p-1 overflow-y-auto">
                 {dayEvents.map(ev => (
-                  <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} />
+                  <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
+                    isConflict={conflictEventIds.has(ev.id)} />
                 ))}
               </div>
             </div>
@@ -284,7 +282,8 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
               {dayEvents.length > 0 ? (
                 <div className="space-y-1">
                   {dayEvents.map(ev => (
-                    <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} />
+                    <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
+                      isConflict={conflictEventIds.has(ev.id)} />
                   ))}
                 </div>
               ) : (
@@ -300,7 +299,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today }) {
 
 // ── CalendarGrid (main export) ────────────────────────────────────────────────
 
-export default function CalendarGrid({ events = [], filterRole, onEventClick }) {
+export default function CalendarGrid({ events = [], filterRole, classColorMap = {}, onEventClick }) {
   const [view, setView]               = useState('month')
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
@@ -316,6 +315,24 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
     if (!eventsByDay[ev.date]) eventsByDay[ev.date] = []
     eventsByDay[ev.date].push(ev)
   })
+
+  // Detect same-day same-time conflicts
+  const conflictDates = new Set()
+  const conflictEventIds = new Set()
+  for (const [dateKey, dayEvts] of Object.entries(eventsByDay)) {
+    const timeMap = {}
+    for (const ev of dayEvts) {
+      if (!ev.time) continue
+      if (!timeMap[ev.time]) timeMap[ev.time] = []
+      timeMap[ev.time].push(ev.id)
+    }
+    for (const ids of Object.values(timeMap)) {
+      if (ids.length > 1) {
+        conflictDates.add(dateKey)
+        ids.forEach(id => conflictEventIds.add(id))
+      }
+    }
+  }
 
   // Navigation
   const goToToday = () => setCurrentDate(new Date())
@@ -409,6 +426,9 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
           eventsByDay={eventsByDay}
           onEventClick={onEventClick}
           today={today}
+          classColorMap={classColorMap}
+          conflictDates={conflictDates}
+          conflictEventIds={conflictEventIds}
         />
       )}
       {view === 'week' && (
@@ -417,6 +437,8 @@ export default function CalendarGrid({ events = [], filterRole, onEventClick }) 
           eventsByDay={eventsByDay}
           onEventClick={onEventClick}
           today={today}
+          classColorMap={classColorMap}
+          conflictEventIds={conflictEventIds}
         />
       )}
     </div>

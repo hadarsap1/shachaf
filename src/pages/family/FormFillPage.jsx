@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getForms, getSubmissions, saveSubmission, newFieldId } from '../../lib/formsStorage'
+import { getForms, getSubmissionsForFamily, saveSubmission, getChildrenByParent } from '../../lib/db'
 import { ClipboardList, CheckCircle2, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 
-function FormCard({ form, submission, onFill }) {
+function FormCard({ form, submission, currentUserId, onFill }) {
   const done = !!submission
+  const byCoParent = done && submission.userId !== currentUserId
+
+  const submittedDate = done
+    ? (submission.updatedAt?.toDate?.() || submission.submittedAt?.toDate?.() || new Date(submission.submittedAt))
+    : null
 
   return (
     <div className={clsx('card p-5 border-r-4', done ? 'border-green-400' : 'border-primary-400')}>
@@ -21,7 +26,7 @@ function FormCard({ form, submission, onFill }) {
           <p className="text-xs text-gray-500 mt-0.5">{form.description}</p>
           {done && (
             <p className="text-xs text-green-600 mt-1.5">
-              ✓ הוגש ב-{new Date(submission.submittedAt).toLocaleDateString('he-IL')}
+              ✓ הוגש על ידי {byCoParent ? submission.userName : 'את/ה'} ב-{submittedDate?.toLocaleDateString('he-IL')}
             </p>
           )}
         </div>
@@ -32,7 +37,7 @@ function FormCard({ form, submission, onFill }) {
             onClick={() => onFill(form, submission)}
             className="w-full py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
-            צפה בתשובות / ערוך
+            {byCoParent ? 'צפה ועדכן' : 'צפה בתשובות / ערוך'}
           </button>
         ) : (
           <button
@@ -109,11 +114,11 @@ function FillView({ form, existing, onSubmit, onBack }) {
     return errs
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
-    onSubmit(values)
+    await onSubmit(values, existing?.id)
     setDone(true)
   }
 
@@ -172,30 +177,49 @@ export default function FormFillPage() {
   const { user } = useAuth()
   const [forms, setForms] = useState([])
   const [submissions, setSubmissions] = useState([])
+  const [coParentUids, setCoParentUids] = useState([])
   const [filling, setFilling] = useState(null) // { form, existing }
 
   useEffect(() => {
-    const allForms = getForms().filter(f =>
-      f.status === 'published' &&
-      (f.targetRole === user?.role || f.targetRole === 'all')
-    )
-    setForms(allForms)
-    setSubmissions(getSubmissions().filter(s => s.userId === user?.uid))
+    if (!user?.uid) return
+    Promise.all([getChildrenByParent(user.uid), getForms(), getSubmissionsForFamily(user.uid)])
+      .then(([children, allForms, allSubmissions]) => {
+        const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
+        const allParentUids = [...new Set(children.flatMap(c => c.parentUids || []))]
+        setCoParentUids(allParentUids.filter(uid => uid !== user.uid))
+        setForms(allForms.filter(f =>
+          f.status === 'published' && (
+            f.targetRole === user.role ||
+            f.targetRole === 'all' ||
+            (f.targetRole === 'class' && (f.classIds || []).some(id => myClassIds.includes(id)))
+          )
+        ))
+        setSubmissions(allSubmissions)
+      })
+      .catch(() => {
+        Promise.all([getForms(), getSubmissionsForFamily(user.uid)]).then(([allForms, allSubmissions]) => {
+          setForms(allForms.filter(f => f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')))
+          setSubmissions(allSubmissions)
+        }).catch(() => {})
+      })
   }, [user])
 
   const getSubmission = (formId) => submissions.find(s => s.formId === formId)
 
-  const handleSubmit = (form, values) => {
+  const handleSubmit = async (form, values, existingId = null) => {
     const sub = {
-      id: 'sub-' + Date.now(),
+      ...(existingId ? { id: existingId } : {}),
       formId: form.id,
       userId: user.uid,
       userName: user.name,
-      submittedAt: new Date().toISOString(),
+      coParentUids,
       data: values,
     }
-    saveSubmission(sub)
-    setSubmissions(getSubmissions().filter(s => s.userId === user?.uid))
+    const saved = await saveSubmission(sub)
+    setSubmissions(prev => {
+      const idx = prev.findIndex(s => s.formId === form.id)
+      return idx >= 0 ? prev.map(s => s.formId === form.id ? saved : s) : [...prev, saved]
+    })
   }
 
   if (filling) {
@@ -204,7 +228,7 @@ export default function FormFillPage() {
         <FillView
           form={filling.form}
           existing={filling.existing}
-          onSubmit={(values) => handleSubmit(filling.form, values)}
+          onSubmit={(values, existingId) => handleSubmit(filling.form, values, existingId)}
           onBack={() => setFilling(null)}
         />
       </div>
@@ -229,6 +253,7 @@ export default function FormFillPage() {
             key={form.id}
             form={form}
             submission={getSubmission(form.id)}
+            currentUserId={user.uid}
             onFill={(f, sub) => setFilling({ form: f, existing: sub })}
           />
         ))}

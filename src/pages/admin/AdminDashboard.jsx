@@ -1,46 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getTasks, getEvents, getUsers, getMessages } from '../../lib/db'
+import { getTasks, getEvents, getMessages } from '../../lib/db'
 import StatCard from '../../components/ui/StatCard'
 import {
-  Users, CheckSquare, Calendar, Activity,
-  Clock, TrendingUp, UserPlus, X, MessageCircle,
+  CheckSquare, Calendar, Activity,
+  Clock, TrendingUp, X,
   Loader2, MessageSquare,
 } from 'lucide-react'
 import clsx from 'clsx'
-
-const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
-
-function UsersPanel({ users, title }) {
-  return (
-    <div className="space-y-2">
-      {users.length === 0 && (
-        <p className="text-center text-sm text-gray-400 py-6">אין משתמשים עדיין</p>
-      )}
-      {users.map(u => {
-        const phone = u.phone?.replace(/\D/g, '') || ''
-        return (
-          <div key={u.uid} className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-            {isUrl(u.avatar)
-              ? <img src={u.avatar} alt="" className="w-9 h-9 rounded-full flex-shrink-0 object-cover" />
-              : <div className="avatar w-9 h-9 text-sm bg-primary-100 text-primary-700 flex-shrink-0">{u.name?.[0] || '?'}</div>
-            }
-            <div className="flex-1 text-right min-w-0">
-              <div className="font-semibold text-gray-800 text-sm">{u.name}</div>
-              <div className="text-xs text-gray-500 truncate">{u.email}</div>
-            </div>
-            {phone && (
-              <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
-                className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 flex-shrink-0">
-                <MessageCircle size={14} />
-              </a>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 function SlidePanel({ title, sub, children, onClose }) {
   return (
@@ -62,16 +29,15 @@ function SlidePanel({ title, sub, children, onClose }) {
 
 export default function AdminDashboard() {
   const [activePanel, setActivePanel] = useState(null)
-  const [tasks, setTasks]     = useState([])
-  const [events, setEvents]   = useState([])
-  const [users, setUsers]     = useState([])
+  const [tasks, setTasks]       = useState([])
+  const [events, setEvents]     = useState([])
   const [messages, setMessages] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    Promise.all([getTasks(), getEvents(), getUsers(), getMessages()])
-      .then(([t, e, u, m]) => {
-        setTasks(t); setEvents(e); setUsers(u); setMessages(m)
+    Promise.all([getTasks(), getEvents(), getMessages()])
+      .then(([t, e, m]) => {
+        setTasks(t); setEvents(e); setMessages(m)
         setLoading(false)
       })
       .catch(err => { console.error('Dashboard load failed', err); setLoading(false) })
@@ -81,20 +47,17 @@ export default function AdminDashboard() {
   const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length
   const doneTasks       = tasks.filter(t => t.status === 'done').length
   const totalTasks      = tasks.length
+  const avgCompletion   = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
-  const upcomingEvents = events.filter(e => e.date && new Date(e.date) >= today).length
-
-  const newFamilies  = users.filter(u => u.role === 'new_family')
-  const hostFamilies = users.filter(u => u.role === 'host_family')
-  const avgCompletion = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
-  const unreadMessages = messages.filter(m => !m.read).length
+  const upcomingEvents  = events.filter(e => e.date && new Date(e.date) >= today).length
+  const unreadMessages  = messages.filter(m => !m.read).length
 
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-primary-800">לוח בקרה</h1>
-        <p className="text-sm text-gray-500 mt-0.5">סקירה כללית של פלטפורמת שחף</p>
+        <h1 className="text-2xl font-black text-primary-800">מסך הבית</h1>
+        <p className="text-sm text-gray-500 mt-0.5">סקירה כללית של קהילת שחף</p>
       </div>
 
       {loading ? (
@@ -104,11 +67,10 @@ export default function AdminDashboard() {
       ) : (
         <>
           {/* Stats grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <StatCard icon={Users}     label="משפחות חדשות"   value={newFamilies.length}  color="primary"   onClick={() => setActivePanel('new_families')} />
-            <StatCard icon={UserPlus}  label="משפחות מארחות"  value={hostFamilies.length} color="secondary" onClick={() => setActivePanel('host_families')} />
-            <StatCard icon={TrendingUp} label="השלמת משימות"  value={`${avgCompletion}%`} color="success"   onClick={() => setActivePanel('tasks')} />
-            <StatCard icon={Clock}     label="אירועים קרובים" value={upcomingEvents}       color="accent" />
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <StatCard icon={TrendingUp}   label="השלמת משימות"   value={`${avgCompletion}%`} color="success"   onClick={() => setActivePanel('tasks')} />
+            <StatCard icon={Clock}        label="אירועים קרובים" value={upcomingEvents}       color="accent" onClick={() => setActivePanel('events')} />
+            <StatCard icon={MessageSquare} label="הודעות חדשות"  value={unreadMessages}       color="primary"   onClick={() => setActivePanel('messages')} />
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -119,7 +81,13 @@ export default function AdminDashboard() {
                 סטטוס משימות
               </h2>
               {totalTasks === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">אין משימות עדיין</p>
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-400 mb-3">אין משימות עדיין</p>
+                  <a href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                    <CheckSquare size={13} />
+                    פרסם משימה ראשונה
+                  </a>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {[
@@ -146,9 +114,9 @@ export default function AdminDashboard() {
               <h2 className="font-bold text-gray-700 mb-4">פעולות מהירות</h2>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { to: '/admin/users',    label: 'ניהול משתמשים', icon: Users,         color: 'bg-primary-50 text-primary-600 border-primary-200' },
-                  { to: '/admin/tasks',    label: 'פרסם משימה',    icon: CheckSquare,   color: 'bg-secondary-50 text-secondary-600 border-secondary-200' },
-                  { to: '/admin/events',   label: 'צור אירוע',     icon: Calendar,      color: 'bg-accent-50 text-accent-600 border-accent-200' },
+                  { to: '/admin/users',    label: 'ניהול משפחות',  icon: Activity,     color: 'bg-primary-50 text-primary-600 border-primary-200' },
+                  { to: '/admin/tasks',    label: 'פרסם משימה',    icon: CheckSquare,  color: 'bg-secondary-50 text-secondary-600 border-secondary-200' },
+                  { to: '/admin/events',   label: 'צור אירוע',     icon: Calendar,     color: 'bg-accent-50 text-accent-600 border-accent-200' },
                   { to: '/admin/messages', label: `הודעות${unreadMessages > 0 ? ` (${unreadMessages})` : ''}`, icon: MessageSquare, color: 'bg-purple-50 text-purple-600 border-purple-200' },
                 ].map(action => {
                   const Icon = action.icon
@@ -199,16 +167,6 @@ export default function AdminDashboard() {
           )}
 
           {/* Panels */}
-          {activePanel === 'new_families' && (
-            <SlidePanel title="משפחות חדשות" sub={`${newFamilies.length} משפחות`} onClose={() => setActivePanel(null)}>
-              <UsersPanel users={newFamilies} />
-            </SlidePanel>
-          )}
-          {activePanel === 'host_families' && (
-            <SlidePanel title="משפחות מארחות" sub={`${hostFamilies.length} מארחות`} onClose={() => setActivePanel(null)}>
-              <UsersPanel users={hostFamilies} />
-            </SlidePanel>
-          )}
           {activePanel === 'tasks' && (
             <SlidePanel title="פירוט משימות" sub={`${totalTasks} משימות`} onClose={() => setActivePanel(null)}>
               <div className="space-y-2">
@@ -221,6 +179,46 @@ export default function AdminDashboard() {
                       {t.status === 'done' ? '✓ הושלם' : t.status === 'in_progress' ? 'בתהליך' : 'ממתין'}
                     </div>
                   </div>
+                ))}
+              </div>
+            </SlidePanel>
+          )}
+          {activePanel === 'events' && (
+            <SlidePanel title="אירועים קרובים" sub={`${upcomingEvents} אירועים`} onClose={() => setActivePanel(null)}>
+              <div className="space-y-2">
+                {upcomingEvents === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-6">אין אירועים קרובים</p>
+                )}
+                {[...events]
+                  .filter(e => e.date && new Date(e.date) >= today)
+                  .sort((a, b) => new Date(a.date) - new Date(b.date))
+                  .map(ev => (
+                    <Link key={ev.id} to="/admin/events" onClick={() => setActivePanel(null)}
+                      className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 transition-colors">
+                      <div className="font-semibold text-gray-800 text-sm">{ev.title}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {new Date(ev.date).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'long' })}
+                        {ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}
+                      </div>
+                    </Link>
+                  ))
+                }
+              </div>
+            </SlidePanel>
+          )}
+          {activePanel === 'messages' && (
+            <SlidePanel title="הודעות חדשות" sub={`${unreadMessages} שלא נקראו`} onClose={() => setActivePanel(null)}>
+              <div className="space-y-2">
+                {messages.filter(m => !m.read).length === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-6">אין הודעות שלא נקראו</p>
+                )}
+                {messages.filter(m => !m.read).map(msg => (
+                  <Link key={msg.id} to="/admin/messages" onClick={() => setActivePanel(null)}
+                    className="block bg-blue-50 rounded-xl p-3 text-right hover:bg-blue-100 transition-colors">
+                    <div className="font-semibold text-gray-800 text-sm">{msg.subject}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{msg.userName}</div>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{msg.body}</p>
+                  </Link>
                 ))}
               </div>
             </SlidePanel>
