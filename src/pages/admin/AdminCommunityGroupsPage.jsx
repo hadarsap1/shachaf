@@ -4,7 +4,7 @@ import { COMMITTEE_ICONS, CLASS_COLORS } from '../../lib/classColors'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
   Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
-  Plus, Edit2, Trash2, X, Loader2, Search,
+  Plus, Edit2, Trash2, X, Loader2, Search, Type, Link, Table2, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -14,6 +14,108 @@ const ICON_MAP = {
 }
 
 const HOBBY_ICONS = ['Heart', 'Star', 'Music', 'Book', 'Globe', 'Zap', 'Coffee', 'Briefcase', 'Camera', 'Sun', 'Leaf', 'Palette', 'Users', 'Gift', 'Flag', 'Shield']
+
+// ── Custom field editor ───────────────────────────────────────────────────────
+const FIELD_TYPES = [
+  { type: 'text',  label: 'טקסט',    icon: Type },
+  { type: 'link',  label: 'קישור',   icon: Link },
+  { type: 'table', label: 'טבלה',    icon: Table2 },
+]
+
+function blankField(type) {
+  if (type === 'table') return { type, label: '', columns: ['עמודה 1', 'עמודה 2'], rows: [['', '']] }
+  return { type, label: '', value: '' }
+}
+
+function TableFieldEditor({ field, onChange }) {
+  const setCol = (i, v) => onChange({ ...field, columns: field.columns.map((c, ci) => ci === i ? v : c) })
+  const setCell = (ri, ci, v) => onChange({ ...field, rows: field.rows.map((r, rIdx) => rIdx === ri ? r.map((c, cIdx) => cIdx === ci ? v : c) : r) })
+  const addCol = () => onChange({ ...field, columns: [...field.columns, `עמודה ${field.columns.length + 1}`], rows: field.rows.map(r => [...r, '']) })
+  const removeCol = (i) => {
+    if (field.columns.length <= 1) return
+    onChange({ ...field, columns: field.columns.filter((_, ci) => ci !== i), rows: field.rows.map(r => r.filter((_, ci) => ci !== i)) })
+  }
+  const addRow = () => onChange({ ...field, rows: [...field.rows, field.columns.map(() => '')] })
+  const removeRow = (i) => onChange({ ...field, rows: field.rows.filter((_, ri) => ri !== i) })
+
+  return (
+    <div className="mt-2 overflow-x-auto">
+      <table className="w-full text-sm border-collapse" dir="rtl">
+        <thead>
+          <tr>
+            {field.columns.map((col, ci) => (
+              <th key={ci} className="border border-gray-200 bg-gray-50 p-0">
+                <div className="flex items-center">
+                  <input value={col} onChange={e => setCol(ci, e.target.value)}
+                    className="flex-1 bg-transparent text-xs font-semibold text-gray-700 px-2 py-1.5 outline-none text-right min-w-0"
+                    placeholder={`עמודה ${ci + 1}`} dir="rtl" />
+                  {field.columns.length > 1 && (
+                    <button onClick={() => removeCol(ci)} className="px-1 text-red-400 hover:text-red-600 flex-shrink-0">
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+              </th>
+            ))}
+            <th className="border border-gray-200 bg-gray-50 w-8">
+              <button onClick={addCol} className="w-full h-full flex items-center justify-center text-gray-400 hover:text-primary-600 py-1.5">
+                <Plus size={13} />
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {field.rows.map((row, ri) => (
+            <tr key={ri}>
+              {row.map((cell, ci) => (
+                <td key={ci} className="border border-gray-200 p-0">
+                  <input value={cell} onChange={e => setCell(ri, ci, e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs outline-none text-right" dir="rtl" />
+                </td>
+              ))}
+              <td className="border border-gray-200 w-8 text-center">
+                <button onClick={() => removeRow(ri)} className="text-red-400 hover:text-red-600 px-1">
+                  <X size={11} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button onClick={addRow} className="mt-1.5 text-xs text-gray-500 hover:text-primary-600 flex items-center gap-1">
+        <Plus size={12} /> הוסף שורה
+      </button>
+    </div>
+  )
+}
+
+function FieldEditor({ field, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-200">
+      <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-0.5">
+          <button onClick={onMoveUp} disabled={isFirst} className="text-gray-300 hover:text-gray-500 disabled:opacity-30"><ChevronUp size={14} /></button>
+          <button onClick={onMoveDown} disabled={isLast} className="text-gray-300 hover:text-gray-500 disabled:opacity-30"><ChevronDown size={14} /></button>
+        </div>
+        <input value={field.label} onChange={e => onChange({ ...field, label: e.target.value })}
+          placeholder="כותרת השדה" className="flex-1 input text-sm py-1.5 text-right" dir="rtl" />
+        <span className="text-xs text-gray-400 flex-shrink-0">
+          {FIELD_TYPES.find(f => f.type === field.type)?.label}
+        </span>
+        <button onClick={onRemove} className="text-red-400 hover:text-red-600 flex-shrink-0"><X size={14} /></button>
+      </div>
+      {field.type === 'text' && (
+        <textarea value={field.value} onChange={e => onChange({ ...field, value: e.target.value })}
+          rows={2} placeholder="תוכן..." className="input w-full text-sm resize-none text-right" dir="rtl" />
+      )}
+      {field.type === 'link' && (
+        <input value={field.value} onChange={e => onChange({ ...field, value: e.target.value })}
+          placeholder="https://..." className="input w-full text-sm" dir="ltr" />
+      )}
+      {field.type === 'table' && <TableFieldEditor field={field} onChange={onChange} />}
+    </div>
+  )
+}
 
 // ── Member search ─────────────────────────────────────────────────────────────
 function MemberSearch({ communityUsers, onSelect }) {
@@ -79,9 +181,20 @@ function MemberSearch({ communityUsers, onSelect }) {
 
 // ── Group edit panel ──────────────────────────────────────────────────────────
 function GroupPanel({ group, isNew, onSave, onClose, communityUsers, allUsers }) {
-  const [draft, setDraft]   = useState({ icon: 'Heart', color: CLASS_COLORS[0], order: 0, memberUids: [], ...group })
+  const [draft, setDraft]   = useState({ icon: 'Heart', color: CLASS_COLORS[0], order: 0, memberUids: [], fields: [], ...group })
   const [saving, setSaving] = useState(false)
   const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
+
+  const updateField = (i, f) => set('fields', draft.fields.map((x, xi) => xi === i ? f : x))
+  const removeField = (i) => set('fields', draft.fields.filter((_, xi) => xi !== i))
+  const addField = (type) => set('fields', [...draft.fields, blankField(type)])
+  const moveField = (i, dir) => {
+    const arr = [...draft.fields]
+    const j = i + dir
+    if (j < 0 || j >= arr.length) return
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    set('fields', arr)
+  }
 
   const addMember = (u) => {
     if (draft.memberUids.includes(u.uid)) return
@@ -154,6 +267,33 @@ function GroupPanel({ group, isNew, onSave, onClose, communityUsers, allUsers })
                     draft.color === c ? 'border-gray-800 scale-110' : 'border-transparent hover:scale-105'
                   )}
                   style={{ backgroundColor: c }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Custom fields */}
+          <div>
+            <label className="label mb-2">שדות מותאמים ({draft.fields?.length || 0})</label>
+            <div className="space-y-2 mb-2">
+              {(draft.fields || []).map((f, i) => (
+                <FieldEditor
+                  key={i}
+                  field={f}
+                  onChange={updated => updateField(i, updated)}
+                  onRemove={() => removeField(i)}
+                  onMoveUp={() => moveField(i, -1)}
+                  onMoveDown={() => moveField(i, 1)}
+                  isFirst={i === 0}
+                  isLast={i === draft.fields.length - 1}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              {FIELD_TYPES.map(({ type, label, icon: Icon }) => (
+                <button key={type} type="button" onClick={() => addField(type)}
+                  className="flex-1 flex items-center justify-center gap-1 text-xs border border-dashed border-gray-300 rounded-xl py-2 text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors">
+                  <Icon size={12} /> {label}
+                </button>
               ))}
             </div>
           </div>

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, BookOpen, Menu, X,
   LogOut, ChevronDown, Activity, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, GraduationCap,
-  Baby, HelpCircle, Network, Upload, AlertTriangle, Heart,
+  Baby, HelpCircle, Network, Upload, AlertTriangle, Heart, Eye,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -94,6 +94,14 @@ const BOTTOM_NAV = {
   super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
 }
 
+const ROLE_LABEL = {
+  new_family:  'משפחה חדשה',
+  host_family: 'משפחה מארחת',
+  community:   'חבר קהילה',
+  admin:       'מנהל',
+  super_admin: 'מנהל ראשי',
+}
+
 function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/dashboard' && to !== '/admin' && pathname.startsWith(to))
@@ -171,17 +179,17 @@ function UserMenu({ user, logout }) {
 }
 
 export default function AppShell() {
-  const { user, logout, isAdmin, isClassAdmin } = useAuth()
+  const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, deactivateViewAs } = useAuth()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
-  const baseLinks = NAV_LINKS[user?.role] || []
+  const baseLinks = NAV_LINKS[effectiveRole] || []
   // Class admins who are not global admins get an import link injected
   const links = isClassAdmin
     ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload }]
     : baseLinks
 
-  const bottomNavPaths = BOTTOM_NAV[user?.role] || []
+  const bottomNavPaths = BOTTOM_NAV[effectiveRole] || []
   const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
 
   const activeLink = links.find(l =>
@@ -251,6 +259,18 @@ export default function AppShell() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* View-as banner */}
+        {viewAs && (
+          <div className="flex items-center justify-between bg-amber-500 text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
+            <button onClick={deactivateViewAs} className="flex items-center gap-1 hover:underline text-white/90">
+              ← חזרה למנהל ראשי
+            </button>
+            <span className="flex items-center gap-1.5">
+              <Eye size={14} />
+              מציג כ: {ROLE_LABEL[viewAs]}
+            </span>
+          </div>
+        )}
         {/* Mobile topbar */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm" dir="rtl">
           <button

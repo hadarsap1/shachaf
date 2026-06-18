@@ -3,8 +3,16 @@ import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { getClasses } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
-import { Shield, Check, RefreshCw, Loader2 } from 'lucide-react'
+import { Shield, Check, RefreshCw, Loader2, Eye, Home, Users, GraduationCap } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
+
+const VIEW_AS_OPTIONS = [
+  { role: 'new_family',  label: 'משפחה חדשה',  sub: 'לוח בית, כיתה, משימות',       icon: Home,           bg: 'bg-primary-50',   text: 'text-primary-700',   border: 'border-primary-200' },
+  { role: 'host_family', label: 'משפחה מארחת', sub: 'ניהול משפחות מוקצות',          icon: Users,          bg: 'bg-secondary-50', text: 'text-secondary-700', border: 'border-secondary-200' },
+  { role: 'community',   label: 'חבר קהילה',   sub: 'אירועים, ועדות, קבוצות',      icon: GraduationCap,  bg: 'bg-green-50',     text: 'text-green-700',     border: 'border-green-200' },
+  { role: 'admin',       label: 'מנהל',         sub: 'פאנל ניהול, הודעות, דוחות',   icon: Shield,         bg: 'bg-accent-50',    text: 'text-accent-700',    border: 'border-accent-200' },
+]
 
 const ROLES = [
   { value: 'new_family',  label: 'משפחה חדשה' },
@@ -42,13 +50,19 @@ function RoleSelect({ user, onSave, saving }) {
 }
 
 export default function SuperAdminPage() {
-  const { user: me } = useAuth()
+  const { user: me, viewAs, activateViewAs, deactivateViewAs } = useAuth()
+  const navigate = useNavigate()
   const [users, setUsers]     = useState([])
   const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(null)
   const [saved, setSaved]     = useState(null)
   const [error, setError]     = useState('')
+
+  const handleViewAs = (role) => {
+    activateViewAs(role)
+    navigate(role === 'admin' ? '/admin' : '/dashboard')
+  }
 
   const loadUsers = async () => {
     setLoading(true)
@@ -99,6 +113,41 @@ export default function SuperAdminPage() {
           <p className="text-sm text-gray-500 mt-0.5 text-right">{users.length} משתמשים רשומים</p>
         </div>
       </div>
+
+      {/* View As */}
+      <section className="mb-6">
+        <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right flex items-center gap-1.5 justify-end">
+          <Eye size={13} />
+          צפה באפליקציה בתור
+        </h2>
+        <div className="grid grid-cols-2 gap-2">
+          {VIEW_AS_OPTIONS.map(({ role, label, sub, icon: Icon, bg, text, border }) => {
+            const active = viewAs === role
+            return (
+              <button
+                key={role}
+                onClick={() => active ? deactivateViewAs() : handleViewAs(role)}
+                className={clsx(
+                  'rounded-2xl border p-3 text-right transition-all flex items-start gap-3',
+                  active ? `${bg} ${border} ring-2 ring-offset-1 ring-current ${text}` : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700'
+                )}
+              >
+                <Icon size={18} className={clsx('flex-shrink-0 mt-0.5', active ? text : 'text-gray-400')} />
+                <div>
+                  <p className="font-semibold text-sm">{label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+        {viewAs && (
+          <button onClick={deactivateViewAs}
+            className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5 w-full hover:bg-amber-100 transition-colors">
+            ← חזרה למצב מנהל ראשי
+          </button>
+        )}
+      </section>
 
       {error && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-right">

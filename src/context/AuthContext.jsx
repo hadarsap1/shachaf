@@ -19,8 +19,20 @@ import { MOCK_USERS } from '../lib/mockData'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser]     = useState(null)
+  const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
+  const [viewAs, setViewAsState] = useState(() => {
+    try { return localStorage.getItem('shachaf_view_as') || null } catch { return null }
+  })
+
+  const activateViewAs = (role) => {
+    localStorage.setItem('shachaf_view_as', role)
+    setViewAsState(role)
+  }
+  const deactivateViewAs = () => {
+    localStorage.removeItem('shachaf_view_as')
+    setViewAsState(null)
+  }
 
   const fetchUserProfile = async (firebaseUser) => {
     try {
@@ -151,12 +163,14 @@ export function AuthProvider({ children }) {
   const isNewFamily  = user?.role === 'new_family'
   const isCommunity  = user?.role === 'community'
   const isClassAdmin = !isAdmin && (user?.classAdminFor || []).length > 0
+  const effectiveRole = viewAs || user?.role
 
   return (
     <AuthContext.Provider value={{
       user, loading,
       loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout,
       isAdmin, isSuperAdmin, isHostFamily, isNewFamily, isCommunity, isClassAdmin,
+      viewAs, effectiveRole, activateViewAs, deactivateViewAs,
     }}>
       {children}
     </AuthContext.Provider>

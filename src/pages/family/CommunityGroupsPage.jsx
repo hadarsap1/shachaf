@@ -3,9 +3,54 @@ import { getHobbyGroups, joinHobbyGroup, leaveHobbyGroup } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
-  Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Loader2,
+  Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Loader2, ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
+
+function GroupFields({ fields }) {
+  if (!fields?.length) return null
+  return (
+    <div className="mt-3 space-y-3">
+      {fields.map((f, i) => {
+        if (f.type === 'text') return (
+          <div key={i}>
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5">{f.label}</p>}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{f.value}</p>
+          </div>
+        )
+        if (f.type === 'link') return (
+          <div key={i}>
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5">{f.label}</p>}
+            <a href={f.value} target="_blank" rel="noopener noreferrer"
+              className="text-sm text-primary-600 hover:underline flex items-center gap-1">
+              <ExternalLink size={12} /> {f.label || f.value}
+            </a>
+          </div>
+        )
+        if (f.type === 'table' && f.columns?.length) return (
+          <div key={i}>
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-1">{f.label}</p>}
+            <div className="overflow-x-auto rounded-xl border border-gray-100">
+              <table className="w-full text-xs" dir="rtl">
+                <thead className="bg-gray-50">
+                  <tr>{f.columns.map((c, ci) => <th key={ci} className="px-3 py-2 text-right font-semibold text-gray-600">{c}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {(f.rows || []).map((row, ri) => (
+                    <tr key={ri} className="border-t border-gray-100">
+                      {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-700">{cell}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+        return null
+      })}
+    </div>
+  )
+}
 
 const ICON_MAP = {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -48,6 +93,7 @@ function HobbyGroupCard({ group, uid }) {
           <p className="text-xs text-gray-400 mt-1">{memberUids.length} חברים</p>
         </div>
       </div>
+      <GroupFields fields={group.fields} />
       <button
         onClick={toggle}
         disabled={loading}
