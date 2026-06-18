@@ -4,16 +4,16 @@ import {
   assignClassAdmin, removeClassAdmin,
   getChildren, saveChild, deleteChild, bulkImportChildren,
 } from '../../lib/db'
-import { CLASS_COLORS, DAYS_HE, blankCenterHours } from '../../lib/classColors'
+import { CLASS_COLORS, blankCenterHours } from '../../lib/classColors'
 import {
   GraduationCap, Plus, Edit2, Trash2, X, Check, Users,
-  Loader2, Search, Upload, Baby, AlertCircle, FileText,
+  Loader2, Search, Upload, Baby, Cake,
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const GRADES = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב']
 
-const SCHEDULE_DAYS  = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳']
+const SCHEDULE_DAYS  = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
 const SCHEDULE_PERIODS = [
   { id: 'morning', label: 'מפגש בוקר' },
   { id: '1',       label: '1' },
@@ -167,6 +167,7 @@ function ClassChildrenTab({ classId, classColor }) {
   const [error,     setError]     = useState('')
   const [importRows,  setImportRows]  = useState(null)
   const [importing, setImporting] = useState(false)
+  const [editingBirth, setEditingBirth] = useState(null)
 
   useEffect(() => {
     if (!classId || classId.startsWith('class-')) { setLoading(false); return }
@@ -204,17 +205,36 @@ function ClassChildrenTab({ classId, classColor }) {
     }
   }
 
+  const handleBirthDate = async (child, birthDate) => {
+    const updated = { ...child, birthDate }
+    setChildren(prev => prev.map(c => c.id === child.id ? updated : c))
+    try { await saveChild(updated) } catch (e) { setError(e.message) }
+  }
+
   const parseImportFile = async (file) => {
     setError('')
     try {
-      const { read, utils } = await import('xlsx')
-      const buf = await file.arrayBuffer()
-      const wb  = read(buf, { type: 'array', defval: '' })
-      const ws  = wb.Sheets[wb.SheetNames[0]]
-      const raw = utils.sheet_to_json(ws, { defval: '' })
-      const rows = raw.map(row => {
+      const ext = file.name.split('.').pop().toLowerCase()
+      let data
+      if (ext === 'csv') {
+        const { default: Papa } = await import('papaparse')
+        const text = await file.text()
+        data = Papa.parse(text, { header: true, skipEmptyLines: true }).data
+      } else {
+        const { default: readXlsxFile } = await import('read-excel-file/browser')
+        const xlsxRows = await readXlsxFile(file)
+        if (!xlsxRows.length) { setError('הקובץ ריק'); return }
+        const headers = xlsxRows[0]
+        data = xlsxRows.slice(1).map(row => {
+          const obj = {}
+          headers.forEach((h, i) => { obj[String(h ?? '')] = row[i] })
+          return obj
+        })
+      }
+      const nameFields = ['שם', 'שם מלא', 'name', 'full name']
+      const rows = data.map(row => {
         const val = Object.entries(row).find(([k]) =>
-          ['שם', 'שם מלא', 'name', 'full name'].includes(k.toString().trim().toLowerCase())
+          nameFields.includes(k.toString().trim().toLowerCase())
         )?.[1]
         return (val || '').toString().trim()
       }).filter(Boolean)
@@ -321,21 +341,47 @@ function ClassChildrenTab({ classId, classColor }) {
           <p className="text-xs text-gray-400 text-right">{children.length} ילדים</p>
           {children.map(child => (
             <div key={child.id}
-              className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
-                style={{ backgroundColor: classColor || '#1B3B70' }}>
-                {child.name?.[0] || '?'}
+              className="bg-gray-50 rounded-xl px-3 py-2">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                  style={{ backgroundColor: classColor || '#1B3B70' }}>
+                  {child.name?.[0] || '?'}
+                </div>
+                <span className="flex-1 text-sm text-gray-800">{child.name}</span>
+                {child.birthDate && (
+                  <span className="text-[10px] text-gray-400">
+                    {new Date(child.birthDate).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })}
+                  </span>
+                )}
+                <button
+                  onClick={() => setEditingBirth(editingBirth === child.id ? null : child.id)}
+                  className={clsx('p-1 rounded-lg transition-colors',
+                    child.birthDate ? 'text-amber-400 hover:text-amber-600' : 'text-gray-300 hover:text-amber-400'
+                  )}
+                  title="יום הולדת"
+                >
+                  <Cake size={13} />
+                </button>
+                {child.parentUids?.length > 0 && (
+                  <span className="text-[10px] text-secondary-600">{child.parentUids.length} הורים</span>
+                )}
+                <button onClick={() => handleDelete(child.id)} disabled={deleting === child.id}
+                  className="p-1 text-gray-300 hover:text-red-500 rounded-lg transition-colors">
+                  {deleting === child.id
+                    ? <Loader2 size={13} className="animate-spin" />
+                    : <X size={13} />}
+                </button>
               </div>
-              <span className="flex-1 text-sm text-gray-800">{child.name}</span>
-              {child.parentUids?.length > 0 && (
-                <span className="text-[10px] text-secondary-600">{child.parentUids.length} הורים</span>
+              {editingBirth === child.id && (
+                <div className="mt-2 flex items-center gap-2 pe-1">
+                  <label className="text-xs text-gray-500 flex-shrink-0">תאריך לידה:</label>
+                  <input type="date"
+                    value={child.birthDate || ''}
+                    onChange={e => { handleBirthDate(child, e.target.value); setEditingBirth(null) }}
+                    className="input flex-1 text-xs py-1"
+                    dir="ltr" />
+                </div>
               )}
-              <button onClick={() => handleDelete(child.id)} disabled={deleting === child.id}
-                className="p-1 text-gray-300 hover:text-red-500 rounded-lg transition-colors">
-                {deleting === child.id
-                  ? <Loader2 size={13} className="animate-spin" />
-                  : <X size={13} />}
-              </button>
             </div>
           ))}
         </div>
@@ -346,7 +392,7 @@ function ClassChildrenTab({ classId, classColor }) {
 
 // ── Class admins tab ──────────────────────────────────────────────────────────
 
-function ClassAdminsTab({ classId, adminUids, allUsers, onAdd, onRemove, saving }) {
+function ClassAdminsTab({ adminUids, allUsers, onAdd, onRemove, saving }) {
   const [search, setSearch] = useState('')
   const admins = allUsers.filter(u => adminUids.includes(u.uid))
   const q = search.toLowerCase()

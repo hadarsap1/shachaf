@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react'
 import { getAnnouncements, saveAnnouncement, deleteAnnouncement, getClasses } from '../../lib/db'
-import { Megaphone, Plus, Edit2, Trash2, X, Check, Loader2, Globe } from 'lucide-react'
+import { Megaphone, Plus, Edit2, Trash2, X, Check, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
+
+const AUDIENCE_OPTIONS = [
+  { value: 'all',         label: 'כולם' },
+  { value: 'new_family',  label: 'משפחות חדשות' },
+  { value: 'host_family', label: 'משפחות מארחות' },
+  { value: 'class',       label: 'כיתה ספציפית' },
+]
 
 const blankAnn = () => ({
   id: 'ann-' + Date.now(),
   title: '',
   body: '',
+  targetGroups: ['all'],
   classIds: [],
 })
 
@@ -17,6 +25,11 @@ function AnnPanel({ ann, isNew, onSave, onClose, allClasses }) {
 
   const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
 
+  const currentAudience = draft.targetGroups?.[0] || 'all'
+  const setAudience = (val) => {
+    set('targetGroups', [val])
+    if (val !== 'class') set('classIds', [])
+  }
   const toggleClass = (id) => {
     const next = (draft.classIds || []).includes(id)
       ? (draft.classIds || []).filter(c => c !== id)
@@ -66,34 +79,36 @@ function AnnPanel({ ann, isNew, onSave, onClose, allClasses }) {
 
           <div>
             <label className="label mb-2">קהל יעד</label>
-            <label className="flex items-center justify-end gap-2 cursor-pointer mb-3">
-              <span className="text-sm text-gray-700 flex items-center gap-1.5">
-                <Globe size={14} className="text-primary-500" />
-                כלל בית הספר
-              </span>
-              <input type="checkbox"
-                checked={(draft.classIds || []).length === 0}
-                onChange={() => set('classIds', [])}
-                className="w-4 h-4 accent-primary-600"
-              />
-            </label>
-            {allClasses.length > 0 && (
-              <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-48 overflow-y-auto">
-                {allClasses.map(cls => {
-                  const checked = (draft.classIds || []).includes(cls.id)
-                  return (
-                    <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
-                      <span className="text-sm text-gray-700 flex items-center gap-1.5">
-                        {cls.name}
-                        <span className="w-2.5 h-2.5 rounded-full inline-block"
-                          style={{ backgroundColor: cls.color || '#1B3B70' }} />
-                      </span>
-                      <input type="checkbox" checked={checked}
-                        onChange={() => toggleClass(cls.id)}
-                        className="w-4 h-4 accent-primary-600" />
-                    </label>
-                  )
-                })}
+            <div className="flex flex-wrap gap-2">
+              {AUDIENCE_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  onClick={() => setAudience(opt.value)}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                    currentAudience === opt.value
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                  )}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {currentAudience === 'class' && (
+              <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-48 overflow-y-auto">
+                {allClasses.length === 0 && <p className="text-sm text-gray-400 text-center py-1">אין כיתות במערכת</p>}
+                {allClasses.map(cls => (
+                  <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
+                    <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                      {cls.name}
+                      <span className="w-2.5 h-2.5 rounded-full inline-block"
+                        style={{ backgroundColor: cls.color || '#1B3B70' }} />
+                    </span>
+                    <input type="checkbox"
+                      checked={(draft.classIds || []).includes(cls.id)}
+                      onChange={() => toggleClass(cls.id)}
+                      className="w-4 h-4 accent-primary-600" />
+                  </label>
+                ))}
               </div>
             )}
           </div>
@@ -193,19 +208,27 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
                   <div className="flex items-start justify-between gap-2">
                     <div className="text-xs text-gray-400">{formatDate(ann.createdAt)}</div>
                     <div className="flex items-center gap-1">
-                      {!ann.classIds?.length ? (
-                        <span className="badge-primary text-xs flex items-center gap-1">
-                          <Globe size={10} /> כולם
-                        </span>
-                      ) : ann.classIds.map(cid => (
-                        <span key={cid} className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{
-                            backgroundColor: (classNameMap[cid]?.color || '#1B3B70') + '22',
-                            color: classNameMap[cid]?.color || '#1B3B70',
-                          }}>
-                          {classNameMap[cid]?.name || cid}
-                        </span>
-                      ))}
+                      {(() => {
+                        const tg = ann.targetGroups || ['all']
+                        const audience = tg[0]
+                        if (audience === 'class' && ann.classIds?.length) {
+                          return ann.classIds.map(cid => (
+                            <span key={cid} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              style={{
+                                backgroundColor: (classNameMap[cid]?.color || '#1B3B70') + '22',
+                                color: classNameMap[cid]?.color || '#1B3B70',
+                              }}>
+                              {classNameMap[cid]?.name || cid}
+                            </span>
+                          ))
+                        }
+                        const audienceLabels = { all: 'כולם', new_family: 'משפחות חדשות', host_family: 'משפחות מארחות' }
+                        return (
+                          <span className="badge-primary text-xs">
+                            {audienceLabels[audience] || 'כולם'}
+                          </span>
+                        )
+                      })()}
                     </div>
                   </div>
                   <h3 className="font-semibold text-gray-800 mt-1">{ann.title}</h3>

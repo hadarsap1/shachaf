@@ -17,6 +17,7 @@ import HelpPage from './pages/HelpPage'
 import ClassPage from './pages/family/ClassPage'
 import CommitteesPage from './pages/family/CommitteesPage'
 import ClassRosterPage from './pages/family/ClassRosterPage'
+import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
 
 // Admin/super pages are lazy-loaded — families never download this code.
 const AdminDashboard        = lazy(() => import('./pages/admin/AdminDashboard'))
@@ -33,6 +34,7 @@ const AdminChildrenPage     = lazy(() => import('./pages/admin/AdminChildrenPage
 const AdminCommitteesPage   = lazy(() => import('./pages/admin/AdminCommitteesPage'))
 const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'))
 const AdminResourcesPage    = lazy(() => import('./pages/admin/AdminResourcesPage'))
+const AdminEmergencyPage    = lazy(() => import('./pages/admin/AdminEmergencyPage'))
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
   const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin } = useAuth()
@@ -87,6 +89,7 @@ export default function App() {
             <Route path="/class" element={<ClassPage />} />
             <Route path="/class-roster" element={<ClassRosterPage />} />
             <Route path="/committees" element={<CommitteesPage />} />
+            <Route path="/emergency" element={<EmergencySchedulePage />} />
           </Route>
 
           <Route element={<ProtectedShell hostOnly />}>
@@ -106,6 +109,7 @@ export default function App() {
             <Route path="/admin/committees" element={<AdminCommitteesPage />} />
             <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
             <Route path="/admin/resources" element={<AdminResourcesPage />} />
+            <Route path="/admin/emergency" element={<AdminEmergencyPage />} />
           </Route>
           {/* Class admins (non-global-admin users with classAdminFor) can import families */}
           <Route element={<ProtectedShell adminOnly classAdminOk />}>

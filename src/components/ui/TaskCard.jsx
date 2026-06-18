@@ -37,18 +37,25 @@ const PRIORITY_DOT = {
 
 export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
   const [expanded, setExpanded] = useState(false)
+  const [justDone, setJustDone] = useState(false)
   const config = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending
   const StatusIcon = config.icon
 
   const handleWhatsApp = (e) => {
     e.stopPropagation()
-    window.open(`https://wa.me/${task.whatsappPhone.replace(/\D/g, '')}`, '_blank')
+    const digits = task.whatsappPhone.replace(/\D/g, '')
+    const e164 = digits.startsWith('972') ? digits : '972' + digits.replace(/^0/, '')
+    window.open(`https://wa.me/${e164}`, '_blank')
   }
 
   const handleToggleStatus = (e) => {
     e.stopPropagation()
     if (!onStatusChange || task.status === 'done') return
     const next = task.status === 'pending' ? 'in_progress' : 'done'
+    if (next === 'done') {
+      setJustDone(true)
+      setTimeout(() => setJustDone(false), 700)
+    }
     onStatusChange(task.id, next)
   }
 
@@ -71,6 +78,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
             className={clsx(
               'mt-0.5 flex-shrink-0 transition-colors',
               config.color,
+              justDone && 'animate-check-done',
               task.status !== 'done' && !isAdmin && 'hover:scale-110'
             )}
             disabled={isAdmin}

@@ -1,5 +1,6 @@
 import { Calendar, MapPin, Clock, Plus } from 'lucide-react'
 import clsx from 'clsx'
+import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent, isEventPast } from '../../lib/calendar'
 
 const TYPE_CONFIG = {
   social:      { label: 'חברתי',     color: 'badge-primary' },
@@ -8,47 +9,12 @@ const TYPE_CONFIG = {
   community:   { label: 'קהילה',     color: 'badge-warning' },
 }
 
-function buildGoogleCalendarUrl({ title, start, end, location, description = '' }) {
-  const fmt = (s) => s.replace(/[-:]/g, '').replace('T', 'T').slice(0, 15) + '00Z'
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: title,
-    dates: `${fmt(start)}/${fmt(end)}`,
-    location: location || '',
-    details: description,
-  })
-  return `https://calendar.google.com/calendar/render?${params}`
-}
-
-function buildICSContent({ title, start, end, location, description = '' }) {
-  const fmt = (s) => s.replace(/[-:]/g, '').slice(0, 15) + '00Z'
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'BEGIN:VEVENT',
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
-    `SUMMARY:${title}`,
-    `LOCATION:${location || ''}`,
-    `DESCRIPTION:${description}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\n')
-}
-
-function buildCalendarData(event) {
-  if (event.calendarData) return event.calendarData
-  const time = event.time || '09:00'
-  const start = `${event.date}T${time}`
-  const [h, m] = time.split(':').map(Number)
-  const endHour = String((h + 1) % 24).padStart(2, '0')
-  const end = `${event.date}T${endHour}:${String(m).padStart(2, '0')}`
-  return { title: event.title, start, end, location: event.location || '', description: event.description || '' }
-}
-
 export default function EventCard({ event, onCardClick }) {
   const typeConfig = TYPE_CONFIG[event.type] || TYPE_CONFIG.social
-  const eventDate = new Date(event.date)
+  // Parse as LOCAL time (a bare 'YYYY-MM-DD' is otherwise treated as UTC midnight,
+  // which makes a same-day event read as "past" during the local evening).
+  const eventDate = new Date(`${event.date}T00:00:00`)
+  const isPast = isEventPast(event)
   const calData = buildCalendarData(event)
 
   const handleAddToCalendar = () => {
@@ -116,22 +82,29 @@ export default function EventCard({ event, onCardClick }) {
           )}
         </div>
 
-        <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
-          <button
-            onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-colors font-medium"
-          >
-            <Plus size={13} />
-            Google Calendar
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); handleDownloadICS() }}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-colors font-medium"
-          >
-            <Calendar size={13} />
-            יומן (.ics)
-          </button>
-        </div>
+        {!isPast && (
+          <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+            <button
+              onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-colors font-medium"
+            >
+              <Plus size={13} />
+              Google Calendar
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); handleDownloadICS() }}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-colors font-medium"
+            >
+              <Calendar size={13} />
+              יומן (.ics)
+            </button>
+          </div>
+        )}
+        {isPast && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-400">האירוע הסתיים</span>
+          </div>
+        )}
       </div>
     </div>
   )

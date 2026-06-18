@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getTasks, saveTask, deleteTask, getUsers, MILESTONES } from '../../lib/db'
-import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2 } from 'lucide-react'
+import { getTasks, saveTask, deleteTask, getClasses, MILESTONES } from '../../lib/db'
+import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2, Users } from 'lucide-react'
 import clsx from 'clsx'
 
 const FAMILY_CHIPS = [
@@ -21,6 +21,20 @@ const PRIORITY_OPTIONS = [
   { value: 'low',    label: 'נמוך' },
 ]
 
+const AUDIENCE_OPTIONS = [
+  { value: 'all',         label: 'כולם' },
+  { value: 'new_family',  label: 'משפחות חדשות' },
+  { value: 'host_family', label: 'משפחות מארחות' },
+  { value: 'class',       label: 'כיתה ספציפית' },
+]
+
+const AUDIENCE_LABEL = {
+  all:         'כולם',
+  new_family:  'משפחות חדשות',
+  host_family: 'משפחות מארחות',
+  class:       'כיתה',
+}
+
 const STATUS_COLOR = {
   pending:     'bg-gray-100 text-gray-600',
   in_progress: 'bg-primary-50 text-primary-700',
@@ -35,7 +49,8 @@ const blankTask = () => ({
   status: 'pending',
   priority: 'medium',
   dueDate: '',
-  assignedTo: '',
+  targetGroups: ['all'],
+  classIds: [],
   completedAt: null,
   resourceUrl: '',
   whatsappPhone: '',
@@ -43,13 +58,25 @@ const blankTask = () => ({
 
 // ---- Task slide panel (add / edit) ----
 
-function TaskPanel({ task, isNew, onSave, onClose, assignableUsers }) {
+function TaskPanel({ task, isNew, onSave, onClose, classes }) {
   const [draft, setDraft] = useState({ ...task })
   const [errors, setErrors] = useState({})
 
   const set = (field, value) => {
     setDraft(d => ({ ...d, [field]: value }))
     setErrors(e => ({ ...e, [field]: '' }))
+  }
+
+  const currentAudience = draft.targetGroups?.[0] || 'all'
+  const setAudience = (val) => {
+    set('targetGroups', [val])
+    if (val !== 'class') set('classIds', [])
+  }
+  const toggleClassId = (id) => {
+    const next = (draft.classIds || []).includes(id)
+      ? (draft.classIds || []).filter(c => c !== id)
+      : [...(draft.classIds || []), id]
+    set('classIds', next)
   }
 
   const validate = () => {
@@ -116,12 +143,39 @@ function TaskPanel({ task, isNew, onSave, onClose, assignableUsers }) {
           </div>
 
           <div>
-            <label className="label block mb-1 text-right">הוקצה ל</label>
-            <select value={draft.assignedTo} onChange={e => set('assignedTo', e.target.value)}
-              className="input w-full text-right">
-              <option value="">לא הוקצה</option>
-              {assignableUsers.map(u => <option key={u.uid} value={u.uid}>{u.name}</option>)}
-            </select>
+            <label className="label block mb-1 text-right">קהל יעד</label>
+            <div className="flex flex-wrap gap-2">
+              {AUDIENCE_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  onClick={() => setAudience(opt.value)}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                    currentAudience === opt.value
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                  )}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {currentAudience === 'class' && (
+              <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
+                {classes.length === 0 && <p className="text-sm text-gray-400 text-center py-1">אין כיתות במערכת</p>}
+                {classes.map(cls => (
+                  <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
+                    <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                      {cls.name}
+                      <span className="w-2 h-2 rounded-full inline-block flex-shrink-0"
+                        style={{ backgroundColor: cls.color || '#1B3B70' }} />
+                    </span>
+                    <input type="checkbox"
+                      checked={(draft.classIds || []).includes(cls.id)}
+                      onChange={() => toggleClassId(cls.id)}
+                      className="w-4 h-4 accent-primary-600 flex-shrink-0" />
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -161,7 +215,7 @@ function TaskPanel({ task, isNew, onSave, onClose, assignableUsers }) {
 
 export default function AdminTasksPage() {
   const [tasks, setTasks] = useState([])
-  const [assignableUsers, setAssignableUsers] = useState([])
+  const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [familyFilter, setFamilyFilter] = useState('all')
@@ -170,20 +224,19 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     setLoading(true)
-    Promise.all([getTasks(), getUsers()])
-      .then(([t, u]) => {
+    Promise.all([getTasks(), getClasses()])
+      .then(([t, c]) => {
         setTasks(t)
-        setAssignableUsers(u.filter(u => u.role === 'new_family' || u.role === 'host_family'))
+        setClasses(c)
         setLoading(false)
       })
       .catch(err => { console.error(err); setLoading(false) })
   }, [])
 
-  const userRoleMap = Object.fromEntries(assignableUsers.map(u => [u.uid, u.role]))
-
   const filtered = tasks.filter(t => {
     const matchStatus = statusFilter === 'all' || t.status === statusFilter
-    const matchFamily = familyFilter === 'all' || userRoleMap[t.assignedTo] === familyFilter
+    const tg = t.targetGroups || ['all']
+    const matchFamily = familyFilter === 'all' || tg.includes(familyFilter)
     return matchStatus && matchFamily
   })
 
@@ -325,7 +378,10 @@ export default function AdminTasksPage() {
                     <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
                   )}
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 justify-end flex-wrap">
-                    {task.assignedTo && <span>{assignableUsers.find(u => u.uid === task.assignedTo)?.name || task.assignedTo}</span>}
+                    <span className="flex items-center gap-1">
+                      <Users size={11} />
+                      {AUDIENCE_LABEL[(task.targetGroups || ['all'])[0]] || 'כולם'}
+                    </span>
                     {task.dueDate && <span>{new Date(task.dueDate).toLocaleDateString('he-IL')}</span>}
                     {task.milestone && <span className="text-primary-400">{task.milestone}</span>}
                   </div>
@@ -388,7 +444,7 @@ export default function AdminTasksPage() {
           isNew={editing.id.startsWith('task-')}
           onSave={handleSave}
           onClose={() => setEditing(null)}
-          assignableUsers={assignableUsers}
+          classes={classes}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import {
   Upload, RefreshCw, Trash2, Loader2, CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import {
-  collection, query, where, getDocs, writeBatch, doc, getDoc, setDoc, serverTimestamp,
+  collection, query, where, getDocs, writeBatch, doc, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { getPendingFamilies, deletePendingFamily } from '../../lib/db'
@@ -23,20 +23,14 @@ const TABS = [
   { key: 'community', label: 'קהילה' },
 ]
 
-// ── Parse spreadsheet/CSV buffer → normalized rows ────────────────────────────
-async function parseFile(file) {
-  const { read, utils } = await import('xlsx')
-  const buffer = await file.arrayBuffer()
-  const wb = read(buffer, { type: 'array', defval: '' })
-  const ws = wb.Sheets[wb.SheetNames[0]]
-  const raw = utils.sheet_to_json(ws, { defval: '' })
-
-  return raw.map(row => {
+// ── Parse spreadsheet/CSV → normalized rows ───────────────────────────────────
+function normalizeRows(data) {
+  return data.map(row => {
     const normalized = {}
     for (const [key, val] of Object.entries(row)) {
       const mapped = COLUMN_ALIASES[key.toString().toLowerCase().trim()]
         ?? COLUMN_ALIASES[key.toString().trim()]
-      if (mapped) normalized[mapped] = String(val).trim()
+      if (mapped) normalized[mapped] = String(val ?? '').trim()
     }
     return {
       name: normalized.name || '',
@@ -45,6 +39,26 @@ async function parseFile(file) {
       address: normalized.address || '',
     }
   }).filter(r => r.name || r.email)
+}
+
+async function parseFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase()
+  if (ext === 'csv') {
+    const { default: Papa } = await import('papaparse')
+    const text = await file.text()
+    const { data } = Papa.parse(text, { header: true, skipEmptyLines: true })
+    return normalizeRows(data)
+  }
+  const { default: readXlsxFile } = await import('read-excel-file/browser')
+  const xlsxRows = await readXlsxFile(file)
+  if (!xlsxRows.length) return []
+  const headers = xlsxRows[0]
+  const data = xlsxRows.slice(1).map(row => {
+    const obj = {}
+    headers.forEach((h, i) => { obj[String(h ?? '')] = row[i] })
+    return obj
+  })
+  return normalizeRows(data)
 }
 
 // ── Missing-field badges ───────────────────────────────────────────────────────

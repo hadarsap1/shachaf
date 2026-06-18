@@ -4,7 +4,7 @@ import { getTasks, getEvents, getMessages } from '../../lib/db'
 import StatCard from '../../components/ui/StatCard'
 import {
   CheckSquare, Calendar, Activity,
-  Clock, TrendingUp, X, MessageCircle,
+  Clock, TrendingUp, X,
   Loader2, MessageSquare,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <StatCard icon={TrendingUp}   label="השלמת משימות"   value={`${avgCompletion}%`} color="success"   onClick={() => setActivePanel('tasks')} />
-            <StatCard icon={Clock}        label="אירועים קרובים" value={upcomingEvents}       color="accent" />
+            <StatCard icon={Clock}        label="אירועים קרובים" value={upcomingEvents}       color="accent" onClick={() => setActivePanel('events')} />
             <StatCard icon={MessageSquare} label="הודעות חדשות"  value={unreadMessages}       color="primary"   onClick={() => setActivePanel('messages')} />
           </div>
 
@@ -81,7 +81,13 @@ export default function AdminDashboard() {
                 סטטוס משימות
               </h2>
               {totalTasks === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">אין משימות עדיין</p>
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-400 mb-3">אין משימות עדיין</p>
+                  <a href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                    <CheckSquare size={13} />
+                    פרסם משימה ראשונה
+                  </a>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {[
@@ -174,6 +180,29 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </SlidePanel>
+          )}
+          {activePanel === 'events' && (
+            <SlidePanel title="אירועים קרובים" sub={`${upcomingEvents} אירועים`} onClose={() => setActivePanel(null)}>
+              <div className="space-y-2">
+                {upcomingEvents === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-6">אין אירועים קרובים</p>
+                )}
+                {[...events]
+                  .filter(e => e.date && new Date(e.date) >= today)
+                  .sort((a, b) => new Date(a.date) - new Date(b.date))
+                  .map(ev => (
+                    <Link key={ev.id} to="/admin/events" onClick={() => setActivePanel(null)}
+                      className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 transition-colors">
+                      <div className="font-semibold text-gray-800 text-sm">{ev.title}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {new Date(ev.date).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'long' })}
+                        {ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}
+                      </div>
+                    </Link>
+                  ))
+                }
               </div>
             </SlidePanel>
           )}

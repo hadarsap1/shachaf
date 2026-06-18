@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, saveTask, getEvents, MILESTONES } from '../../lib/db'
-import { getForms, getSubmissions } from '../../lib/formsStorage'
+import { getTasks, saveTask, getEvents, MILESTONES, getForms, getSubmissionsForFamily, getChildrenByParent, getEmergencyMode } from '../../lib/db'
 import ProgressRing from '../../components/ui/ProgressRing'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
-import { CheckSquare, Calendar, MessageCircle, ArrowLeft, Sparkles, ClipboardList, Loader2 } from 'lucide-react'
+import { CheckSquare, Calendar, MessageCircle, ArrowLeft, Sparkles, ClipboardList, Loader2, AlertTriangle } from 'lucide-react'
+
+function timeGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'בוקר טוב,'
+  if (h < 17) return 'צהריים טובים,'
+  if (h < 21) return 'אחר הצהריים טוב,'
+  return 'ערב טוב,'
+}
 
 export default function DashboardPage() {
   const { user, isHostFamily } = useAuth()
@@ -16,22 +23,35 @@ export default function DashboardPage() {
   const [pendingForms, setPendingForms] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState(null)
+  const [emergency, setEmergency] = useState(null)
+
+  useEffect(() => {
+    getEmergencyMode().then(m => { if (m?.active) setEmergency(m) })
+  }, [])
 
   useEffect(() => {
     if (!user?.uid) return
-    Promise.all([getTasks(user.uid), getEvents()])
-      .then(([taskData, eventData]) => {
+    Promise.all([getTasks(user.uid), getEvents(), getForms(), getSubmissionsForFamily(user.uid), getChildrenByParent(user.uid)])
+      .then(([taskData, eventData, allForms, allSubmissions, children]) => {
         setTasks(taskData)
         const role = user.role
+        const today = new Date().toISOString().slice(0, 10)
+        // Only future events, matching the user's target groups.
         setEvents(eventData.filter(ev => {
+          if (ev.date && ev.date < today) return false
           const tg = ev.targetGroups || []
           return !tg.length || tg.includes('all') || tg.includes(role)
         }))
-        const myForms = getForms().filter(f =>
-          f.status === 'published' && (f.targetRole === user.role || f.targetRole === 'all')
+        // Pending-forms count mirrors FormFillPage (includes class-targeted forms).
+        const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
+        const myForms = allForms.filter(f =>
+          f.status === 'published' && (
+            f.targetRole === user.role ||
+            f.targetRole === 'all' ||
+            (f.targetRole === 'class' && (f.classIds || []).some(id => myClassIds.includes(id)))
+          )
         )
-        const mySubmissions = getSubmissions().filter(s => s.userId === user.uid)
-        setPendingForms(myForms.filter(f => !mySubmissions.find(s => s.formId === f.id)).length)
+        setPendingForms(myForms.filter(f => !allSubmissions.find(s => s.formId === f.id)).length)
       })
       .catch(err => { console.error('Dashboard load failed:', err) })
       .finally(() => setLoading(false))
@@ -73,14 +93,32 @@ export default function DashboardPage() {
 
   return (
     <div className="page-container rtl" dir="rtl">
+      {/* Emergency banner */}
+      {emergency && (
+        <Link
+          to="/emergency"
+          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 hover:shadow-card-hover transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle size={18} className="text-red-600" />
+          </div>
+          <div className="flex-1 text-right">
+            <div className="font-bold text-red-800 text-sm">{emergency.title || 'שגרת חירום פעילה'}</div>
+            {emergency.message && <div className="text-xs text-red-600 mt-0.5 line-clamp-1">{emergency.message}</div>}
+            <div className="text-xs text-red-500 mt-0.5">לחצו לצפייה בלוח השיעורים</div>
+          </div>
+          <ArrowLeft size={16} className="text-red-400 flex-shrink-0" />
+        </Link>
+      )}
+
       {/* Greeting banner */}
       <div className="bg-gradient-to-l from-primary-600 to-secondary-500 rounded-3xl p-5 sm:p-6 mb-6 text-white overflow-hidden relative">
         <div className="absolute top-0 left-0 w-40 h-40 rounded-full bg-white/5 -translate-x-10 -translate-y-10" />
         <div className="relative">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-primary-100 text-sm font-medium">שלום,</p>
-              <h1 className="text-2xl font-black mt-0.5">{user?.name} 👋</h1>
+              <p className="text-primary-100 text-sm font-medium">{timeGreeting()}</p>
+              <h1 className="text-2xl font-black mt-0.5">{user?.name}</h1>
               <p className="text-primary-100 text-sm mt-1">
                 {isHostFamily ? 'אתם עוזרים לקלוט משפחות חדשות — תודה!' : 'ברוכים הבאים לקהילת שחף!'}
               </p>
@@ -105,7 +143,7 @@ export default function DashboardPage() {
           <div className="text-xs text-gray-500 mt-0.5">משימות פתוחות</div>
         </Link>
         <Link to="/events" className="card p-3 text-center hover:shadow-card-hover transition-shadow">
-          <div className="text-2xl font-black text-secondary-500">{upcomingEvents.length}</div>
+          <div className="text-2xl font-black text-secondary-500">{events.length}</div>
           <div className="text-xs text-gray-500 mt-0.5">אירועים קרובים</div>
         </Link>
         <Link to="/chat" className="card p-3 text-center hover:shadow-card-hover transition-shadow">

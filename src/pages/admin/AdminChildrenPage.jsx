@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild,
   bulkImportChildren, linkChildToParent, unlinkChildFromParent,
+  getAdminNote, saveAdminNote,
 } from '../../lib/db'
-import { CLASS_COLORS } from '../../lib/classColors'
 import {
   Baby, Plus, Trash2, X, Check, Search, Upload, Link2,
-  Link, Loader2, ChevronDown, Users, AlertCircle,
+  Loader2, AlertCircle, StickyNote,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -18,6 +18,57 @@ const blankChild = () => ({
   parentUids: [],
 })
 
+// ── Admin notes section (stored in adminNotes collection, not child document) ─
+
+function AdminNotesSection({ childId, isNew }) {
+  const [note, setNote]     = useState('')
+  const [loading, setLoading] = useState(!isNew)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved]   = useState(false)
+
+  useEffect(() => {
+    if (isNew) return
+    getAdminNote(childId).then(n => { setNote(n); setLoading(false) })
+  }, [childId, isNew])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await saveAdminNote(childId, note)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="label">הערות מנהל</label>
+      {isNew ? (
+        <p className="text-xs text-gray-400 mt-1">שמור את הילד/ה תחילה כדי להוסיף הערות</p>
+      ) : loading ? (
+        <div className="text-xs text-gray-400 mt-1">טוען...</div>
+      ) : (
+        <div className="space-y-2">
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="לדוגמה: שם משתמש וסיסמה לאתר הלמידה"
+            rows={3}
+            className="input w-full resize-none"
+          />
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-1.5 text-xs btn-outline py-1 px-3">
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+            {saved ? 'נשמר!' : 'שמור הערות'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Add / Edit panel ──────────────────────────────────────────────────────────
 
 function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
@@ -28,9 +79,6 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
   const [linking, setLinking]     = useState(false)
 
   const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
-
-  const classMap = Object.fromEntries(classes.map(c => [c.id, c]))
-  const selectedClass = classMap[draft.classId]
 
   const parentSuggestions = parentSearch.length > 1
     ? allUsers.filter(u =>
@@ -72,7 +120,8 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
     if (!draft.classId) { setError('יש לבחור כיתה'); return }
     setSaving(true)
     try {
-      await onSave({ ...draft, name: draft.name.trim() })
+      const { notes: _notes, ...childData } = draft
+      await onSave({ ...childData, name: childData.name.trim() })
     } catch (e) {
       setError(e.message)
     } finally {
@@ -111,6 +160,14 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
               ))}
             </select>
           </div>
+
+          <div>
+            <label className="label">תאריך לידה (אופציונלי)</label>
+            <input type="date" value={draft.birthDate || ''} onChange={e => set('birthDate', e.target.value)}
+              className="input w-full" />
+          </div>
+
+          <AdminNotesSection childId={draft.id} isNew={isNew} />
 
           <div>
             <label className="label mb-3">קישור הורים</label>
@@ -206,15 +263,14 @@ function ImportPanel({ classes, onImport, onClose }) {
       if (file.name.endsWith('.csv')) {
         const text = await file.text()
         setRows(parseCSV(text))
-        setPreview(true)
-        return
+      } else {
+        const { default: readXlsxFile } = await import('read-excel-file/browser')
+        const xlsxRows = await readXlsxFile(file)
+        const csvText = xlsxRows.map(row =>
+          row.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')
+        ).join('\n')
+        setRows(parseCSV(csvText))
       }
-      const { default: XLSX } = await import('xlsx')
-      const buf = await file.arrayBuffer()
-      const wb = XLSX.read(buf, { type: 'array' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const data = XLSX.utils.sheet_to_csv(ws)
-      setRows(parseCSV(data))
       setPreview(true)
     } catch (e) {
       setError(e.message)
@@ -374,7 +430,7 @@ export default function AdminChildrenPage() {
   })
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
+    <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">ניהול ילדים</h1>
@@ -433,10 +489,13 @@ export default function AdminChildrenPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-800 text-sm">{child.name}</div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
                     {cls ? `כיתה ${cls.name}` : 'כיתה לא ידועה'}
                     {child.parentUids?.length > 0 && (
-                      <span className="ms-2 text-secondary-600">· {child.parentUids.length} הורה/ים מקושרים</span>
+                      <span className="text-secondary-600">· {child.parentUids.length} הורה/ים</span>
+                    )}
+                    {child.notes && (
+                      <span className="text-amber-500 flex items-center gap-0.5"><StickyNote size={11} /> הערות</span>
                     )}
                   </div>
                 </div>

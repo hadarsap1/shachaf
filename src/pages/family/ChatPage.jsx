@@ -79,6 +79,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState(INITIAL_SUGGESTIONS)
   const bottomRef = useRef(null)
+  const idRef = useRef(2) // monotonic message id (id 1 is the greeting)
+  const nextId = () => idRef.current++
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -89,7 +91,7 @@ export default function ChatPage() {
     if (!userMsg || loading) return
     setInput('')
 
-    const newMessages = [...messages, { id: Date.now(), role: 'user', content: userMsg }]
+    const newMessages = [...messages, { id: nextId(), role: 'user', content: userMsg }]
     setMessages(newMessages)
     setLoading(true)
 
@@ -97,15 +99,15 @@ export default function ChatPage() {
       const reply = await callChat(
         newMessages.filter(m => m.role !== 'assistant' || m.id !== 1)
       )
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: reply }])
+      setMessages(prev => [...prev, { id: nextId(), role: 'assistant', content: reply }])
       setSuggestions(getFollowups(reply))
     } catch (err) {
-      let content = 'מצטער, אירעה שגיאה. נסה שוב או פנה למשפחה המארחת.'
+      let content = 'מצטער, אירעה שגיאה. נסה שוב או פנה לדף העזרה / צור קשר עם מנהלי האתר.'
       if (err.status === 401) content = 'יש להתחבר מחדש.'
-      if (err.status === 429 && err.code === 'daily_limit') content = 'הגעת למגבלת ההודעות היומית (30 הודעות). נסה שוב מחר.'
+      else if (err.status === 429 && err.code === 'daily_limit') content = 'הגעת למגבלת ההודעות היומית (30 הודעות). נסה שוב מחר.'
       else if (err.status === 429) content = 'שלחת יותר מדי הודעות, המתן דקה.'
       setMessages(prev => [...prev, {
-        id: Date.now() + 1,
+        id: nextId(),
         role: 'assistant',
         content,
       }])

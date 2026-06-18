@@ -580,3 +580,39 @@ export async function getEventsByCommittee(committeeId) {
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
+
+// ── Emergency mode ────────────────────────────────────────────────────────────
+export async function getEmergencyMode() {
+  const snap = await getDoc(doc(db, 'settings', 'emergencyMode'))
+  return snap.exists() ? snap.data() : { active: false }
+}
+
+export async function setEmergencyMode(data, uid) {
+  await setDoc(doc(db, 'settings', 'emergencyMode'), {
+    ...data,
+    updatedAt: serverTimestamp(),
+    updatedBy: uid,
+  }, { merge: true })
+}
+
+// emergencySchedule doc id = `{classId}_{date}` (date: YYYY-MM-DD)
+export async function getEmergencySchedule(classId, date) {
+  const snap = await getDoc(doc(db, 'emergencySchedule', `${classId}_${date}`))
+  return snap.exists() ? snap.data().slots || [] : []
+}
+
+export async function saveEmergencySchedule(classId, date, slots) {
+  await setDoc(doc(db, 'emergencySchedule', `${classId}_${date}`), {
+    classId,
+    date,
+    slots,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+// Fetch all emergency schedule docs for a given date (all classes)
+export async function getEmergencyScheduleForDate(date) {
+  const q = query(collection(db, 'emergencySchedule'), where('date', '==', date))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => d.data())
+}

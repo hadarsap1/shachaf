@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { getClasses } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import { Shield, Check, RefreshCw, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
@@ -42,20 +43,27 @@ function RoleSelect({ user, onSave, saving }) {
 
 export default function SuperAdminPage() {
   const { user: me } = useAuth()
-  const [users, setUsers]   = useState([])
+  const [users, setUsers]     = useState([])
+  const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving]  = useState(null)
-  const [saved, setSaved]    = useState(null)
-  const [error, setError]    = useState('')
+  const [saving, setSaving]   = useState(null)
+  const [saved, setSaved]     = useState(null)
+  const [error, setError]     = useState('')
 
   const loadUsers = async () => {
     setLoading(true)
-    const snap = await getDocs(collection(db, 'users'))
+    const [snap, cls] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getClasses(),
+    ])
     setUsers(snap.docs.map(d => ({ uid: d.id, ...d.data() })))
+    setClasses(cls)
     setLoading(false)
   }
 
   useEffect(() => { loadUsers() }, [])
+
+  const classNameMap = Object.fromEntries(classes.map(c => [c.id, c]))
 
   const changeRole = async (user, newRole) => {
     if (user.role === newRole) return
@@ -119,12 +127,29 @@ export default function SuperAdminPage() {
                       : <div className="avatar w-10 h-10 bg-accent-100 text-accent-700 flex-shrink-0">{u.name?.[0]}</div>
                     }
                     <div className="flex-1 text-right min-w-0">
-                      <div className="flex items-center gap-2 justify-end">
+                      <div className="flex items-center gap-2 justify-end flex-wrap">
                         <span className="font-semibold text-gray-800 text-sm">{u.name}</span>
                         {saved === u.uid && <Check size={13} className="text-green-500" />}
                         {u.uid === me?.uid && <span className="text-xs text-gray-400">(אני)</span>}
                       </div>
                       <p className="text-xs text-gray-500">{u.email}</p>
+                      {u.classAdminFor?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5 justify-end">
+                          {u.classAdminFor.map(cid => {
+                            const cls = classNameMap[cid]
+                            return cls ? (
+                              <span key={cid}
+                                className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                style={{
+                                  backgroundColor: (cls.color || '#1B3B70') + '22',
+                                  color: cls.color || '#1B3B70',
+                                }}>
+                                {cls.name}
+                              </span>
+                            ) : null
+                          })}
+                        </div>
+                      )}
                     </div>
                     <RoleSelect user={u} onSave={changeRole} saving={saving} />
                   </div>

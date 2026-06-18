@@ -1,18 +1,31 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getEvents } from '../../lib/db'
+import { getEvents, getClasses } from '../../lib/db'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import { Calendar, MapPin, Clock, Edit2, X, Plus, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const FILTER_OPTIONS = [
+const ROLE_FILTERS = [
   { value: 'all',        label: 'הכל' },
   { value: 'new_family', label: 'משפחות חדשות' },
   { value: 'host_family',label: 'משפחות מארחות' },
   { value: 'admin',      label: 'מנהלים' },
 ]
+
+function matchesFilter(ev, filterValue) {
+  if (filterValue === 'all') return true
+  if (ROLE_FILTERS.some(f => f.value === filterValue)) {
+    const groups = ev.targetGroups || ['all']
+    return groups.includes('all') || groups.includes(filterValue)
+  }
+  // class ID
+  const groups = ev.targetGroups || ['all']
+  if (groups.includes('all')) return true
+  if (groups.includes('class')) return (ev.classIds || []).includes(filterValue)
+  return false
+}
 
 const TYPE_LABEL = {
   social:      'חברתי',
@@ -200,14 +213,20 @@ function EventDetailPanel({ event, onClose }) {
 
 export default function AdminCalendarPage() {
   const [events, setEvents]           = useState([])
+  const [filterOptions, setFilterOptions] = useState(ROLE_FILTERS)
   const [loading, setLoading]         = useState(true)
-  const [filterRole, setFilterRole]   = useState('all')
+  const [filterValue, setFilterValue] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState(null)
 
   useEffect(() => {
-    getEvents()
-      .then(data => { setEvents(data); setLoading(false) })
-      .catch(err  => { console.error('AdminCalendarPage load failed', err); setLoading(false) })
+    Promise.all([getEvents(), getClasses()])
+      .then(([evData, classes]) => {
+        setEvents(evData)
+        const classChips = classes.map(cls => ({ value: cls.id, label: cls.name || cls.id }))
+        setFilterOptions([...ROLE_FILTERS, ...classChips])
+        setLoading(false)
+      })
+      .catch(err => { console.error('AdminCalendarPage load failed', err); setLoading(false) })
   }, [])
 
   return (
@@ -223,13 +242,13 @@ export default function AdminCalendarPage() {
 
       {/* ── Filter chips ── */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        {FILTER_OPTIONS.map(opt => (
+        {filterOptions.map(opt => (
           <button
             key={opt.value}
-            onClick={() => setFilterRole(opt.value)}
+            onClick={() => setFilterValue(opt.value)}
             className={clsx(
               'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
-              filterRole === opt.value
+              filterValue === opt.value
                 ? 'bg-primary-600 text-white'
                 : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
             )}
@@ -249,8 +268,8 @@ export default function AdminCalendarPage() {
       {/* ── Calendar ── */}
       {!loading && (
         <CalendarGrid
-          events={events}
-          filterRole={filterRole}
+          events={events.filter(ev => matchesFilter(ev, filterValue))}
+          filterRole="all"
           onEventClick={setSelectedEvent}
         />
       )}

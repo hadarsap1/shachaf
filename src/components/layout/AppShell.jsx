@@ -8,7 +8,7 @@ import {
   LayoutDashboard, BookOpen, Menu, X,
   LogOut, ChevronDown, Activity, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, GraduationCap,
-  Baby, HelpCircle, Network, Upload,
+  Baby, HelpCircle, Network, Upload, AlertTriangle,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -60,6 +60,7 @@ const NAV_LINKS = {
     { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
+    { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
   ],
   super_admin: [
@@ -74,6 +75,7 @@ const NAV_LINKS = {
     { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
+    { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
     { to: '/super/admins', label: 'מנהלים', icon: Shield },
   ],

@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getEvents, getAnnouncements } from '../../lib/db'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
-  Phone, Mail, Loader2, ChevronDown,
+  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 
-const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי']
-
-const SCHEDULE_DAYS    = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳']
+const SCHEDULE_DAYS    = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
 const SCHEDULE_PERIODS = [
   { id: 'morning', label: 'מפגש בוקר' },
   { id: '1',       label: '1' },
@@ -146,15 +144,70 @@ function Section({ title, icon: Icon, color, children, action }) {
   )
 }
 
+// ── Child note card ──────────────────────────────────────────────────────────
+
+function ChildNoteCard({ child, parentId, color }) {
+  const [note, setNote] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getChildNote(child.id, parentId)
+      .then(n => { setNote(n); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [child.id, parentId])
+
+  const handleBlur = async (val) => {
+    try {
+      await saveChildNote(child.id, parentId, val)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch { /* ignore */ }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          {saved && (
+            <span className="flex items-center gap-1 text-xs text-green-600">
+              <Check size={11} /> נשמר
+            </span>
+          )}
+        </div>
+        <span className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+          {child.name}
+          <span className="w-2 h-2 rounded-full inline-block"
+            style={{ backgroundColor: color || '#1B3B70' }} />
+        </span>
+      </div>
+      {loading ? (
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+      ) : (
+        <textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          onBlur={e => handleBlur(e.target.value)}
+          className="input w-full resize-none text-sm leading-relaxed"
+          rows={3}
+          placeholder="הוסף הערות פרטיות... (למשל: שם משתמש וסיסמה לאתר הלמידה)"
+        />
+      )}
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ClassPage() {
   const { user } = useAuth()
-  const [myClasses, setMyClasses]       = useState([])
-  const [selectedIdx, setSelectedIdx]   = useState(0)
-  const [events, setEvents]             = useState([])
+  const [myClasses, setMyClasses]         = useState([])
+  const [myChildren, setMyChildren]       = useState([])
+  const [selectedIdx, setSelectedIdx]     = useState(0)
+  const [events, setEvents]               = useState([])
   const [announcements, setAnnouncements] = useState([])
-  const [loading, setLoading]           = useState(true)
+  const [classChildren, setClassChildren] = useState([])
+  const [loading, setLoading]             = useState(true)
 
   useEffect(() => {
     if (!user) return
@@ -168,8 +221,13 @@ export default function ClassPage() {
       const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
       const filtered = classes.filter(c => myClassIds.includes(c.id))
       setMyClasses(filtered)
+      setMyChildren(children)
       setEvents(allEvents)
       setAnnouncements(allAnns)
+      if (myClassIds.length > 0) {
+        const allKids = await getChildren(myClassIds[0])
+        setClassChildren(allKids)
+      }
       setLoading(false)
     }
     load()
@@ -185,7 +243,12 @@ export default function ClassPage() {
     : []
 
   const classAnns = cls
-    ? announcements.filter(ann => !ann.classIds?.length || ann.classIds.includes(cls.id))
+    ? announcements.filter(ann => {
+        const tg = ann.targetGroups || ['all']
+        const audience = tg[0]
+        if (audience === 'class') return (ann.classIds || []).includes(cls.id)
+        return audience === 'all' || audience === user?.role
+      })
     : []
 
   if (loading) return (
@@ -254,6 +317,36 @@ export default function ClassPage() {
           </Section>
         )}
 
+        {/* Upcoming birthdays */}
+        {(() => {
+          const today = new Date()
+          const upcoming = classChildren
+            .filter(c => c.birthDate)
+            .map(c => {
+              const [, mm, dd] = c.birthDate.split('-')
+              const thisYear = new Date(today.getFullYear(), +mm - 1, +dd)
+              if (thisYear < today) thisYear.setFullYear(today.getFullYear() + 1)
+              return { ...c, next: thisYear, diff: Math.ceil((thisYear - today) / 86400000) }
+            })
+            .filter(c => c.diff <= 60)
+            .sort((a, b) => a.diff - b.diff)
+          if (!upcoming.length) return null
+          return (
+            <Section title="ימי הולדת קרובים" icon={Cake} color={cls?.color || '#1B3B70'}>
+              <div className="space-y-2">
+                {upcoming.map(c => (
+                  <div key={c.id} className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-gray-400">
+                      {c.next.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}
+                    </span>
+                    <span className="text-sm font-medium text-gray-800">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )
+        })()}
+
         {/* Announcements */}
         {classAnns.length > 0 && (
           <Section title="הודעות" icon={Megaphone} color={cls?.color || '#1B3B70'}>
@@ -306,6 +399,18 @@ export default function ClassPage() {
         {cls?.committee?.length > 0 && (
           <Section title="ועד הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
             {cls.committee.map((p, i) => <PersonCard key={i} person={p} />)}
+          </Section>
+        )}
+
+        {/* Personal notes per child — visible only to this parent */}
+        {myChildren.filter(c => c.classId === cls?.id).length > 0 && (
+          <Section title="הערות אישיות" icon={StickyNote} color={cls?.color || '#1B3B70'}>
+            <p className="text-xs text-gray-400 mb-3 text-right">הערות אלו פרטיות — רק אתם רואים אותן</p>
+            <div className="space-y-4">
+              {myChildren.filter(c => c.classId === cls?.id).map(child => (
+                <ChildNoteCard key={child.id} child={child} parentId={user.uid} color={cls?.color} />
+              ))}
+            </div>
           </Section>
         )}
       </div>
