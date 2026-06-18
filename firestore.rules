@@ -162,6 +162,8 @@ service cloud.firestore {
              in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', [])
         || resource.data.get('classId', '')
              in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
+        // Onboarding: any auth user can read unlinked children to self-link during onboarding
+        || resource.data.get('parentUids', []).size() == 0
       );
       allow write: if request.auth != null
                    && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
@@ -170,6 +172,11 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && request.auth.uid in resource.data.parentUids
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath']);
+      // Onboarding: any auth user can claim an unlinked child by setting parentUids to [themselves]
+      allow update: if request.auth != null
+                    && resource.data.get('parentUids', []).size() == 0
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids'])
+                    && request.resource.data.parentUids == [request.auth.uid];
     }
 
     // Admin notes — admin-only read/write, invisible to families

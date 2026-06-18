@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
-import { syncUserClassIds } from '../lib/db'
+import { syncUserClassIds, completeOnboarding } from '../lib/db'
 import { MOCK_USERS } from '../lib/mockData'
 
 const AuthContext = createContext(null)
@@ -157,13 +157,23 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const isAdmin      = user?.role === 'admin' || user?.role === 'super_admin'
-  const isSuperAdmin = user?.role === 'super_admin'
-  const isHostFamily = user?.role === 'host_family'
-  const isNewFamily  = user?.role === 'new_family'
-  const isCommunity  = user?.role === 'community'
-  const isClassAdmin = !isAdmin && (user?.classAdminFor || []).length > 0
-  const effectiveRole = viewAs || user?.role
+  const updateUserState = (updates) => {
+    setUser(prev => prev ? { ...prev, ...updates } : prev)
+  }
+
+  const markOnboardingComplete = async () => {
+    await completeOnboarding(user.uid)
+    setUser(prev => prev ? { ...prev, onboardingComplete: true } : prev)
+  }
+
+  const isAdmin        = user?.role === 'admin' || user?.role === 'super_admin'
+  const isSuperAdmin   = user?.role === 'super_admin'
+  const isHostFamily   = user?.role === 'host_family'
+  const isNewFamily    = user?.role === 'new_family'
+  const isCommunity    = user?.role === 'community'
+  const isClassAdmin   = !isAdmin && (user?.classAdminFor || []).length > 0
+  const effectiveRole  = viewAs || user?.role
+  const needsOnboarding = user?.role === 'new_family' && !user?.onboardingComplete
 
   return (
     <AuthContext.Provider value={{
@@ -171,6 +181,7 @@ export function AuthProvider({ children }) {
       loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout,
       isAdmin, isSuperAdmin, isHostFamily, isNewFamily, isCommunity, isClassAdmin,
       viewAs, effectiveRole, activateViewAs, deactivateViewAs,
+      needsOnboarding, markOnboardingComplete, updateUserState,
     }}>
       {children}
     </AuthContext.Provider>

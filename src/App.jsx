@@ -37,20 +37,32 @@ const AdminAnnouncementsPage    = lazy(() => import('./pages/admin/AdminAnnounce
 const AdminResourcesPage        = lazy(() => import('./pages/admin/AdminResourcesPage'))
 const AdminEmergencyPage        = lazy(() => import('./pages/admin/AdminEmergencyPage'))
 const AdminCommunityGroupsPage  = lazy(() => import('./pages/admin/AdminCommunityGroupsPage'))
+const OnboardingPage             = lazy(() => import('./pages/family/OnboardingPage'))
+
+const Spinner = () => (
+  <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+    <img src="/logo.png" alt="שחף" className="h-16 w-auto mb-6 opacity-80" />
+    <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+  </div>
+)
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
-  const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin } = useAuth()
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
-      <img src="/logo.png" alt="שחף" className="h-16 w-auto mb-6 opacity-80" />
-      <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin, needsOnboarding } = useAuth()
+  if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
+  if (needsOnboarding) return <Navigate to="/onboarding" replace />
   if (adminOnly && !isAdmin && !(classAdminOk && isClassAdmin)) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />
   if (hostOnly && !isHostFamily && !isAdmin) return <Navigate to="/" replace />
   return <AppShell />
+}
+
+function ProtectedOnboarding() {
+  const { user, loading, needsOnboarding } = useAuth()
+  if (loading) return <Spinner />
+  if (!user) return <Navigate to="/login" replace />
+  if (!needsOnboarding) return <Navigate to="/dashboard" replace />
+  return <OnboardingPage />
 }
 
 function RootRedirect() {
@@ -76,6 +88,7 @@ export default function App() {
         <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/onboarding" element={<ProtectedOnboarding />} />
           <Route path="/" element={<RootRedirect />} />
 
           <Route element={<ProtectedShell />}>

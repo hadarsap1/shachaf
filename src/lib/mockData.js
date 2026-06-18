@@ -11,6 +11,7 @@ export const MOCK_USERS = {
     hostFamilyId: 'host-1',
     joinedAt: '2024-01-15',
     phone: '050-1234567',
+    onboardingComplete: true,
   },
   hostFamily: {
     id: 'host-1',
@@ -20,6 +21,7 @@ export const MOCK_USERS = {
     avatar: 'כ',
     assignedNewFamilies: ['new-1'],
     phone: '052-9876543',
+    onboardingComplete: true,
   },
   admin: {
     id: 'admin-1',
@@ -27,6 +29,7 @@ export const MOCK_USERS = {
     email: 'admin@shahaf.edu',
     role: 'admin',
     avatar: 'ו',
+    onboardingComplete: true,
   },
   superAdmin: {
     id: 'super-1',
@@ -34,6 +37,7 @@ export const MOCK_USERS = {
     email: 'super@shahaf.edu',
     role: 'super_admin',
     avatar: 'מ',
+    onboardingComplete: true,
   },
 }
 

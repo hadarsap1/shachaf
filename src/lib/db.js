@@ -620,3 +620,19 @@ export async function getEmergencyScheduleForDate(date) {
   const snap = await getDocs(q)
   return snap.docs.map(d => d.data())
 }
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+export async function completeOnboarding(uid) {
+  await updateDoc(doc(db, 'users', uid), { onboardingComplete: true })
+}
+
+// Returns children that have no parents yet (for onboarding self-linking).
+// Security rule allows reading these docs for any authenticated user.
+export async function getUnlinkedChildren() {
+  // ponytail: no orderBy — avoids requiring a composite index; sort client-side
+  const q = query(collection(db, 'children'), where('parentUids', '==', []))
+  const snap = await getDocs(q)
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
+}
