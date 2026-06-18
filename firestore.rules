@@ -11,6 +11,17 @@ service cloud.firestore {
                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                      in ['admin', 'super_admin'];
 
+      // Same-class parents can read each other's profiles (for class roster)
+      allow read: if request.auth != null
+                  && resource.data.get('classIds', []).hasAny(
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', [])
+                     );
+
+      // Host families can read new_family profiles (for their families view)
+      allow read: if request.auth != null
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'host_family'
+                  && resource.data.role == 'new_family';
+
       // Users can create their own profile (role is set from pending import or defaults to new_family)
       allow create: if request.auth != null
                     && request.auth.uid == userId;
@@ -154,7 +165,7 @@ service cloud.firestore {
                       || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []).size() > 0);
       allow update: if request.auth != null
                     && request.auth.uid in resource.data.parentUids
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet']);
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath']);
     }
 
     // Admin notes — admin-only read/write, invisible to families

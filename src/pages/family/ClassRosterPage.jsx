@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getClasses, getChildren, getChildrenByParent, getUsers } from '../../lib/db'
+import { getClasses, getChildren, getChildrenByParent, getUsersByUids } from '../../lib/db'
 import { GraduationCap, Phone, Users, Loader2, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
@@ -18,8 +18,11 @@ function ChildCard({ child, parents }) {
             <p className="text-xs text-gray-400">🐾 {child.pet}</p>
           )}
         </div>
-        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0">
-          {child.name?.[0] || '?'}
+        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600">
+          {child.photoUrl
+            ? <img src={child.photoUrl} alt="" className="w-full h-full object-cover" />
+            : child.name?.[0] || '?'
+          }
         </div>
       </div>
       {parents.length > 0 && (
@@ -86,15 +89,14 @@ export default function ClassRosterPage() {
       const kids = await getChildren(cls.id)
       setClassChildren(kids)
 
-      // Load all users and build a parentUid → user map
-      const allUsers = await getUsers()
-      const userMap = Object.fromEntries(allUsers.map(u => [u.uid, u]))
+      // Collect all unique parentUids across the class then fetch individually
+      const allParentUids = [...new Set(kids.flatMap(k => k.parentUids || []))]
+      const parentUsers = await getUsersByUids(allParentUids)
+      const userMap = Object.fromEntries(parentUsers.map(u => [u.uid, u]))
 
       const parentMap = {}
       for (const kid of kids) {
-        parentMap[kid.id] = (kid.parentUids || [])
-          .map(uid => userMap[uid])
-          .filter(Boolean)
+        parentMap[kid.id] = (kid.parentUids || []).map(uid => userMap[uid]).filter(Boolean)
       }
       setParents(parentMap)
       setLoadingRoster(false)

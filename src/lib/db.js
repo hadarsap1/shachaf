@@ -9,15 +9,39 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage, firebaseConfig } from './firebase'
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
+function safeExt(file) {
+  return file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+}
+
 export async function uploadEventImage(eventId, file) {
-  const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-  const path = `events/${eventId}.${ext}`
+  const path = `events/${eventId}.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
-  const url  = await getDownloadURL(snap.ref)
-  return { url, path }
+  return { url: await getDownloadURL(snap.ref), path }
 }
 
 export async function deleteEventImage(path) {
+  if (!path) return
+  try { await deleteObject(ref(storage, path)) } catch { /* already gone */ }
+}
+
+export async function uploadChildPhoto(childId, file) {
+  const path = `children/${childId}/photo.${safeExt(file)}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  return { url: await getDownloadURL(snap.ref), path }
+}
+
+export async function deleteChildPhoto(path) {
+  if (!path) return
+  try { await deleteObject(ref(storage, path)) } catch { /* already gone */ }
+}
+
+export async function uploadUserAvatar(uid, file) {
+  const path = `users/${uid}/avatar.${safeExt(file)}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  return { url: await getDownloadURL(snap.ref), path }
+}
+
+export async function deleteUserAvatar(path) {
   if (!path) return
   try { await deleteObject(ref(storage, path)) } catch { /* already gone */ }
 }
@@ -80,6 +104,25 @@ export async function getUsers() {
   return snap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }))
 }
 
+// Fetch a specific set of user docs by uid — safe for non-admin callers.
+// Uses individual GET reads so same-class Firestore read rule applies.
+export async function getUsersByUids(uids) {
+  if (!uids?.length) return []
+  const results = await Promise.allSettled(
+    uids.map(uid => getDoc(doc(db, 'users', uid)))
+  )
+  return results
+    .filter(r => r.status === 'fulfilled' && r.value.exists())
+    .map(r => ({ uid: r.value.id, id: r.value.id, ...r.value.data() }))
+}
+
+// For host-family view — queries only new_family users (backed by Firestore rule)
+export async function getNewFamilies() {
+  const q = query(collection(db, 'users'), where('role', '==', 'new_family'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }))
+}
+
 const ALLOWED_PROFILE_FIELDS = [
   'name', 'phone', 'address', 'avatar',
   'workplace', 'profession', 'hobbies', 'temporaryStatus',
@@ -95,7 +138,7 @@ export async function updateUserProfile(uid, data) {
 
 export async function updateChildProfile(childId, data) {
   const safe = Object.fromEntries(
-    Object.entries(data).filter(([k]) => ['hobbies', 'pet'].includes(k))
+    Object.entries(data).filter(([k]) => ['hobbies', 'pet', 'photoUrl', 'photoPath'].includes(k))
   )
   if (Object.keys(safe).length === 0) return
   await updateDoc(doc(db, 'children', childId), safe)

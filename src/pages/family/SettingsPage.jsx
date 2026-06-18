@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { updateUserProfile, updateChildProfile, registerCoParent, getChildrenByParent } from '../../lib/db'
+import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, registerCoParent, getChildrenByParent } from '../../lib/db'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
-import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint } from 'lucide-react'
+import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X } from 'lucide-react'
 import clsx from 'clsx'
 
 const TEMPORARY_STATUS_OPTIONS = [
@@ -278,16 +278,32 @@ function CoParentSection({ currentUser, onRegistered }) {
 }
 
 function ChildProfileCard({ child }) {
-  const [form, setForm] = useState({ hobbies: child.hobbies || [], pet: child.pet || '' })
+  const [form, setForm] = useState({ pet: child.pet || '' })
   const [hobbiesInput, setHobbiesInput] = useState((child.hobbies || []).join(', '))
+  const [photoPreview, setPhotoPreview] = useState(child.photoUrl || null)
+  const [photoFile, setPhotoFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const handlePhoto = (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !file.type.startsWith('image/')) return
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
 
   const handleSave = async () => {
     setSaving(true)
     try {
       const hobbies = hobbiesInput.split(',').map(h => h.trim()).filter(Boolean)
-      await updateChildProfile(child.id, { hobbies, pet: form.pet })
+      const update = { hobbies, pet: form.pet }
+      if (photoFile) {
+        if (child.photoPath) await deleteChildPhoto(child.photoPath)
+        const { url, path } = await uploadChildPhoto(child.id, photoFile)
+        update.photoUrl = url
+        update.photoPath = path
+      }
+      await updateChildProfile(child.id, update)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } finally {
@@ -297,11 +313,20 @@ function ChildProfileCard({ child }) {
 
   return (
     <div className="border border-gray-100 rounded-xl p-4 space-y-3">
-      <div className="flex items-center gap-2 justify-end">
+      <div className="flex items-center gap-3 justify-end">
         <span className="font-semibold text-gray-800 text-sm">{child.name}</span>
-        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600">
-          {child.name?.[0] || '?'}
-        </div>
+        <label className="relative cursor-pointer group">
+          <div className="w-12 h-12 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center text-base font-bold text-primary-600">
+            {photoPreview
+              ? <img src={photoPreview} alt="" className="w-full h-full object-cover" />
+              : child.name?.[0] || '?'
+            }
+          </div>
+          <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <Camera size={14} className="text-white" />
+          </div>
+          <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+        </label>
       </div>
       <div>
         <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">
