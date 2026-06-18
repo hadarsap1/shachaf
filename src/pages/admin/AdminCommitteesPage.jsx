@@ -278,7 +278,7 @@ export default function AdminCommitteesPage() {
     }
   }
 
-  const TABS = [{ id: 'committees', label: 'ועדות' }, { id: 'hobby', label: 'קבוצות תחביב' }]
+  const TABS = [{ id: 'committees', label: 'ועדות' }, { id: 'hobby', label: 'קבוצות קהילה' }]
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
@@ -363,7 +363,7 @@ export default function AdminCommitteesPage() {
           {hobbyGroups.length === 0 && !editingHobby && (
             <div className="text-center py-16 text-gray-400">
               <Users size={40} className="mx-auto mb-3 opacity-40" />
-              <p className="font-medium">אין קבוצות תחביב עדיין</p>
+              <p className="font-medium">אין קבוצות קהילה עדיין</p>
             </div>
           )}
           {hobbyGroups.map(g => (

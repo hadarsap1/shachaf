@@ -258,7 +258,7 @@ export default function CommitteesPage() {
 
   const TABS = [
     { id: 'committees', label: 'ועדות' },
-    { id: 'hobby', label: 'קבוצות תחביב' },
+    { id: 'hobby', label: 'קבוצות קהילה' },
   ]
 
   return (
@@ -304,7 +304,7 @@ export default function CommitteesPage() {
       ) : hobbyGroups.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Heart size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין קבוצות תחביב עדיין</p>
+          <p className="font-semibold text-gray-500">אין קבוצות קהילה עדיין</p>
           <p className="text-sm mt-1">הנהלת הקהילה תפתח קבוצות בהתאם לתחומי העניין</p>
         </div>
       ) : (
