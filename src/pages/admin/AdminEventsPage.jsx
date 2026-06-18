@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getEvents, saveEvent, deleteEvent, getClasses, uploadEventImage, deleteEventImage } from '../../lib/db'
+import { getEvents, saveEvent, deleteEvent, getClasses, getCommittees, uploadEventImage, deleteEventImage } from '../../lib/db'
 import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import CalendarGrid from '../../components/ui/CalendarGrid'
@@ -45,6 +45,7 @@ const TARGET_GROUPS = [
   { value: 'all',        label: 'כולם' },
   { value: 'new_family', label: 'משפחות חדשות' },
   { value: 'host_family',label: 'משפחות מארחות' },
+  { value: 'class',      label: 'כיתה ספציפית' },
 ]
 
 const blankEvent = () => ({
@@ -58,6 +59,7 @@ const blankEvent = () => ({
   required: false,
   targetGroups: ['all'],
   classIds: [],
+  committeeId: null,
 })
 
 // ---- Class multi-select dropdown ----
@@ -104,6 +106,9 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
       </button>
       {open && (
         <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {classes.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-4">אין כיתות במערכת</p>
+          )}
           {classes.map(cls => {
             const checked = selected.includes(cls.id)
             return (
@@ -130,7 +135,7 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
 
 // ---- Event slide panel (add / edit) ----
 
-function EventPanel({ event, isNew, onSave, onClose, allClasses = [], restricted = false }) {
+function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommittees = [], restricted = false }) {
   const [draft, setDraft] = useState({ ...event, classIds: event.classIds || [] })
   const [errors, setErrors] = useState({})
   const [imageFile, setImageFile] = useState(null)
@@ -154,26 +159,17 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], restricted
 
   const toggleGroup = (value) => {
     setErrors(e => ({ ...e, targetGroups: '' }))
-    if (value === 'all') {
-      setDraft(d => ({ ...d, targetGroups: ['all'] }))
-      return
+    if (value === 'class') {
+      setDraft(d => ({ ...d, targetGroups: ['class'] }))
+    } else {
+      setDraft(d => ({ ...d, targetGroups: [value], classIds: [] }))
     }
-    const current = (draft.targetGroups || ['all']).filter(g => g !== 'all')
-    const next = current.includes(value)
-      ? current.filter(g => g !== value)
-      : [...current, value]
-    const newGroups = next.length ? next : ['all']
-    // when switching to specific family types, class selection no longer applies
-    setDraft(d => ({
-      ...d,
-      targetGroups: newGroups,
-      classIds: newGroups.includes('all') ? d.classIds : [],
-    }))
   }
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
   }
@@ -252,29 +248,28 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], restricted
 
           <div>
             <label className="label block mb-1 text-right">קהל יעד</label>
-            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
+            <div className="flex flex-wrap gap-2">
               {TARGET_GROUPS.map(g => {
                 const groups = draft.targetGroups || ['all']
-                const isChecked = g.value === 'all'
-                  ? groups.includes('all')
-                  : !groups.includes('all') && groups.includes(g.value)
+                const isSelected = groups.includes(g.value)
                 return (
-                  <label key={g.value} className="flex items-center justify-end gap-2 cursor-pointer">
-                    <span className="text-sm text-gray-700">{g.label}</span>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleGroup(g.value)}
-                      className="w-4 h-4 accent-primary-600"
-                    />
-                  </label>
+                  <button key={g.value} type="button"
+                    onClick={() => toggleGroup(g.value)}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                      isSelected
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                    )}>
+                    {g.label}
+                  </button>
                 )
               })}
             </div>
             {errors.targetGroups && <p className="text-xs text-red-500 mt-1 text-right">{errors.targetGroups}</p>}
           </div>
 
-          {allClasses.length > 0 && (draft.targetGroups || ['all']).includes('all') && (
+          {(draft.targetGroups || ['all']).includes('class') && (
             <ClassPicker
               classes={allClasses}
               selected={draft.classIds || []}
@@ -289,6 +284,22 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], restricted
               className="w-4 h-4 accent-primary-600" />
             <label htmlFor="required-toggle" className="text-sm text-gray-700 cursor-pointer">כולם מוזמנים (סמן כאירוע לכולם)</label>
           </div>
+
+          {allCommittees.length > 0 && (
+            <div>
+              <label className="label block mb-1 text-right">ועדה מארגנת (אופציונלי)</label>
+              <select
+                value={draft.committeeId || ''}
+                onChange={e => set('committeeId', e.target.value || null)}
+                className="input w-full text-right"
+              >
+                <option value="">ללא ועדה</option>
+                {allCommittees.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Image */}
           <div>
@@ -347,6 +358,7 @@ export default function AdminEventsPage() {
   const [tab, setTab] = useState('events')
   const [events, setEvents] = useState([])
   const [classes, setClasses] = useState([])
+  const [committees, setCommittees] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -380,10 +392,11 @@ export default function AdminEventsPage() {
   })
 
   useEffect(() => {
-    Promise.all([getEvents(), getClasses()])
-      .then(([evts, cls]) => {
+    Promise.all([getEvents(), getClasses(), getCommittees()])
+      .then(([evts, cls, cmts]) => {
         setEvents(evts)
         setClasses(cls)
+        setCommittees(cmts)
         setActiveClasses(cls.map(c => c.id))
         if (location.state?.editEvent) setEditing(location.state.editEvent)
       })
@@ -675,6 +688,7 @@ export default function AdminEventsPage() {
           onSave={handleSave}
           onClose={() => setEditing(null)}
           allClasses={visibleClasses}
+          allCommittees={committees}
           restricted={isRestricted}
         />
       )}

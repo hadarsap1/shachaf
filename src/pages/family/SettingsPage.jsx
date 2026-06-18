@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, registerCoParent, getChildrenByParent } from '../../lib/db'
+import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent } from '../../lib/db'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X } from 'lucide-react'
@@ -373,6 +373,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [coParent, setCoParent] = useState(user?.coParent || null)
   const [children, setChildren] = useState([])
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null)
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -407,10 +409,24 @@ export default function SettingsPage() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !file.type.startsWith('image/')) return
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
     try {
+      let avatarUpdates = {}
+      if (avatarFile) {
+        if (user.avatarPath) await deleteUserAvatar(user.avatarPath)
+        const { url, path } = await uploadUserAvatar(user.uid, avatarFile)
+        avatarUpdates = { avatar: url, avatarPath: path }
+        setAvatarFile(null)
+      }
       await updateUserProfile(user.uid, {
         name: form.name,
         phone: form.phone,
@@ -419,6 +435,7 @@ export default function SettingsPage() {
         profession: form.profession,
         hobbies: form.hobbies.split(',').map(h => h.trim()).filter(Boolean),
         temporaryStatus: form.temporaryStatus,
+        ...avatarUpdates,
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
@@ -444,6 +461,21 @@ export default function SettingsPage() {
           פרטים אישיים
         </h2>
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Avatar upload */}
+          <div className="flex justify-center">
+            <label className="relative cursor-pointer group">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 border-2 border-white shadow">
+                {avatarPreview
+                  ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                  : user?.name?.[0] || '?'
+                }
+              </div>
+              <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <Camera size={16} className="text-white" />
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </label>
+          </div>
           <div>
             <label className="label block mb-1 text-right">שם מלא</label>
             <input

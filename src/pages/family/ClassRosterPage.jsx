@@ -60,6 +60,8 @@ function ChildCard({ child, parents }) {
 export default function ClassRosterPage() {
   const { user } = useAuth()
   const [myClasses, setMyClasses] = useState([])
+  const [otherClasses, setOtherClasses] = useState([]) // classes user has no child in
+  const [otherAdmins, setOtherAdmins] = useState({})  // classId → [user]
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [classChildren, setClassChildren] = useState([])
   const [parents, setParents] = useState({}) // childId → [user]
@@ -74,7 +76,22 @@ export default function ClassRosterPage() {
         getClasses(),
       ])
       const myClassIds = [...new Set(myKids.map(c => c.classId).filter(Boolean))]
-      setMyClasses(allClasses.filter(c => myClassIds.includes(c.id)))
+      const mine = allClasses.filter(c => myClassIds.includes(c.id))
+      const other = allClasses.filter(c => !myClassIds.includes(c.id))
+      setMyClasses(mine)
+      setOtherClasses(other)
+
+      // Fetch admin contacts for non-member classes (class admins are publicly readable)
+      const adminUids = [...new Set(other.flatMap(c => c.adminUids || []))]
+      if (adminUids.length) {
+        const admins = await getUsersByUids(adminUids)
+        const adminMap = Object.fromEntries(admins.map(u => [u.uid, u]))
+        const byClass = {}
+        for (const cls of other) {
+          byClass[cls.id] = (cls.adminUids || []).map(uid => adminMap[uid]).filter(Boolean)
+        }
+        setOtherAdmins(byClass)
+      }
       setLoading(false)
     }
     load()
@@ -175,6 +192,43 @@ export default function ClassRosterPage() {
           {classChildren.map(child => (
             <ChildCard key={child.id} child={child} parents={parents[child.id] || []} />
           ))}
+        </div>
+      )}
+
+      {/* Other classes — show admin contact only */}
+      {otherClasses.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 text-right">כיתות אחרות — איש קשר</h2>
+          <div className="space-y-2">
+            {otherClasses.map(cls => {
+              const admins = otherAdmins[cls.id] || []
+              return (
+                <div key={cls.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-3">
+                  <div className="text-right flex-1">
+                    <p className="font-semibold text-sm text-gray-800">{cls.name}</p>
+                    {cls.grade && <p className="text-xs text-gray-400">כיתה {cls.grade}</p>}
+                    {admins.length === 0 && <p className="text-xs text-gray-400 mt-1">אין רכז/ת כיתה</p>}
+                    {admins.map(a => (
+                      <div key={a.uid} className="flex flex-wrap gap-3 mt-1 justify-end">
+                        <span className="text-xs text-gray-700">{a.name}</span>
+                        {a.phone && (
+                          <a href={`tel:${a.phone}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+                            <Phone size={10} />{a.phone}
+                          </a>
+                        )}
+                        {a.email && (
+                          <a href={`mailto:${a.email}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+                            <Mail size={10} />{a.email}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="w-3 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: cls.color || '#1B3B70' }} />
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

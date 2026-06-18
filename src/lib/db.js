@@ -1,7 +1,7 @@
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, serverTimestamp, getDoc, setDoc, writeBatch,
-  getFirestore,
+  getFirestore, arrayUnion, arrayRemove,
 } from 'firebase/firestore'
 import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfile, sendPasswordResetEmail } from 'firebase/auth'
 import { initializeApp, deleteApp } from 'firebase/app'
@@ -124,7 +124,7 @@ export async function getNewFamilies() {
 }
 
 const ALLOWED_PROFILE_FIELDS = [
-  'name', 'phone', 'address', 'avatar',
+  'name', 'phone', 'address', 'avatar', 'avatarPath',
   'workplace', 'profession', 'hobbies', 'temporaryStatus',
 ]
 
@@ -544,4 +544,39 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
     try { await secondaryAuth.signOut() } catch {}
     try { await deleteApp(secondaryApp) } catch {}
   }
+}
+
+// ── Hobby groups ───────────────────────────────────────────────────────────────
+export async function getHobbyGroups() {
+  const snap = await getDocs(query(collection(db, 'hobbyGroups'), orderBy('order', 'asc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveHobbyGroup(group) {
+  const { id, ...data } = group
+  if (id && !id.startsWith('hobby-')) {
+    await updateDoc(doc(db, 'hobbyGroups', id), { ...data, updatedAt: serverTimestamp() })
+    return group
+  }
+  const r = await addDoc(collection(db, 'hobbyGroups'), { ...data, memberUids: [], createdAt: serverTimestamp() })
+  return { ...group, id: r.id }
+}
+
+export async function deleteHobbyGroup(id) {
+  await deleteDoc(doc(db, 'hobbyGroups', id))
+}
+
+export async function joinHobbyGroup(groupId, uid) {
+  await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayUnion(uid) })
+}
+
+export async function leaveHobbyGroup(groupId, uid) {
+  await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayRemove(uid) })
+}
+
+// ── Committee-scoped events ───────────────────────────────────────────────────
+export async function getEventsByCommittee(committeeId) {
+  const q = query(collection(db, 'events'), where('committeeId', '==', committeeId), orderBy('date', 'asc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
