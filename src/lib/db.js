@@ -9,8 +9,10 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage, firebaseConfig } from './firebase'
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
+const BLOCKED_EXTS = new Set(['svg', 'svgz', 'xml', 'html', 'htm', 'js', 'mjs'])
 function safeExt(file) {
-  return file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  return BLOCKED_EXTS.has(ext) ? 'jpg' : ext
 }
 
 export async function uploadEventImage(eventId, file) {
@@ -499,7 +501,9 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
 
   try {
     // Temp password — co-parent sets their own via the reset email we send
-    const tempPw = `_Sh${Math.random().toString(36).slice(2, 10)}!`
+    const arr = new Uint8Array(9)
+    crypto.getRandomValues(arr)
+    const tempPw = `_Sh${btoa(String.fromCharCode(...arr)).replace(/[+/=]/g, '').slice(0, 8)}!`
     const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPw)
     await updateFBProfile(cred.user, { displayName: name })
     const newUid = cred.user.uid

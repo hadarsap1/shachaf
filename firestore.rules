@@ -234,12 +234,21 @@ service cloud.firestore {
       allow create, delete: if request.auth != null
                             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                                in ['admin', 'super_admin'];
-      // Admin full update; any member can update only the memberUids field (join/leave)
+      // Admin full update; any authenticated user may add/remove only their own uid from memberUids
       allow update: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                        in ['admin', 'super_admin'];
       allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids']);
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
+                    && (
+                         // join: only their own uid was appended
+                         (request.resource.data.memberUids.hasAll(resource.data.memberUids)
+                          && request.resource.data.memberUids.removeAll(resource.data.memberUids) == [request.auth.uid])
+                         ||
+                         // leave: only their own uid was removed
+                         (resource.data.memberUids.hasAll(request.resource.data.memberUids)
+                          && resource.data.memberUids.removeAll(request.resource.data.memberUids) == [request.auth.uid])
+                       );
     }
 
     // Settings (e.g. emergencyMode) — all authenticated can read; only admins write

@@ -95,7 +95,7 @@ export default function LoginPage() {
         setAwaitingGoogleReturn(true)
       }
       await loginWithGoogle()
-      navigate('/dashboard')
+      // useEffect on user handles navigation (admin → /admin, others → /dashboard)
     } catch (err) {
       localStorage.removeItem(GOOGLE_PENDING_KEY)
       setAwaitingGoogleReturn(false)
@@ -119,7 +119,7 @@ export default function LoginPage() {
     setLoading('login')
     try {
       await loginWithEmail(email, password)
-      navigate('/dashboard')
+      // useEffect on user handles navigation
     } catch (err) {
       setError(firebaseError(err.code))
     } finally {
@@ -134,7 +134,7 @@ export default function LoginPage() {
     setLoading('register')
     try {
       await registerWithEmail(email, password, name.trim())
-      navigate('/dashboard')
+      // useEffect on user handles navigation
     } catch (err) {
       setError(firebaseError(err.code))
     } finally {

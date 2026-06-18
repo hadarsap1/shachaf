@@ -8,7 +8,7 @@ import {
   LayoutDashboard, BookOpen, Menu, X,
   LogOut, ChevronDown, Activity, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, GraduationCap,
-  Baby, HelpCircle, Network, Upload, AlertTriangle,
+  Baby, HelpCircle, Network, Upload, AlertTriangle, Heart,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -20,6 +20,7 @@ const NAV_LINKS = {
     { to: '/tasks',        label: 'משימות',        icon: CheckSquare },
     { to: '/events',       label: 'אירועים',       icon: Calendar },
     { to: '/committees',   label: 'ועדות',         icon: Network },
+    { to: '/community',    label: 'קבוצות קהילה', icon: Heart },
     { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
     { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
     { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
@@ -33,6 +34,7 @@ const NAV_LINKS = {
     { to: '/families',     label: 'המשפחות שלי',  icon: Users },
     { to: '/events',       label: 'אירועים',       icon: Calendar },
     { to: '/committees',   label: 'ועדות',         icon: Network },
+    { to: '/community',    label: 'קבוצות קהילה', icon: Heart },
     { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
     { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
     { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
@@ -43,6 +45,7 @@ const NAV_LINKS = {
     { to: '/dashboard',  label: 'בית',          icon: Home },
     { to: '/events',     label: 'אירועים',       icon: Calendar },
     { to: '/committees', label: 'ועדות',         icon: Network },
+    { to: '/community',  label: 'קבוצות קהילה', icon: Heart },
     { to: '/resources',  label: 'מידע שימושי',  icon: BookOpen },
     { to: '/contact',    label: 'צור קשר',      icon: MessageSquare },
     { to: '/help',       label: 'עזרה',          icon: HelpCircle },
@@ -54,6 +57,7 @@ const NAV_LINKS = {
     { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
     { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
     { to: '/admin/committees', label: 'ועדות', icon: Shield },
+    { to: '/admin/community', label: 'קבוצות קהילה', icon: Heart },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
@@ -69,6 +73,7 @@ const NAV_LINKS = {
     { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
     { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
     { to: '/admin/committees', label: 'ועדות', icon: Shield },
+    { to: '/admin/community', label: 'קבוצות קהילה', icon: Heart },
     { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
     { to: '/admin/events', label: 'אירועים', icon: Calendar },
     { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
