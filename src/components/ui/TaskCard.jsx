@@ -62,7 +62,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
   return (
     <div
       className={clsx(
-        'card border transition-all duration-200',
+        'card border transition-[box-shadow,opacity] duration-200',
         config.border,
         task.status === 'done' ? 'opacity-75' : ''
       )}
@@ -76,7 +76,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
           <button
             onClick={handleToggleStatus}
             className={clsx(
-              'mt-0.5 flex-shrink-0 transition-colors',
+              'mt-0.5 flex-shrink-0 transition-[color,scale] duration-150',
               config.color,
               justDone && 'animate-check-done',
               task.status !== 'done' && !isAdmin && 'hover:scale-110'
@@ -136,7 +136,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
                 href={task.resourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150"
               >
                 <ExternalLink size={13} />
                 פתח קישור
@@ -145,7 +145,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
             {task.whatsappPhone && (
               <button
                 onClick={handleWhatsApp}
-                className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-[background-color] duration-150"
               >
                 <MessageCircle size={13} />
                 שלח וואטסאפ

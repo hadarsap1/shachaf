@@ -111,7 +111,7 @@ function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
       to={to}
       onClick={onClick}
       className={clsx(
-        'flex items-center gap-3 rounded-xl font-medium transition-all duration-150',
+        'flex items-center gap-3 rounded-xl font-medium transition-[background-color,color] duration-150',
         sub
           ? 'px-3 py-2 text-xs me-4'
           : 'px-3 py-2.5 text-sm',
@@ -146,7 +146,7 @@ function UserMenu({ user, logout }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-primary-600/50 transition-colors w-full"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-primary-600/50 transition-[background-color] duration-150 w-full"
       >
         {isUrl(user?.avatar)
           ? <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0 object-cover" />
@@ -167,7 +167,7 @@ function UserMenu({ user, logout }) {
           </div>
           <button
             onClick={() => { setOpen(false); logout() }}
-            className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-[background-color] duration-150"
           >
             <LogOut size={16} />
             התנתקות
@@ -303,7 +303,7 @@ export default function AppShell() {
               return (
                 <Link key={link.to} to={link.to}
                   className={clsx(
-                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all relative',
+                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-[background-color,color] duration-150 relative',
                     active
                       ? 'text-primary-600 bg-primary-50'
                       : 'text-gray-400 hover:text-gray-600'

@@ -97,7 +97,7 @@ export default function DashboardPage() {
       {emergency && (
         <Link
           to="/emergency"
-          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 hover:shadow-card-hover transition-all"
+          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 hover:shadow-card-hover transition-[box-shadow] duration-200"
         >
           <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
             <AlertTriangle size={18} className="text-red-600" />
@@ -139,11 +139,11 @@ export default function DashboardPage() {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <Link to="/tasks" className="card p-3 text-center hover:shadow-card-hover transition-shadow">
-          <div className="text-2xl font-black text-primary-600">{myTasks.filter(t => t.status !== 'done').length}</div>
+          <div className="text-2xl font-black text-primary-600 tabular-nums">{myTasks.filter(t => t.status !== 'done').length}</div>
           <div className="text-xs text-gray-500 mt-0.5">משימות פתוחות</div>
         </Link>
         <Link to="/events" className="card p-3 text-center hover:shadow-card-hover transition-shadow">
-          <div className="text-2xl font-black text-secondary-500">{events.length}</div>
+          <div className="text-2xl font-black text-secondary-500 tabular-nums">{events.length}</div>
           <div className="text-xs text-gray-500 mt-0.5">אירועים קרובים</div>
         </Link>
         <Link to="/chat" className="card p-3 text-center hover:shadow-card-hover transition-shadow">
@@ -158,7 +158,7 @@ export default function DashboardPage() {
       {pendingForms > 0 && (
         <Link
           to="/forms"
-          className="card p-4 flex items-center gap-3 mb-6 bg-amber-50 border border-amber-200 hover:shadow-card-hover transition-all"
+          className="card p-4 flex items-center gap-3 mb-6 bg-amber-50 border border-amber-200 hover:shadow-card-hover transition-[box-shadow] duration-200"
         >
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
             <ClipboardList size={18} className="text-amber-600" />
@@ -221,7 +221,7 @@ export default function DashboardPage() {
       {/* AI Chat CTA */}
       <Link
         to="/chat"
-        className="card p-4 flex items-center gap-4 hover:shadow-card-hover transition-all duration-200 bg-gradient-to-l from-primary-50 to-secondary-50 border border-primary-100"
+        className="card p-4 flex items-center gap-4 hover:shadow-card-hover transition-[box-shadow] duration-200 bg-gradient-to-l from-primary-50 to-secondary-50 border border-primary-100"
       >
         <div className="p-3 bg-primary-600 rounded-2xl text-white">
           <MessageCircle size={22} />

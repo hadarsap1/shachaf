@@ -13,9 +13,9 @@ export default function StatCard({ icon: Icon, label, value, sub, color = 'prima
     <div
       onClick={onClick}
       className={clsx(
-        'card p-4 sm:p-5 border-0 transition-all',
+        'card p-4 sm:p-5 border-0 transition-[box-shadow,transform] duration-200',
         c.bg,
-        onClick && 'cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 active:scale-[0.98]'
+        onClick && 'cursor-pointer hover:shadow-card-hover hover:-translate-y-0.5 active:scale-[0.96] transition-[box-shadow,transform]'
       )}
     >
       <div className="flex items-start justify-between">
@@ -32,7 +32,7 @@ export default function StatCard({ icon: Icon, label, value, sub, color = 'prima
         )}
       </div>
       <div className="mt-3">
-        <div className={clsx('text-2xl font-bold', c.value)}>{value}</div>
+        <div className={clsx('text-2xl font-bold tabular-nums', c.value)}>{value}</div>
         <div className="text-sm font-medium text-gray-700 mt-0.5">{label}</div>
         {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
       </div>
