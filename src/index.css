@@ -29,6 +29,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+p, li, figcaption {
+  text-wrap: pretty;
+}
+
 #root {
   min-height: 100svh;
   width: 100%;
@@ -59,25 +67,25 @@ body {
 @layer components {
   .btn-primary {
     @apply bg-primary-500 hover:bg-primary-600 text-white font-medium px-4 py-2.5 rounded-xl
-           transition-all duration-200 shadow-sm hover:shadow-md active:scale-95
+           transition-[background-color,box-shadow,scale] duration-150 shadow-sm hover:shadow-md active:scale-[0.96]
            focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2;
   }
 
   .btn-secondary {
     @apply bg-secondary-400 hover:bg-secondary-500 text-white font-medium px-4 py-2.5 rounded-xl
-           transition-all duration-200 shadow-sm hover:shadow-md active:scale-95
+           transition-[background-color,box-shadow,scale] duration-150 shadow-sm hover:shadow-md active:scale-[0.96]
            focus:outline-none focus:ring-2 focus:ring-secondary-300 focus:ring-offset-2;
   }
 
   .btn-outline {
     @apply border-2 border-primary-500 text-primary-600 hover:bg-primary-50 font-medium px-4 py-2 rounded-xl
-           transition-all duration-200 active:scale-95
+           transition-[background-color,scale] duration-150 active:scale-[0.96]
            focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2;
   }
 
   .btn-ghost {
     @apply text-gray-600 hover:text-primary-600 hover:bg-primary-50 font-medium px-3 py-2 rounded-lg
-           transition-all duration-200;
+           transition-[background-color,color] duration-150;
   }
 
   .card {
@@ -85,7 +93,7 @@ body {
   }
 
   .card-hover {
-    @apply card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer;
+    @apply card hover:shadow-card-hover transition-[box-shadow] duration-200 cursor-pointer;
   }
 
   .badge {
@@ -120,7 +128,7 @@ body {
     @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white
            text-gray-900 placeholder-gray-400 text-sm
            focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400
-           transition-all duration-200;
+           transition-[border-color,box-shadow] duration-150;
   }
 
   .label {
@@ -144,7 +152,7 @@ body {
   }
 
   .progress-fill {
-    @apply h-full rounded-full bg-gradient-to-r from-primary-400 to-secondary-400 transition-all duration-500;
+    @apply h-full rounded-full bg-gradient-to-r from-primary-400 to-secondary-400 transition-[width] duration-500;
   }
 
   .stat-card {
@@ -154,7 +162,7 @@ body {
   .nav-link {
     @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
            text-gray-600 hover:text-primary-700 hover:bg-primary-50
-           transition-all duration-150;
+           transition-[background-color,color] duration-150;
   }
 
   .nav-link-active {

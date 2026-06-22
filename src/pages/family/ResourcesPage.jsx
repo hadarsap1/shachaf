@@ -62,7 +62,7 @@ export default function ResourcesPage() {
                   href={resource.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-all duration-200 group"
+                  className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-[box-shadow] duration-200 group"
                 >
                   <div className={`p-2.5 rounded-xl flex-shrink-0 ${bg} group-hover:opacity-80 transition-opacity`}>
                     <Icon size={16} className={color} />

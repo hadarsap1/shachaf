@@ -34,11 +34,11 @@ export default function EventCard({ event, onCardClick }) {
 
   return (
     <div
-      className={clsx('card overflow-hidden transition-shadow', onCardClick ? 'cursor-pointer hover:shadow-card-hover' : 'hover:shadow-card-hover')}
+      className={clsx('card overflow-hidden transition-[box-shadow] duration-200', onCardClick ? 'cursor-pointer hover:shadow-card-hover' : 'hover:shadow-card-hover')}
       onClick={onCardClick}
     >
       {event.imageUrl ? (
-        <img src={event.imageUrl} alt={event.title} className="w-full h-36 object-cover" />
+        <img src={event.imageUrl} alt={event.title} className="w-full h-36 object-cover outline outline-1 outline-black/10" />
       ) : (
         <div className={clsx(
           'h-1.5',
@@ -86,14 +86,14 @@ export default function EventCard({ event, onCardClick }) {
           <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
             <button
               onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-colors font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium"
             >
               <Plus size={13} />
               Google Calendar
             </button>
             <button
               onClick={e => { e.stopPropagation(); handleDownloadICS() }}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-colors font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium"
             >
               <Calendar size={13} />
               יומן (.ics)

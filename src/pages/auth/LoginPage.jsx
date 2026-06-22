@@ -188,7 +188,7 @@ export default function LoginPage() {
                     <button key={role.key} onClick={() => handleDemoLogin(role.key)}
                       disabled={loading !== null}
                       className={clsx(
-                        'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all group',
+                        'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-[background-color,border-color,scale] duration-150 active:scale-[0.96] group',
                         role.subtle
                           ? 'border-dashed border-gray-200 hover:border-red-200 hover:bg-red-50/30'
                           : 'border-gray-100 hover:border-primary-200 hover:bg-primary-50/50'
