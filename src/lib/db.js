@@ -1,7 +1,7 @@
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, serverTimestamp, getDoc, setDoc, writeBatch,
-  getFirestore, arrayUnion, arrayRemove,
+  getFirestore, arrayUnion, arrayRemove, onSnapshot, limit,
 } from 'firebase/firestore'
 import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfile, sendPasswordResetEmail } from 'firebase/auth'
 import { initializeApp, deleteApp } from 'firebase/app'
@@ -643,4 +643,59 @@ export async function getUnlinkedChildren() {
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
+}
+
+// ── Committee membership (UID-based join/leave) ───────────────────────────────
+export async function joinCommittee(committeeId, uid) {
+  await updateDoc(doc(db, 'committees', committeeId), { memberUids: arrayUnion(uid) })
+}
+
+export async function leaveCommittee(committeeId, uid) {
+  await updateDoc(doc(db, 'committees', committeeId), { memberUids: arrayRemove(uid) })
+}
+
+// ── Committee chat ────────────────────────────────────────────────────────────
+export function subscribeCommitteeChat(committeeId, callback) {
+  const q = query(
+    collection(db, 'committeeChat'),
+    where('committeeId', '==', committeeId),
+    orderBy('createdAt', 'asc'),
+    limit(200),
+  )
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  })
+}
+
+export async function sendCommitteeChatMessage(committeeId, uid, name, text) {
+  await addDoc(collection(db, 'committeeChat'), {
+    committeeId, uid, name,
+    text: String(text).slice(0, 2000),
+    createdAt: serverTimestamp(),
+  })
+}
+
+// ── Committee summaries (meeting notes & decisions) ───────────────────────────
+export async function getCommitteeSummaries(committeeId) {
+  const q = query(
+    collection(db, 'committeeSummaries'),
+    where('committeeId', '==', committeeId),
+    orderBy('date', 'desc'),
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function saveCommitteeSummary(summary) {
+  const { id, ...data } = summary
+  if (id && !id.startsWith('summary-')) {
+    await updateDoc(doc(db, 'committeeSummaries', id), { ...data, updatedAt: serverTimestamp() })
+    return summary
+  }
+  const ref = await addDoc(collection(db, 'committeeSummaries'), { ...data, createdAt: serverTimestamp() })
+  return { ...summary, id: ref.id }
+}
+
+export async function deleteCommitteeSummary(id) {
+  await deleteDoc(doc(db, 'committeeSummaries', id))
 }
