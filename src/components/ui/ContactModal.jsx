@@ -1,6 +1,22 @@
-import { X, Phone, Mail, MessageCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Phone, Mail, MessageCircle, GraduationCap } from 'lucide-react'
+import { getChildrenByParent, getClasses } from '../../lib/db'
 
 export default function ContactModal({ person, onClose }) {
+  const [classLabels, setClassLabels] = useState(null)
+
+  useEffect(() => {
+    if (!person?.uid) return
+    let cancelled = false
+    Promise.all([getChildrenByParent(person.uid), getClasses()]).then(([children, classes]) => {
+      if (cancelled) return
+      const classMap = Object.fromEntries(classes.map(c => [c.id, c.name]))
+      const labels = [...new Set(children.map(c => classMap[c.classId]).filter(Boolean))]
+      setClassLabels(labels)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [person?.uid])
+
   if (!person) return null
 
   const initials = person.name
@@ -92,6 +108,22 @@ export default function ContactModal({ person, onClose }) {
 
           {!person.phone && !person.email && (
             <p className="text-center text-sm text-gray-400 mt-4">אין פרטי קשר זמינים</p>
+          )}
+
+          {classLabels?.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1.5">
+                <GraduationCap size={13} />
+                כיתות
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {classLabels.map(label => (
+                  <span key={label} className="px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-medium">
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
