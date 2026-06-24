@@ -19,9 +19,12 @@ The platform serves five types of users:
 **Key features:**
 - Onboarding task checklist with milestone grouping and status progression
 - Calendar (month + list views) with Google Calendar / ICS export (past events hidden from export)
+- **Event RSVP** — users can mark attendance ("אני מגיע/ה"); attendee list is expandable and each attendee is clickable
 - Class page — weekly schedule, class team contacts, per-child private notes
 - Forms builder — admin creates forms, families fill and re-edit submissions; co-parent submissions are shared (one submission per family per form)
-- Committees directory — descriptions, member lists, contact info
+- **Committees** — join/leave any committee with one tap; per-committee real-time group chat (members only); meeting summaries with numbered decisions (admin-managed); clickable member list with contact bottom-sheet
+- **Community groups** — join/leave hobby groups; expandable panels for info/links (rendered as pill buttons), member list, real-time group chat (members only); members can post links, upload files, and create group-scoped events
+- **Contact bottom-sheet** — tapping any person opens a modal with phone call, WhatsApp, and email actions, plus the parent's kids' class labels (no child names exposed)
 - AI chat assistant (Google Gemini via `/api/chat`) — context-aware of the family's tasks and milestones
 - Two-parent support — first parent registers a co-parent from Settings; both share children, tasks, and form submissions
 - Admin dashboard: user management, bulk CSV/Excel import, forms builder, activity log, messages
@@ -159,18 +162,36 @@ Key collections:
 |------------|-------------|
 | `users/{uid}` | Profile: name, email, role, phone, address, childIds, coParent? |
 | `tasks/{id}` | Onboarding tasks with targetGroups, classIds, milestone, status |
-| `events/{id}` | School/class events with date, time, type, imageUrl? |
+| `events/{id}` | School/class events: date, time, type, imageUrl?, **attendeeUids[]** |
 | `forms/{id}` | Admin-created forms with fields, targetRole, classIds, status |
 | `submissions/{id}` | Form submissions: userId, coParentUids, formId, data |
 | `children/{id}` | Child records: name, classId, parentUids[] |
 | `adminNotes/{childId}` | Admin-only notes per child (not visible to families) |
 | `childNotes/{parentId_childId}` | Per-parent private notes per child |
-| `committees/{id}` | Committee name, description, members, contact |
+| `committees/{id}` | Committee: name, description, members, contact, **memberUids[]** |
+| `committeeChat/{id}` | Real-time committee chat messages: committeeId, uid, name, text, createdAt |
+| `committeeSummaries/{id}` | Meeting summaries: committeeId, title, date, content, decisions[], createdAt |
+| `hobbyGroups/{id}` | Community group: name, description, color, icon, fields[], **memberUids[]** |
+| `groupChat/{id}` | Real-time community group chat: groupId, uid, name, text, createdAt |
+| `groupLinks/{id}` | Member-posted links: groupId, uid, postedBy, label, url, createdAt |
+| `groupFiles/{id}` | Member-uploaded files: groupId, uid, postedBy, label, fileName, fileUrl, filePath, createdAt |
 | `announcements/{id}` | Class/school announcements |
 | `pendingFamilies/{email}` | Pre-imported families waiting to register |
 | `messages/{id}` | Contact form submissions (admin-read only) |
 | `activityLog/{id}` | Admin activity feed |
 | `aiUsage/{uid}` | Per-user AI message counter for rate limiting |
+
+**New collection details:**
+
+`committeeChat` — stores individual chat messages for each committee. Indexed by `committeeId + createdAt`. Limited to 200 most recent per query. Only members of the committee can send; all authenticated users can read.
+
+`committeeSummaries` — stores meeting summaries. Fields: `committeeId` (string), `title` (string), `date` (string YYYY-MM-DD), `content` (string, meeting notes), `decisions` (string[], numbered decisions/action items), `createdAt` (timestamp). Admins can add and delete.
+
+`groupChat` — identical structure to `committeeChat` but scoped by `groupId` instead of `committeeId`. Members-only write; read access for authenticated users.
+
+`events.attendeeUids` — added to existing event documents via `arrayUnion`/`arrayRemove`. No migration needed; defaults to `[]` when absent.
+
+`committees.memberUids` / `hobbyGroups.memberUids` — added to existing documents via `arrayUnion`/`arrayRemove`. No migration needed.
 
 ---
 
@@ -209,6 +230,30 @@ firebase deploy --only firestore:rules   # Deploy security rules
 ```
 
 The `api/chat.js` serverless function is picked up automatically by Vercel.
+
+---
+
+## New feature overview
+
+### Event RSVP
+Users tap "אני מגיע/ה" on any event detail panel to RSVP. The button toggles to "אני מגיע/ה — לחץ לביטול". Attendees are stored in `events/{id}.attendeeUids` (Firestore `arrayUnion`/`arrayRemove`). The attendee count is shown; expanding the list lazy-loads full user profiles and each row is clickable (opens ContactModal).
+
+### Committees — join, chat, summaries
+Each committee card in `CommitteesPage` has a join/leave badge. Once joined, a "צ׳אט" tab appears with a real-time chat panel powered by `onSnapshot`. All users see the "סיכומים" tab with meeting summaries. Admins see an "add summary" form with title, date, free-text content, and numbered decisions. Summaries can be deleted by admins.
+
+The "צוות" tab lists committee members as clickable rows — tapping opens the ContactModal. A non-member "שלח הודעה" tab lets users message the committee directly.
+
+### Community groups — panels, members, chat
+Each group card in `CommunityGroupsPage` has expandable panels:
+- **מידע וקישורים** — renders structured fields: plain text, link pills (never raw URLs), and data tables
+- **חברים** — lazy-loaded member list, each row clickable → ContactModal
+- **צ׳אט** — real-time chat, members only; same `onSnapshot` pattern as committee chat
+
+### ContactModal (bottom-sheet)
+A shared `src/components/ui/ContactModal.jsx` used across committees, groups, and events. Given a `person` object with `uid`, it:
+1. Shows avatar (initials), name, and title
+2. Renders phone (tap-to-call), WhatsApp (deep-link to `wa.me`), and email (mailto) action rows
+3. Fetches `children` and `classes` to resolve which class labels belong to this parent — displayed as chips. Child names are never exposed; only the class name is shown.
 
 ---
 
