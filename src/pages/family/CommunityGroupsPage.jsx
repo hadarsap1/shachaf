@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { getHobbyGroups, joinHobbyGroup, leaveHobbyGroup } from '../../lib/db'
+import { getHobbyGroups, joinHobbyGroup, leaveHobbyGroup, getUsersByUids } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
-  Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Loader2, ExternalLink,
+  Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Loader2, ExternalLink, ChevronLeft, ChevronDown,
 } from 'lucide-react'
 import clsx from 'clsx'
+import ContactModal from '../../components/ui/ContactModal'
 
 function GroupFields({ fields }) {
   if (!fields?.length) return null
@@ -61,6 +62,10 @@ function HobbyGroupCard({ group, uid }) {
   const isMember = (group.memberUids || []).includes(uid)
   const [loading, setLoading] = useState(false)
   const [memberUids, setMemberUids] = useState(group.memberUids || [])
+  const [membersOpen, setMembersOpen] = useState(false)
+  const [members, setMembers] = useState(null)
+  const [loadingMembers, setLoadingMembers] = useState(false)
+  const [selectedMember, setSelectedMember] = useState(null)
   const Icon = ICON_MAP[group.icon] || Users
 
   const toggle = async () => {
@@ -78,6 +83,16 @@ function HobbyGroupCard({ group, uid }) {
     }
   }
 
+  const handleShowMembers = async () => {
+    if (!membersOpen && members === null) {
+      setLoadingMembers(true)
+      const fetched = await getUsersByUids(memberUids)
+      setMembers(fetched)
+      setLoadingMembers(false)
+    }
+    setMembersOpen(o => !o)
+  }
+
   const joined = memberUids.includes(uid)
 
   return (
@@ -90,15 +105,49 @@ function HobbyGroupCard({ group, uid }) {
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-gray-800">{group.name}</h3>
           {group.description && <p className="text-sm text-gray-500 mt-1">{group.description}</p>}
-          <p className="text-xs text-gray-400 mt-1">{memberUids.length} חברים</p>
+          {memberUids.length > 0 && (
+            <button
+              onClick={handleShowMembers}
+              className="flex items-center gap-1 text-xs text-primary-600 mt-1 hover:text-primary-800 transition-[color] duration-150"
+            >
+              <Users size={11} />
+              {membersOpen ? 'הסתר חברים' : `${memberUids.length} חברים`}
+              {loadingMembers
+                ? <Loader2 size={11} className="animate-spin" />
+                : membersOpen ? <ChevronDown size={11} /> : <ChevronLeft size={11} />
+              }
+            </button>
+          )}
+          {memberUids.length === 0 && (
+            <p className="text-xs text-gray-400 mt-1">אין חברים עדיין</p>
+          )}
         </div>
       </div>
+
+      {membersOpen && members && (
+        <div className="mt-3 pt-3 border-t border-gray-50">
+          {members.map(m => (
+            <button
+              key={m.uid}
+              onClick={() => setSelectedMember(m)}
+              className="w-full flex items-center gap-3 py-2 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right"
+            >
+              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+                {m.name?.[0] || '?'}
+              </div>
+              <span className="flex-1 text-sm font-medium text-gray-700 truncate">{m.name}</span>
+              <ChevronLeft size={13} className="text-gray-300 flex-shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+
       <GroupFields fields={group.fields} />
       <button
         onClick={toggle}
         disabled={loading}
         className={clsx(
-          'mt-4 w-full py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2',
+          'mt-4 w-full py-2 rounded-xl text-sm font-medium transition-[background-color,color] duration-150 flex items-center justify-center gap-2',
           joined
             ? 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
             : 'bg-primary-600 text-white hover:bg-primary-700'
@@ -106,6 +155,10 @@ function HobbyGroupCard({ group, uid }) {
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : joined ? 'עזוב קבוצה' : 'הצטרף לקבוצה'}
       </button>
+
+      {selectedMember && (
+        <ContactModal person={selectedMember} onClose={() => setSelectedMember(null)} />
+      )}
     </div>
   )
 }

@@ -1,5 +1,9 @@
-import { X, Clock, MapPin, Plus, Calendar } from 'lucide-react'
+import { useState } from 'react'
+import { X, Clock, MapPin, Plus, Calendar, Users, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
+import { useAuth } from '../../context/AuthContext'
+import { rsvpEvent, unrsvpEvent, getUsersByUids } from '../../lib/db'
+import ContactModal from './ContactModal'
 
 const TYPE_LABEL = {
   social:      'חברתי',
@@ -48,6 +52,46 @@ function buildICSContent(event) {
 }
 
 export default function EventDetailPanel({ event, onClose }) {
+  const { user } = useAuth()
+  const [attendeeUids, setAttendeeUids] = useState(event.attendeeUids || [])
+  const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [attendeesOpen, setAttendeesOpen] = useState(false)
+  const [attendees, setAttendees] = useState(null)
+  const [loadingAttendees, setLoadingAttendees] = useState(false)
+  const [selectedPerson, setSelectedPerson] = useState(null)
+
+  const isGoing = user && attendeeUids.includes(user.uid)
+
+  const handleRsvp = async () => {
+    if (!user) return
+    setRsvpLoading(true)
+    try {
+      if (isGoing) {
+        await unrsvpEvent(event.id, user.uid)
+        setAttendeeUids(u => u.filter(id => id !== user.uid))
+        if (attendees) setAttendees(a => a.filter(p => p.uid !== user.uid))
+      } else {
+        await rsvpEvent(event.id, user.uid)
+        setAttendeeUids(u => [...u, user.uid])
+        if (attendees) setAttendees(a => [...a, { uid: user.uid, name: user.name || '' }])
+      }
+    } catch (e) {
+      console.error('RSVP error', e)
+    } finally {
+      setRsvpLoading(false)
+    }
+  }
+
+  const handleShowAttendees = async () => {
+    if (!attendeesOpen && attendees === null) {
+      setLoadingAttendees(true)
+      const fetched = await getUsersByUids(attendeeUids)
+      setAttendees(fetched)
+      setLoadingAttendees(false)
+    }
+    setAttendeesOpen(o => !o)
+  }
+
   const handleDownloadICS = () => {
     const content = buildICSContent(event)
     const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
@@ -79,60 +123,117 @@ export default function EventDetailPanel({ event, onClose }) {
             <img
               src={event.imageUrl}
               alt={event.title}
-              className="w-full object-cover max-h-56"
+              className="w-full object-cover max-h-56 outline outline-1 outline-black/10"
             />
           )}
 
           <div className="px-5 py-5 space-y-4">
-          <div className="flex justify-end">
-            <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
-              {typeLabel}
-            </span>
-          </div>
+            <div className="flex justify-end">
+              <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
+                {typeLabel}
+              </span>
+            </div>
 
-          <h3 className="text-lg font-bold text-gray-900 text-right leading-snug">{event.title}</h3>
+            <h3 className="text-lg font-bold text-gray-900 text-right leading-snug">{event.title}</h3>
 
-          {event.description && (
-            <p className="text-sm text-gray-600 text-right leading-relaxed">{event.description}</p>
-          )}
+            {event.description && (
+              <p className="text-sm text-gray-600 text-right leading-relaxed">{event.description}</p>
+            )}
 
-          <div className="space-y-2">
-            {event.date && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
-                <span>
-                  {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                  {event.time ? ` • ${event.time}` : ''}
-                </span>
-                <Clock size={15} className="text-primary-400 flex-shrink-0" />
+            <div className="space-y-2">
+              {event.date && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+                  <span>
+                    {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {event.time ? ` • ${event.time}` : ''}
+                  </span>
+                  <Clock size={15} className="text-primary-400 flex-shrink-0" />
+                </div>
+              )}
+              {event.location && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+                  <span>{event.location}</span>
+                  <MapPin size={15} className="text-primary-400 flex-shrink-0" />
+                </div>
+              )}
+            </div>
+
+            {/* RSVP button */}
+            <button
+              onClick={handleRsvp}
+              disabled={rsvpLoading}
+              className={clsx(
+                'w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-[background-color,color] duration-150 active:scale-[0.96]',
+                isGoing
+                  ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                  : 'bg-primary-600 text-white hover:bg-primary-700'
+              )}
+            >
+              {rsvpLoading
+                ? <Loader2 size={15} className="animate-spin" />
+                : isGoing
+                  ? <><CheckCircle2 size={15} />אני מגיע/ה — לחץ לביטול</>
+                  : <>אני מגיע/ה</>
+              }
+            </button>
+
+            {/* Attendees */}
+            {attendeeUids.length > 0 && (
+              <div>
+                <button
+                  onClick={handleShowAttendees}
+                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-[color] duration-150"
+                >
+                  <Users size={14} />
+                  {attendeesOpen ? 'הסתר משתתפים' : `${attendeeUids.length} משתתפים`}
+                  {loadingAttendees
+                    ? <Loader2 size={13} className="animate-spin" />
+                    : <ChevronDown size={13} className={clsx('transition-transform duration-150', attendeesOpen && 'rotate-180')} />
+                  }
+                </button>
+
+                {attendeesOpen && attendees && (
+                  <div className="mt-2 space-y-1">
+                    {attendees.map(person => (
+                      <button
+                        key={person.uid}
+                        onClick={() => setSelectedPerson(person)}
+                        className="w-full flex items-center gap-2.5 py-2 px-2 rounded-xl hover:bg-gray-50 transition-[background-color] duration-150 text-right"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-700 flex-shrink-0">
+                          {person.name?.[0] || '?'}
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-gray-700">{person.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-            {event.location && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
-                <span>{event.location}</span>
-                <MapPin size={15} className="text-primary-400 flex-shrink-0" />
-              </div>
-            )}
-          </div>
           </div>
         </div>
 
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
           <button
             onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
-            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-colors font-medium"
+            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96]"
           >
             <Plus size={14} />
             Google Calendar
           </button>
           <button
             onClick={handleDownloadICS}
-            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-colors font-medium"
+            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96]"
           >
             <Calendar size={14} />
             יומן (.ics)
           </button>
         </div>
       </div>
+
+      {selectedPerson && (
+        <ContactModal person={selectedPerson} onClose={() => setSelectedPerson(null)} />
+      )}
     </>
   )
 }

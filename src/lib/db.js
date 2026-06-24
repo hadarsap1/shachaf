@@ -578,6 +578,14 @@ export async function leaveHobbyGroup(groupId, uid) {
   await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayRemove(uid) })
 }
 
+export async function rsvpEvent(eventId, uid) {
+  await updateDoc(doc(db, 'events', eventId), { attendeeUids: arrayUnion(uid) })
+}
+
+export async function unrsvpEvent(eventId, uid) {
+  await updateDoc(doc(db, 'events', eventId), { attendeeUids: arrayRemove(uid) })
+}
+
 // ── Committee-scoped events ───────────────────────────────────────────────────
 export async function getEventsByCommittee(committeeId) {
   const q = query(collection(db, 'events'), where('committeeId', '==', committeeId), orderBy('date', 'asc'))
