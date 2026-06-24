@@ -90,6 +90,15 @@ service cloud.firestore {
                          (resource.data.attendeeUids.hasAll(request.resource.data.attendeeUids)
                           && resource.data.attendeeUids.removeAll(request.resource.data.attendeeUids) == [request.auth.uid])
                        );
+
+      // Group members can create and delete events scoped to their group
+      allow create: if request.auth != null
+                    && request.resource.data.groupId is string
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.auth.uid in get(/databases/$(database)/documents/hobbyGroups/$(request.resource.data.groupId)).data.get('memberUids', []);
+      allow delete: if request.auth != null
+                    && resource.data.groupId is string
+                    && resource.data.createdBy == request.auth.uid;
     }
 
     // Forms — published forms readable by all auth users; only admins write
@@ -270,6 +279,32 @@ service cloud.firestore {
       allow delete: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                        in ['admin', 'super_admin'];
+    }
+
+    // Group member-contributed links — members can create/delete own; admins delete any; all auth read
+    match /groupLinks/{linkId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.get('url', '').size() <= 2000
+                    && request.resource.data.get('label', '').size() <= 200
+                    && request.resource.data.groupId is string
+                    && request.auth.uid in get(/databases/$(database)/documents/hobbyGroups/$(request.resource.data.groupId)).data.get('memberUids', []);
+      allow delete: if request.auth != null
+                    && (resource.data.uid == request.auth.uid
+                        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']);
+    }
+
+    // Group member-contributed files — members can create/delete own; admins delete any; all auth read
+    match /groupFiles/{fileId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.groupId is string
+                    && request.auth.uid in get(/databases/$(database)/documents/hobbyGroups/$(request.resource.data.groupId)).data.get('memberUids', []);
+      allow delete: if request.auth != null
+                    && (resource.data.uid == request.auth.uid
+                        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']);
     }
 
     // Announcements — all authenticated users can read; only admins write

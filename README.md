@@ -23,7 +23,7 @@ The platform serves five types of users:
 - Class page — weekly schedule, class team contacts, per-child private notes
 - Forms builder — admin creates forms, families fill and re-edit submissions; co-parent submissions are shared (one submission per family per form)
 - **Committees** — join/leave any committee with one tap; per-committee real-time group chat (members only); meeting summaries with numbered decisions (admin-managed); clickable member list with contact bottom-sheet
-- **Community groups** — join/leave hobby groups; expandable panels for info/links (rendered as pill buttons), member list, and real-time group chat (members only)
+- **Community groups** — join/leave hobby groups; expandable panels for info/links (rendered as pill buttons), member list, real-time group chat (members only); members can post links, upload files, and create group-scoped events
 - **Contact bottom-sheet** — tapping any person opens a modal with phone call, WhatsApp, and email actions, plus the parent's kids' class labels (no child names exposed)
 - AI chat assistant (Google Gemini via `/api/chat`) — context-aware of the family's tasks and milestones
 - Two-parent support — first parent registers a co-parent from Settings; both share children, tasks, and form submissions
@@ -173,6 +173,8 @@ Key collections:
 | `committeeSummaries/{id}` | Meeting summaries: committeeId, title, date, content, decisions[], createdAt |
 | `hobbyGroups/{id}` | Community group: name, description, color, icon, fields[], **memberUids[]** |
 | `groupChat/{id}` | Real-time community group chat: groupId, uid, name, text, createdAt |
+| `groupLinks/{id}` | Member-posted links: groupId, uid, postedBy, label, url, createdAt |
+| `groupFiles/{id}` | Member-uploaded files: groupId, uid, postedBy, label, fileName, fileUrl, filePath, createdAt |
 | `announcements/{id}` | Class/school announcements |
 | `pendingFamilies/{email}` | Pre-imported families waiting to register |
 | `messages/{id}` | Contact form submissions (admin-read only) |

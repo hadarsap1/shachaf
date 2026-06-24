@@ -593,6 +593,84 @@ export async function getEventsByCommittee(committeeId) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
+// ── Group member-contributed links ────────────────────────────────────────────
+export async function getGroupLinks(groupId) {
+  const q = query(collection(db, 'groupLinks'), where('groupId', '==', groupId), orderBy('createdAt', 'desc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function addGroupLink(groupId, uid, postedBy, label, url) {
+  await addDoc(collection(db, 'groupLinks'), {
+    groupId,
+    uid,
+    postedBy: String(postedBy).slice(0, 100),
+    label: String(label).slice(0, 200),
+    url: String(url).slice(0, 2000),
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function deleteGroupLink(id) {
+  await deleteDoc(doc(db, 'groupLinks', id))
+}
+
+// ── Group member-contributed files ────────────────────────────────────────────
+export async function uploadGroupFile(groupId, uid, file, label) {
+  const ext = safeExt(file)
+  const path = `groupFiles/${groupId}/${uid}_${Date.now()}.${ext}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  const url = await getDownloadURL(snap.ref)
+  await addDoc(collection(db, 'groupFiles'), {
+    groupId,
+    uid,
+    label: String(label || file.name).slice(0, 200),
+    fileName: file.name,
+    fileUrl: url,
+    filePath: path,
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function getGroupFiles(groupId) {
+  const q = query(collection(db, 'groupFiles'), where('groupId', '==', groupId), orderBy('createdAt', 'desc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function deleteGroupFile(id, filePath) {
+  await deleteDoc(doc(db, 'groupFiles', id))
+  if (filePath) {
+    try { await deleteObject(ref(storage, filePath)) } catch { /* already gone */ }
+  }
+}
+
+// ── Group-scoped events ────────────────────────────────────────────────────────
+export async function getGroupEvents(groupId) {
+  const q = query(collection(db, 'events'), where('groupId', '==', groupId), orderBy('date', 'asc'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function createGroupEvent(groupId, uid, { title, date, time, location, description }) {
+  await addDoc(collection(db, 'events'), {
+    groupId,
+    createdBy: uid,
+    title: String(title).slice(0, 200),
+    date,
+    time: time || '',
+    location: String(location || '').slice(0, 300),
+    description: String(description || '').slice(0, 2000),
+    type: 'community',
+    attendeeUids: [],
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function deleteGroupEvent(id) {
+  await deleteDoc(doc(db, 'events', id))
+}
+
 // ── Emergency mode ────────────────────────────────────────────────────────────
 export async function getEmergencyMode() {
   const snap = await getDoc(doc(db, 'settings', 'emergencyMode'))
