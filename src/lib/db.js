@@ -699,3 +699,24 @@ export async function saveCommitteeSummary(summary) {
 export async function deleteCommitteeSummary(id) {
   await deleteDoc(doc(db, 'committeeSummaries', id))
 }
+
+// ── Community group chat ──────────────────────────────────────────────────────
+export function subscribeGroupChat(groupId, callback) {
+  const q = query(
+    collection(db, 'groupChat'),
+    where('groupId', '==', groupId),
+    orderBy('createdAt', 'asc'),
+    limit(200),
+  )
+  return onSnapshot(q, snap => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  })
+}
+
+export async function sendGroupChatMessage(groupId, uid, name, text) {
+  await addDoc(collection(db, 'groupChat'), {
+    groupId, uid, name,
+    text: String(text).slice(0, 2000),
+    createdAt: serverTimestamp(),
+  })
+}
