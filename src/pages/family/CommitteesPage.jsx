@@ -4,8 +4,9 @@ import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
   Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
-  Phone, Mail, Loader2, MessageSquare, Send, CheckCircle2, Calendar,
+  Phone, Mail, Loader2, MessageSquare, Send, CheckCircle2, Calendar, ChevronLeft,
 } from 'lucide-react'
+import ContactModal from '../../components/ui/ContactModal'
 
 const ICON_MAP = {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -17,9 +18,12 @@ function CommitteeIcon({ name, size = 20, className, style }) {
   return <Icon size={size} className={className} style={style} />
 }
 
-function MemberCard({ member }) {
+function MemberCard({ member, onClick }) {
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right"
+    >
       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0">
         {member.name?.[0] || '?'}
       </div>
@@ -28,20 +32,14 @@ function MemberCard({ member }) {
           <span className="text-sm font-semibold text-gray-800">{member.name}</span>
           {member.title && <span className="text-xs text-gray-400">{member.title}</span>}
         </div>
-        <div className="flex flex-wrap gap-3 mt-1">
-          {member.phone && (
-            <a href={`tel:${member.phone}`} className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800" dir="ltr">
-              <Phone size={11} />{member.phone}
-            </a>
-          )}
-          {member.email && (
-            <a href={`mailto:${member.email}`} className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800" dir="ltr">
-              <Mail size={11} />{member.email}
-            </a>
-          )}
-        </div>
+        {(member.phone || member.email) && (
+          <p className="text-xs text-gray-400 mt-0.5">
+            {member.phone || member.email}
+          </p>
+        )}
       </div>
-    </div>
+      <ChevronLeft size={14} className="text-gray-300 flex-shrink-0" />
+    </button>
   )
 }
 
@@ -54,6 +52,7 @@ function CommitteeCard({ committee }) {
   const [body, setBody]         = useState('')
   const [sending, setSending]   = useState(false)
   const [sent, setSent]         = useState(false)
+  const [selectedMember, setSelectedMember] = useState(null)
   const hasMembers = committee.members?.length > 0
 
   const handleShowEvents = async () => {
@@ -115,8 +114,14 @@ function CommitteeCard({ committee }) {
 
       {expanded && hasMembers && (
         <div className="px-5 pb-4 border-t border-gray-50">
-          {committee.members.map((m, i) => <MemberCard key={i} member={m} />)}
+          {committee.members.map((m, i) => (
+            <MemberCard key={i} member={m} onClick={() => setSelectedMember(m)} />
+          ))}
         </div>
+      )}
+
+      {selectedMember && (
+        <ContactModal person={selectedMember} onClose={() => setSelectedMember(null)} />
       )}
 
       {eventsOpen && (
