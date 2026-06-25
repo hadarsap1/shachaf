@@ -31,10 +31,10 @@ function ScheduleView({ schedule }) {
     <div className="overflow-x-auto -mx-1">
       <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
         <thead>
-          <tr className="border-b border-gray-100">
-            <th className="sticky right-0 z-10 bg-white w-14 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100" />
+          <tr className="border-b border-gray-100 dark:border-gray-700">
+            <th className="sticky right-0 z-10 bg-white w-14 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700" />
             {SCHEDULE_DAYS.map(d => (
-              <th key={d} className="px-1 py-1.5 text-center text-gray-500 font-semibold min-w-[60px]">{d}</th>
+              <th key={d} className="px-1 py-1.5 text-center text-gray-500 font-semibold min-w-[60px] dark:text-gray-400">{d}</th>
             ))}
           </tr>
         </thead>
@@ -50,13 +50,13 @@ function ScheduleView({ schedule }) {
             )
             return (
               <tr key={period.id} className="border-t border-gray-50">
-                <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-400 font-semibold text-center border-l border-gray-100 text-[11px]">
+                <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-400 font-semibold text-center border-l border-gray-100 text-[11px] dark:bg-gray-800 dark:border-gray-700">
                   {period.label}
                 </td>
                 {SCHEDULE_DAYS.map((_, di) => {
                   const val = (schedule || {})[`${di}-${period.id}`]
                   return (
-                    <td key={di} className="px-1 py-1 text-center text-gray-700">
+                    <td key={di} className="px-1 py-1 text-center text-gray-700 dark:text-gray-200">
                       {val || <span className="text-gray-200">—</span>}
                     </td>
                   )
@@ -75,12 +75,12 @@ function ScheduleView({ schedule }) {
 function PersonCard({ person }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0">
+      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40">
         {person.name?.[0] || '?'}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-sm font-semibold text-gray-800">{person.name}</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{person.name}</span>
           {person.role && <span className="text-xs text-gray-400">{person.role}</span>}
           {person.title && <span className="text-xs text-gray-400">{person.title}</span>}
         </div>
@@ -115,12 +115,12 @@ function AnnItem({ ann }) {
         className="w-full flex items-start justify-between gap-2 py-3 text-right"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800">{ann.title}</p>
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{ann.title}</p>
           {ts && <p className="text-xs text-gray-400 mt-0.5">{ts.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}</p>}
         </div>
         <ChevronDown size={16} className={clsx('text-gray-400 flex-shrink-0 mt-0.5 transition-transform', open && 'rotate-180')} />
       </button>
-      {open && <p className="text-sm text-gray-600 leading-relaxed pb-3 px-0.5">{ann.body}</p>}
+      {open && <p className="text-sm text-gray-600 leading-relaxed pb-3 px-0.5 dark:text-gray-300">{ann.body}</p>}
     </div>
   )
 }
@@ -129,11 +129,11 @@ function AnnItem({ ann }) {
 
 function Section({ title, icon: Icon, color, children, action }) {
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
         <div className="flex items-center gap-2.5">
           <Icon size={18} style={{ color }} />
-          <h2 className="font-semibold text-gray-800 text-sm">{title}</h2>
+          <h2 className="font-semibold text-gray-800 text-sm dark:text-gray-100">{title}</h2>
         </div>
         {action}
       </div>
@@ -170,19 +170,19 @@ function ChildNoteCard({ child, parentId, color }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           {saved && (
-            <span className="flex items-center gap-1 text-xs text-green-600">
+            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <Check size={11} /> נשמר
             </span>
           )}
         </div>
-        <span className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+        <span className="text-sm font-semibold text-gray-700 flex items-center gap-1.5 dark:text-gray-200">
           {child.name}
           <span className="w-2 h-2 rounded-full inline-block"
             style={{ backgroundColor: color || '#1B3B70' }} />
         </span>
       </div>
       {loading ? (
-        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse dark:bg-gray-800" />
       ) : (
         <textarea
           value={note}
@@ -260,7 +260,7 @@ export default function ClassPage() {
   if (myClasses.length === 0) return (
     <div className="p-6 text-center" dir="rtl">
       <GraduationCap size={48} className="mx-auto mb-4 text-gray-300" />
-      <h2 className="text-lg font-semibold text-gray-700">אין כיתה מקושרת</h2>
+      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">אין כיתה מקושרת</h2>
       <p className="text-sm text-gray-400 mt-1">
         ילדיכם טרם קושרו לכיתה. צרו קשר עם הנהלת בית הספר.
       </p>
@@ -339,7 +339,7 @@ export default function ClassPage() {
                     <span className="text-xs text-gray-400">
                       {c.next.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}
                     </span>
-                    <span className="text-sm font-medium text-gray-800">{c.name}</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{c.name}</span>
                   </div>
                 ))}
               </div>
@@ -350,7 +350,7 @@ export default function ClassPage() {
         {/* Announcements */}
         {classAnns.length > 0 && (
           <Section title="הודעות" icon={Megaphone} color={cls?.color || '#1B3B70'}>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {classAnns.slice(0, 5).map(ann => (
                 <AnnItem key={ann.id} ann={ann} />
               ))}
@@ -379,7 +379,7 @@ export default function ClassPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{ev.title}</p>
+                    <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{ev.title}</p>
                     {ev.time && <p className="text-xs text-gray-400">{ev.time.slice(0, 5)}</p>}
                   </div>
                 </div>

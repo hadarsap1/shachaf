@@ -30,14 +30,14 @@ function MemberCard({ member, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right"
+      className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right dark:hover:bg-gray-700/50"
     >
-      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0">
+      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0 dark:bg-gray-800 dark:text-gray-400">
         {member.name?.[0] || '?'}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-gray-800">{member.name}</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{member.name}</span>
           {member.title && <span className="text-xs text-gray-400">{member.title}</span>}
         </div>
         {(member.phone || member.email) && (
@@ -181,7 +181,7 @@ function CommitteeSummaries({ committee, isAdmin }) {
       )}
 
       {adding && (
-        <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
+        <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100 dark:bg-gray-900 dark:border-gray-700">
           <input
             className="input text-sm text-right"
             placeholder="כותרת הסיכום"
@@ -224,10 +224,10 @@ function CommitteeSummaries({ committee, isAdmin }) {
       )}
 
       {summaries?.map(s => (
-        <div key={s.id} className="border border-gray-100 rounded-xl p-4 space-y-2">
+        <div key={s.id} className="border border-gray-100 rounded-xl p-4 space-y-2 dark:border-gray-700">
           <div className="flex items-start justify-between gap-2">
             <div className="text-right flex-1">
-              <p className="font-semibold text-gray-800 text-sm">{s.title}</p>
+              <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{s.title}</p>
               <p className="text-xs text-gray-400 mt-0.5">
                 {new Date(s.date).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
@@ -241,14 +241,14 @@ function CommitteeSummaries({ committee, isAdmin }) {
               </button>
             )}
           </div>
-          <p className="text-sm text-gray-600 leading-relaxed text-right">{s.content}</p>
+          <p className="text-sm text-gray-600 leading-relaxed text-right dark:text-gray-300">{s.content}</p>
           {s.decisions?.length > 0 && (
             <div className="mt-2">
-              <p className="text-xs font-semibold text-gray-500 mb-1.5">החלטות:</p>
+              <p className="text-xs font-semibold text-gray-500 mb-1.5 dark:text-gray-400">החלטות:</p>
               <ul className="space-y-1">
                 {s.decisions.map((d, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-gray-700 text-right">
-                    <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">{i + 1}</span>
+                  <li key={i} className="flex items-start gap-2 text-xs text-gray-700 text-right dark:text-gray-200">
+                    <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 dark:text-primary-300 dark:bg-primary-900/40">{i + 1}</span>
                     {d}
                   </li>
                 ))}
@@ -315,7 +315,7 @@ function CommitteeCard({ committee }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <div className="p-5">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -324,7 +324,7 @@ function CommitteeCard({ committee }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-gray-800">{committee.name}</h3>
+              <h3 className="font-bold text-gray-800 dark:text-gray-100">{committee.name}</h3>
               {/* Join/Leave badge */}
               <button
                 onClick={handleJoin}
@@ -340,7 +340,7 @@ function CommitteeCard({ committee }) {
               </button>
             </div>
             {committee.description && (
-              <p className="text-sm text-gray-500 mt-1 leading-relaxed">{committee.description}</p>
+              <p className="text-sm text-gray-500 mt-1 leading-relaxed dark:text-gray-400">{committee.description}</p>
             )}
             {memberUids.length > 0 && (
               <p className="text-xs text-gray-400 mt-1">{memberUids.length} חברים</p>
@@ -414,7 +414,7 @@ function CommitteeCard({ committee }) {
                   <div key={ev.id} className="flex items-center justify-between text-sm">
                     <span className="text-xs text-gray-400">{ev.date} {ev.time || ''}</span>
                     <div className="text-right">
-                      <p className="font-medium text-gray-800 text-sm">{ev.title}</p>
+                      <p className="font-medium text-gray-800 text-sm dark:text-gray-100">{ev.title}</p>
                       {ev.location && <p className="text-xs text-gray-400">{ev.location}</p>}
                     </div>
                   </div>
@@ -439,7 +439,7 @@ function CommitteeCard({ committee }) {
       {activePanel === 'message' && !isMember && (
         <div className="px-5 pb-5 border-t border-gray-50 pt-4">
           {sent ? (
-            <div className="flex items-center gap-2 text-green-600 text-sm justify-center py-2">
+            <div className="flex items-center gap-2 text-green-600 text-sm justify-center py-2 dark:text-green-400">
               <CheckCircle2 size={16} />ההודעה נשלחה לוועדה
             </div>
           ) : (
@@ -478,11 +478,11 @@ export default function CommitteesPage() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Shield size={24} className="text-primary-600" />
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white">
+          <span className="text-2xl leading-none">🔗</span>
           ועדות
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">ועדות הקהילה ואנשי הקשר שלהן</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">ועדות הקהילה ואנשי הקשר שלהן</p>
       </div>
 
       {loading ? (
@@ -490,7 +490,7 @@ export default function CommitteesPage() {
       ) : committees.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Users size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין ועדות פעילות כרגע</p>
+          <p className="font-semibold text-gray-500 dark:text-gray-400">אין ועדות פעילות כרגע</p>
         </div>
       ) : (
         <div className="space-y-4">

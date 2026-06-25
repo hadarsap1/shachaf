@@ -7,25 +7,25 @@ const STATUS_CONFIG = {
     icon: CheckCircle2,
     label: 'הושלם',
     color: 'text-green-500',
-    bg: 'bg-green-50',
-    border: 'border-green-200',
+    bg: 'bg-green-50 dark:bg-green-900/20',
+    border: 'border-green-200 dark:border-green-800',
     badge: 'badge-success',
   },
   in_progress: {
     icon: Clock,
     label: 'בתהליך',
     color: 'text-primary-500',
-    bg: 'bg-primary-50',
-    border: 'border-primary-200',
+    bg: 'bg-primary-50 dark:bg-primary-900/20',
+    border: 'border-primary-200 dark:border-primary-800',
     badge: 'badge-primary',
   },
   pending: {
     icon: Circle,
     label: 'ממתין',
     color: 'text-gray-400',
-    bg: 'bg-gray-50',
-    border: 'border-gray-200',
-    badge: 'bg-gray-100 text-gray-600',
+    bg: 'bg-gray-50 dark:bg-gray-800',
+    border: 'border-gray-200 dark:border-gray-700',
+    badge: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
   },
 }
 
@@ -109,7 +109,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
             {task.dueDate && (
               <div className="flex items-center gap-1 mt-1.5">
                 <Clock size={12} className="text-gray-400" />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   יעד: {new Date(task.dueDate).toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}
                 </span>
               </div>
@@ -127,7 +127,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
       {expanded && (
         <div className={clsx('border-t px-4 pb-4 pt-3 space-y-3', config.border, config.bg)}>
           {task.description && (
-            <p className="text-sm text-gray-700 leading-relaxed">{task.description}</p>
+            <p className="text-sm text-gray-700 leading-relaxed dark:text-gray-200">{task.description}</p>
           )}
 
           <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
                 href={task.resourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150"
+                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150 dark:bg-gray-800 dark:hover:bg-primary-900/30"
               >
                 <ExternalLink size={13} />
                 פתח קישור
@@ -145,7 +145,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
             {task.whatsappPhone && (
               <button
                 onClick={handleWhatsApp}
-                className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-[background-color] duration-150"
+                className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-[background-color] duration-150 dark:bg-green-900/20 dark:text-green-300"
               >
                 <MessageCircle size={13} />
                 שלח וואטסאפ
@@ -154,7 +154,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
           </div>
 
           {task.completedAt && (
-            <p className="text-xs text-green-600">
+            <p className="text-xs text-green-600 dark:text-green-400">
               ✓ הושלם ב-{new Date(task.completedAt).toLocaleDateString('he-IL')}
             </p>
           )}

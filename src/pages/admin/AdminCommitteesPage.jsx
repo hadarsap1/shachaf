@@ -57,7 +57,7 @@ function MemberSearch({ communityUsers, onSelect }) {
 
   return (
     <div className="relative" ref={ref}>
-      <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 focus-within:border-primary-400 focus-within:bg-white transition-colors">
+      <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 focus-within:border-primary-400 focus-within:bg-white transition-colors dark:bg-gray-900 dark:border-gray-700">
         <Search size={14} className="text-gray-400 flex-shrink-0" />
         <input
           value={query}
@@ -69,19 +69,19 @@ function MemberSearch({ communityUsers, onSelect }) {
         />
       </div>
       {open && filtered.length > 0 && (
-        <div className="absolute top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto">
+        <div className="absolute top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
           {filtered.map(u => (
             <button
               key={u.uid}
               type="button"
               onMouseDown={() => pick(u)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 text-right transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 text-right transition-colors dark:hover:bg-primary-900/30"
             >
-              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40">
                 {u.name?.[0] || '?'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
+                <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{u.name}</p>
                 {u.phone && <p className="text-xs text-gray-400" dir="ltr">{u.phone}</p>}
               </div>
             </button>
@@ -123,10 +123,10 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'ועדה חדשה' : 'עריכת ועדה'}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'ועדה חדשה' : 'עריכת ועדה'}</h2>
           <button onClick={handleSave} disabled={saving}
             className="flex items-center gap-1.5 btn-primary text-sm py-1.5 px-3">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
@@ -135,7 +135,7 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</div>}
+          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
 
           <div className="flex gap-3">
             <div className="flex-1">
@@ -200,14 +200,14 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
 
             <div className="space-y-3">
               {(draft.members || []).map((m, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2 dark:bg-gray-900">
                   <div className="flex gap-2">
                     <input value={m.name} onChange={e => updateMember(i, 'name', e.target.value)}
                       placeholder="שם" className="input flex-1 text-sm py-1.5" />
                     <input value={m.title || ''} onChange={e => updateMember(i, 'title', e.target.value)}
                       placeholder="תפקיד" className="input w-28 text-sm py-1.5" />
                     <button onClick={() => removeMember(i)}
-                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg dark:hover:bg-red-900/20">
                       <X size={14} />
                     </button>
                   </div>
@@ -221,7 +221,7 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
               ))}
 
               <button type="button" onClick={addBlankMember}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 font-medium border border-dashed border-gray-300 rounded-xl w-full py-2 justify-center hover:border-gray-400 transition-colors">
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 font-medium border border-dashed border-gray-300 rounded-xl w-full py-2 justify-center hover:border-gray-400 transition-colors dark:text-gray-400">
                 <Plus size={14} />
                 הוסף ידנית
               </button>
@@ -277,8 +277,8 @@ export default function AdminCommitteesPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ועדות</h1>
-          <p className="text-sm text-gray-500 mt-0.5">ניהול ועדות הקהילה</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🛡️</span>ועדות</h1>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">ניהול ועדות הקהילה</p>
         </div>
         <button
           onClick={() => { setSelected(blankCommittee(committees.length + 1)); setIsNew(true) }}
@@ -287,7 +287,7 @@ export default function AdminCommitteesPage() {
         </button>
       </div>
 
-      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -301,23 +301,23 @@ export default function AdminCommitteesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {committees.map(c => (
-            <div key={c.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4">
+            <div key={c.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4 dark:bg-gray-800 dark:border-gray-700">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: c.color + '20' }}>
                 <CommitteeIcon name={c.icon} size={22} className="opacity-90" style={{ color: c.color }} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-800">{c.name}</div>
-                {c.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.description}</p>}
+                <div className="font-semibold text-gray-800 dark:text-gray-100">{c.name}</div>
+                {c.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 dark:text-gray-400">{c.description}</p>}
                 {c.members?.length > 0 && <p className="text-xs text-gray-400 mt-1">{c.members.length} חברים</p>}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => { setSelected(c); setIsNew(false) }}
-                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl">
+                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl dark:hover:bg-primary-900/30">
                   <Edit2 size={15} />
                 </button>
                 <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl">
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl dark:hover:bg-red-900/20">
                   {deleting === c.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                 </button>
               </div>

@@ -33,28 +33,28 @@ function FieldRow({ field, index, total, onChange, onDelete, onMove }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700">
       <div
-        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50"
+        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
         onClick={() => setOpen(!open)}
       >
         <GripVertical size={14} className="text-gray-300 flex-shrink-0" />
         <div className="flex-1 text-right min-w-0">
-          <span className="text-sm font-medium text-gray-800 truncate block">{field.label || 'שדה ללא שם'}</span>
+          <span className="text-sm font-medium text-gray-800 truncate block dark:text-gray-100">{field.label || 'שדה ללא שם'}</span>
           <span className="text-xs text-gray-400">{FIELD_TYPES.find(t => t.value === field.type)?.label}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {field.required && <span className="text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded">נדרש</span>}
+          {field.required && <span className="text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded dark:bg-primary-900/30">נדרש</span>}
           <button onClick={e => { e.stopPropagation(); onMove(index, -1) }} disabled={index === 0}
-            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30">
+            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 dark:hover:bg-gray-700">
             <ChevronUp size={14} />
           </button>
           <button onClick={e => { e.stopPropagation(); onMove(index, 1) }} disabled={index === total - 1}
-            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30">
+            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 dark:hover:bg-gray-700">
             <ChevronDown size={14} />
           </button>
           <button onClick={e => { e.stopPropagation(); onDelete() }}
-            className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded">
+            className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded dark:hover:bg-red-900/20">
             <Trash2 size={14} />
           </button>
           <span className="text-gray-300">{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
@@ -62,7 +62,7 @@ function FieldRow({ field, index, total, onChange, onDelete, onMove }) {
       </div>
 
       {open && (
-        <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50 space-y-3">
+        <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50 space-y-3 dark:bg-gray-900 dark:border-gray-700">
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
               <label className="label block mb-1 text-right text-xs">סוג שדה</label>
@@ -109,7 +109,7 @@ function FieldRow({ field, index, total, onChange, onDelete, onMove }) {
           )}
 
           <label className="flex items-center justify-end gap-2 cursor-pointer">
-            <span className="text-sm text-gray-700">שדה נדרש</span>
+            <span className="text-sm text-gray-700 dark:text-gray-200">שדה נדרש</span>
             <button
               onClick={() => onChange({ ...field, required: !field.required })}
               className={clsx(
@@ -173,7 +173,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
     <div className="space-y-5">
       {/* Form metadata */}
       <div className="card p-5 space-y-4">
-        <h3 className="font-bold text-gray-700 text-sm">פרטי הטופס</h3>
+        <h3 className="font-bold text-gray-700 text-sm dark:text-gray-200">פרטי הטופס</h3>
         <div>
           <label className="label block mb-1 text-right">כותרת הטופס</label>
           <input
@@ -219,11 +219,11 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
             })}
           </div>
           {draft.targetRole === 'class' && (
-            <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
+            <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto dark:bg-gray-900">
               {classes.length === 0 && <p className="text-sm text-gray-400 text-center py-1">אין כיתות במערכת</p>}
               {classes.map(cls => (
                 <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
-                  <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                  <span className="text-sm text-gray-700 flex items-center gap-1.5 dark:text-gray-200">
                     {cls.name}
                     <span className="w-2 h-2 rounded-full inline-block"
                       style={{ backgroundColor: cls.color || '#1B3B70' }} />
@@ -254,7 +254,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
             <Plus size={15} />
             הוסף שדה
           </button>
-          <h3 className="font-bold text-gray-700 text-sm">שדות הטופס ({draft.fields.length})</h3>
+          <h3 className="font-bold text-gray-700 text-sm dark:text-gray-200">שדות הטופס ({draft.fields.length})</h3>
         </div>
         <div className="space-y-2">
           {draft.fields.map((field, i) => (
@@ -291,7 +291,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
         >
           שמור כטיוטה
         </button>
-        <button onClick={onCancel} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50">
+        <button onClick={onCancel} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
           <X size={16} />
         </button>
       </div>
@@ -321,12 +321,12 @@ function SubmissionsPanel({ form, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
           <div className="text-right">
-            <h2 className="font-bold text-gray-800">{form.title}</h2>
-            <p className="text-xs text-gray-500">{loading ? 'טוען...' : `${subs.length} תגובות`}</p>
+            <h2 className="font-bold text-gray-800 dark:text-gray-100">{form.title}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{loading ? 'טוען...' : `${subs.length} תגובות`}</p>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -337,16 +337,16 @@ function SubmissionsPanel({ form, onClose }) {
           ) : subs.length === 0 ? (
             <div className="text-center py-12 text-gray-400 text-sm">עדיין אין תגובות</div>
           ) : subs.map(sub => (
-            <div key={sub.id} className="bg-gray-50 rounded-xl p-4 space-y-2">
+            <div key={sub.id} className="bg-gray-50 rounded-xl p-4 space-y-2 dark:bg-gray-900">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-400">{fmtDate(sub.submittedAt)}</span>
-                <span className="font-semibold text-gray-800 text-sm">{sub.userName}</span>
+                <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{sub.userName}</span>
               </div>
               {form.fields.map(field => (
                 sub.data?.[field.id] ? (
                   <div key={field.id} className="text-right">
-                    <span className="text-xs text-gray-500">{field.label}: </span>
-                    <span className="text-sm text-gray-800">{sub.data[field.id]}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{field.label}: </span>
+                    <span className="text-sm text-gray-800 dark:text-gray-100">{sub.data[field.id]}</span>
                   </div>
                 ) : null
               ))}
@@ -427,7 +427,7 @@ export default function AdminFormsPage() {
             >
               ← חזור לרשימה
             </button>
-            <h1 className="text-xl font-black text-primary-800">
+            <h1 className="text-xl font-black text-primary-800 dark:text-primary-300">
               {editingForm?.title || 'טופס חדש'}
             </h1>
           </div>
@@ -446,11 +446,11 @@ export default function AdminFormsPage() {
               טופס חדש
             </button>
             <div>
-              <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-                <FileText size={22} />
+              <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
+                <span className="text-xl leading-none">📋</span>
                 ניהול טפסים
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5 text-right">{forms.length} טפסים</p>
+              <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{forms.length} טפסים</p>
             </div>
           </div>
 
@@ -476,14 +476,14 @@ export default function AdminFormsPage() {
                   <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                     <button
                       onClick={() => setViewingSubmissions(form)}
-                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 border border-gray-200 hover:border-primary-200 px-2 py-1 rounded-lg transition-colors"
+                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 border border-gray-200 hover:border-primary-200 px-2 py-1 rounded-lg transition-colors dark:text-gray-400 dark:border-gray-700"
                     >
                       <Eye size={12} />
                       תגובות
                     </button>
                     <button
                       onClick={() => handleEdit(form)}
-                      className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded-lg transition-colors"
+                      className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded-lg transition-colors dark:bg-primary-900/30"
                     >
                       <Edit2 size={12} />
                       ערוך
@@ -502,14 +502,14 @@ export default function AdminFormsPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(form.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors dark:hover:bg-red-900/20"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
                   <div className="text-right flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800">{form.title}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{form.description}</p>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">{form.title}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{form.description}</p>
                     <div className="flex items-center gap-2 mt-1.5 justify-end">
                       <span className="text-xs text-gray-400">{form.fields.length} שדות</span>
                       <span className="badge badge-primary text-xs">{targetLabel(form.targetRole)}</span>

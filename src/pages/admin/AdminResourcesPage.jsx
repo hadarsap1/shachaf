@@ -68,10 +68,10 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'הוסף קישור' : 'עריכת קישור'}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'הוסף קישור' : 'עריכת קישור'}</h2>
           <div className="w-8" />
         </div>
 
@@ -115,13 +115,13 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
               placeholder="למשל: בית הספר, קהילה, שירותים..."
             />
             {showCatSuggestions && catSuggestions.length > 0 && (
-              <div className="absolute top-full right-0 left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-card z-10 overflow-hidden">
+              <div className="absolute top-full right-0 left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-card z-10 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                 {catSuggestions.map(c => (
                   <button
                     key={c}
                     type="button"
                     onMouseDown={() => { setCategoryInput(c); setShowCatSuggestions(false) }}
-                    className="w-full text-right px-4 py-2.5 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                    className="w-full text-right px-4 py-2.5 text-sm hover:bg-primary-50 hover:text-primary-700 transition-colors dark:hover:bg-primary-900/30"
                   >
                     {c}
                   </button>
@@ -180,7 +180,7 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
           {error && <p className="text-xs text-red-500 text-right">{error}</p>}
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={handleSave}
             disabled={saving}
@@ -241,11 +241,11 @@ export default function AdminResourcesPage() {
           הוסף קישור
         </button>
         <div>
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-            <BookOpen size={22} />
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
+            <span className="text-xl leading-none">📖</span>
             מידע שימושי
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5 text-right">{resources.length} קישורים</p>
+          <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{resources.length} קישורים</p>
         </div>
       </div>
 
@@ -258,17 +258,17 @@ export default function AdminResourcesPage() {
       {!loading && resources.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <BookOpen size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין קישורים עדיין</p>
+          <p className="font-semibold text-gray-500 dark:text-gray-400">אין קישורים עדיין</p>
           <p className="text-sm mt-1">לחצו על "הוסף קישור" כדי להתחיל</p>
         </div>
       )}
 
       {categories.map(cat => (
         <section key={cat} className="mb-6">
-          <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
-            <span className="flex-1 h-px bg-gray-200" />
+          <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 flex items-center gap-2 dark:text-gray-400">
+            <span className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             {cat}
-            <span className="flex-1 h-px bg-gray-200" />
+            <span className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
           </h2>
           <div className="space-y-2">
             {resources.filter(r => r.category === cat).map(resource => {
@@ -282,16 +282,16 @@ export default function AdminResourcesPage() {
                     <Icon size={16} className={color} />
                   </div>
                   <div className="flex-1 text-right min-w-0">
-                    <div className="font-semibold text-gray-800 text-sm">{resource.title}</div>
+                    <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{resource.title}</div>
                     {resource.description && (
-                      <div className="text-xs text-gray-500 mt-0.5 truncate">{resource.description}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{resource.description}</div>
                     )}
                     <div className="text-xs text-primary-400 mt-0.5 truncate" dir="ltr">{resource.url}</div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => setPanel({ resource, isNew: false })}
-                      className="p-2 rounded-lg hover:bg-primary-50 text-gray-400 hover:text-primary-600 transition-colors"
+                      className="p-2 rounded-lg hover:bg-primary-50 text-gray-400 hover:text-primary-600 transition-colors dark:hover:bg-primary-900/30"
                       title="עריכה"
                     >
                       <Edit2 size={15} />
@@ -299,7 +299,7 @@ export default function AdminResourcesPage() {
                     <button
                       onClick={() => handleDelete(resource.id)}
                       disabled={deleting === resource.id}
-                      className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
+                      className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40 dark:hover:bg-red-900/20"
                       title="מחיקה"
                     >
                       {deleting === resource.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}

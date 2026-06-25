@@ -33,8 +33,8 @@ export default function StatCard({ icon: Icon, label, value, sub, color = 'prima
       </div>
       <div className="mt-3">
         <div className={clsx('text-2xl font-bold tabular-nums', c.value)}>{value}</div>
-        <div className="text-sm font-medium text-gray-700 mt-0.5">{label}</div>
-        {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
+        <div className="text-sm font-medium text-gray-700 mt-0.5 dark:text-gray-200">{label}</div>
+        {sub && <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{sub}</div>}
       </div>
     </div>
   )

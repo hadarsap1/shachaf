@@ -37,18 +37,18 @@ export default function ContactPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-2xl leading-none">💬</span>
           צור קשר
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">שלחו הודעה לצוות בית הספר</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">שלחו הודעה לצוות בית הספר</p>
       </div>
 
       {sent ? (
         <div className="card p-8 text-center">
           <CheckCircle2 size={48} className="text-green-500 mx-auto mb-4" />
-          <h2 className="font-bold text-gray-800 text-lg mb-2">ההודעה נשלחה!</h2>
-          <p className="text-sm text-gray-500 mb-5">נחזור אליכם בהקדם האפשרי.</p>
+          <h2 className="font-bold text-gray-800 text-lg mb-2 dark:text-gray-100">ההודעה נשלחה!</h2>
+          <p className="text-sm text-gray-500 mb-5 dark:text-gray-400">נחזור אליכם בהקדם האפשרי.</p>
           <button onClick={() => { setSent(false); setSubject(''); setBody('') }}
             className="btn-primary py-2 px-6 text-sm">
             שלח הודעה נוספת

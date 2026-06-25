@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import AppShell from './components/layout/AppShell'
 
 import LoginPage from './pages/auth/LoginPage'
@@ -40,7 +41,7 @@ const AdminCommunityGroupsPage  = lazy(() => import('./pages/admin/AdminCommunit
 const OnboardingPage             = lazy(() => import('./pages/family/OnboardingPage'))
 
 const Spinner = () => (
-  <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+  <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
     <img src="/logo.png" alt="שחף" className="h-16 w-auto mb-6 opacity-80" />
     <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
   </div>
@@ -75,7 +76,7 @@ function RootRedirect() {
 
 function RouteFallback() {
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
+    <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
       <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
     </div>
   )
@@ -84,6 +85,7 @@ function RouteFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -141,6 +143,7 @@ export default function App() {
         </Routes>
         </Suspense>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

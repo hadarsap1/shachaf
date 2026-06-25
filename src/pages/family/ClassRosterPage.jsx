@@ -7,10 +7,10 @@ import clsx from 'clsx'
 
 function ChildCard({ child, parents }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-3 justify-end">
         <div>
-          <p className="font-semibold text-gray-800 text-sm">{child.name}</p>
+          <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{child.name}</p>
           {child.hobbies?.length > 0 && (
             <p className="text-xs text-gray-400 mt-0.5">{child.hobbies.join(' · ')}</p>
           )}
@@ -18,7 +18,7 @@ function ChildCard({ child, parents }) {
             <p className="text-xs text-gray-400">🐾 {child.pet}</p>
           )}
         </div>
-        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600">
+        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600 dark:bg-primary-900/40">
           {child.photoUrl
             ? <img src={child.photoUrl} alt="" className="w-full h-full object-cover" />
             : child.name?.[0] || '?'
@@ -26,11 +26,11 @@ function ChildCard({ child, parents }) {
         </div>
       </div>
       {parents.length > 0 && (
-        <div className="px-4 py-2 divide-y divide-gray-50">
+        <div className="px-4 py-2 divide-y divide-gray-50 dark:divide-gray-700">
           {parents.map(p => (
             <div key={p.uid} className="flex items-center gap-2 py-2 justify-end">
               <div className="text-right">
-                <p className="text-xs font-medium text-gray-700">{p.name}</p>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-200">{p.name}</p>
                 <div className="flex gap-3 mt-0.5 justify-end">
                   {p.phone && (
                     <a href={`tel:${p.phone}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
@@ -46,7 +46,7 @@ function ChildCard({ child, parents }) {
                   )}
                 </div>
               </div>
-              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0 dark:bg-gray-800 dark:text-gray-400">
                 {p.name?.[0] || '?'}
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function ClassRosterPage() {
   if (myClasses.length === 0) return (
     <div className="p-6 text-center" dir="rtl">
       <GraduationCap size={48} className="mx-auto mb-4 text-gray-300" />
-      <h2 className="text-lg font-semibold text-gray-700">אין כיתה מקושרת</h2>
+      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">אין כיתה מקושרת</h2>
       <p className="text-sm text-gray-400 mt-1">ילדיכם טרם קושרו לכיתה</p>
       <Link to="/contact" className="mt-4 inline-flex btn-primary text-sm py-2 px-4">צור קשר</Link>
     </div>
@@ -141,11 +141,11 @@ export default function ClassRosterPage() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-5">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-2xl leading-none">👥</span>
           ספריית כיתה
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">ילדים ופרטי הורים</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">ילדים ופרטי הורים</p>
       </div>
 
       {/* Class tabs */}
@@ -203,14 +203,14 @@ export default function ClassRosterPage() {
             {otherClasses.map(cls => {
               const admins = otherAdmins[cls.id] || []
               return (
-                <div key={cls.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-3">
+                <div key={cls.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-3 dark:bg-gray-800 dark:border-gray-700">
                   <div className="text-right flex-1">
-                    <p className="font-semibold text-sm text-gray-800">{cls.name}</p>
+                    <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{cls.name}</p>
                     {cls.grade && <p className="text-xs text-gray-400">כיתה {cls.grade}</p>}
                     {admins.length === 0 && <p className="text-xs text-gray-400 mt-1">אין רכז/ת כיתה</p>}
                     {admins.map(a => (
                       <div key={a.uid} className="flex flex-wrap gap-3 mt-1 justify-end">
-                        <span className="text-xs text-gray-700">{a.name}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-200">{a.name}</span>
                         {a.phone && (
                           <a href={`tel:${a.phone}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
                             <Phone size={10} />{a.phone}

@@ -13,10 +13,10 @@ const TYPE_LABEL = {
 }
 
 const TYPE_BADGE = {
-  social:      'bg-primary-50 text-primary-700 border-primary-200',
-  orientation: 'bg-secondary-50 text-secondary-700 border-secondary-200',
-  ceremony:    'bg-accent-50 text-accent-700 border-accent-200',
-  community:   'bg-purple-50 text-purple-700 border-purple-200',
+  social:      'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-800',
+  orientation: 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300 border-secondary-200 dark:border-secondary-800',
+  ceremony:    'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300 border-accent-200 dark:border-accent-800',
+  community:   'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
 }
 
 function buildGoogleCalendarUrl(event) {
@@ -104,18 +104,18 @@ export default function EventDetailPanel({ event, onClose }) {
   }
 
   const eventDate = new Date(event.date)
-  const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 text-gray-600 border-gray-200'
+  const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
   const typeLabel = TYPE_LABEL[event.type] || event.type
 
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700">
             <X size={18} />
           </button>
-          <h2 className="font-bold text-gray-800">פרטי אירוע</h2>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">פרטי אירוע</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -134,15 +134,15 @@ export default function EventDetailPanel({ event, onClose }) {
               </span>
             </div>
 
-            <h3 className="text-lg font-bold text-gray-900 text-right leading-snug">{event.title}</h3>
+            <h3 className="text-lg font-bold text-gray-900 text-right leading-snug dark:text-white">{event.title}</h3>
 
             {event.description && (
-              <p className="text-sm text-gray-600 text-right leading-relaxed">{event.description}</p>
+              <p className="text-sm text-gray-600 text-right leading-relaxed dark:text-gray-300">{event.description}</p>
             )}
 
             <div className="space-y-2">
               {event.date && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+                <div className="flex items-center gap-2 text-sm text-gray-600 justify-end dark:text-gray-300">
                   <span>
                     {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     {event.time ? ` • ${event.time}` : ''}
@@ -151,7 +151,7 @@ export default function EventDetailPanel({ event, onClose }) {
                 </div>
               )}
               {event.location && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+                <div className="flex items-center gap-2 text-sm text-gray-600 justify-end dark:text-gray-300">
                   <span>{event.location}</span>
                   <MapPin size={15} className="text-primary-400 flex-shrink-0" />
                 </div>
@@ -165,7 +165,7 @@ export default function EventDetailPanel({ event, onClose }) {
               className={clsx(
                 'w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-[background-color,color] duration-150 active:scale-[0.96]',
                 isGoing
-                  ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                  ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800'
                   : 'bg-primary-600 text-white hover:bg-primary-700'
               )}
             >
@@ -182,7 +182,7 @@ export default function EventDetailPanel({ event, onClose }) {
               <div>
                 <button
                   onClick={handleShowAttendees}
-                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-[color] duration-150"
+                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-[color] duration-150 dark:text-gray-400"
                 >
                   <Users size={14} />
                   {attendeesOpen ? 'הסתר משתתפים' : `${attendeeUids.length} משתתפים`}
@@ -198,12 +198,12 @@ export default function EventDetailPanel({ event, onClose }) {
                       <button
                         key={person.uid}
                         onClick={() => setSelectedPerson(person)}
-                        className="w-full flex items-center gap-2.5 py-2 px-2 rounded-xl hover:bg-gray-50 transition-[background-color] duration-150 text-right"
+                        className="w-full flex items-center gap-2.5 py-2 px-2 rounded-xl hover:bg-gray-50 transition-[background-color] duration-150 text-right dark:hover:bg-gray-700/50"
                       >
-                        <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-700 flex-shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-700 flex-shrink-0 dark:text-primary-300 dark:bg-primary-900/40">
                           {person.name?.[0] || '?'}
                         </div>
-                        <span className="flex-1 text-sm font-medium text-gray-700">{person.name}</span>
+                        <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200">{person.name}</span>
                       </button>
                     ))}
                   </div>
@@ -213,17 +213,17 @@ export default function EventDetailPanel({ event, onClose }) {
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
           <button
             onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
-            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96]"
+            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-primary-900/30"
           >
             <Plus size={14} />
             Google Calendar
           </button>
           <button
             onClick={handleDownloadICS}
-            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96]"
+            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
           >
             <Calendar size={14} />
             יומן (.ics)

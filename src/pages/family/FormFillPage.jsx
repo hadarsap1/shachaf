@@ -22,10 +22,10 @@ function FormCard({ form, submission, currentUserId, onFill }) {
           <CheckCircle2 size={20} className={done ? 'text-green-600' : 'text-primary-400'} />
         </div>
         <div className="flex-1 text-right">
-          <h3 className="font-semibold text-gray-800">{form.title}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{form.description}</p>
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100">{form.title}</h3>
+          <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{form.description}</p>
           {done && (
-            <p className="text-xs text-green-600 mt-1.5">
+            <p className="text-xs text-green-600 mt-1.5 dark:text-green-400">
               ✓ הוגש על ידי {byCoParent ? submission.userName : 'את/ה'} ב-{submittedDate?.toLocaleDateString('he-IL')}
             </p>
           )}
@@ -35,7 +35,7 @@ function FormCard({ form, submission, currentUserId, onFill }) {
         {done ? (
           <button
             onClick={() => onFill(form, submission)}
-            className="w-full py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="w-full py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50"
           >
             {byCoParent ? 'צפה ועדכן' : 'צפה בתשובות / ערוך'}
           </button>
@@ -125,11 +125,11 @@ function FillView({ form, existing, onSubmit, onBack }) {
   if (done) {
     return (
       <div className="text-center py-16">
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 size={36} className="text-green-600" />
+        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4 dark:bg-green-900/30">
+          <CheckCircle2 size={36} className="text-green-600 dark:text-green-400" />
         </div>
-        <h2 className="text-xl font-bold text-gray-800 mb-1">הטופס הוגש בהצלחה!</h2>
-        <p className="text-sm text-gray-500 mb-6">הפרטים נשמרו ויועברו לצוות</p>
+        <h2 className="text-xl font-bold text-gray-800 mb-1 dark:text-gray-100">הטופס הוגש בהצלחה!</h2>
+        <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">הפרטים נשמרו ויועברו לצוות</p>
         <button onClick={onBack} className="btn-primary px-8 py-2.5">חזרה לרשימה</button>
       </div>
     )
@@ -140,8 +140,8 @@ function FillView({ form, existing, onSubmit, onBack }) {
       <button onClick={onBack} className="text-sm text-primary-600 hover:underline mb-4 block">
         ← חזור
       </button>
-      <h2 className="text-lg font-bold text-gray-800 mb-1">{form.title}</h2>
-      {form.description && <p className="text-sm text-gray-500 mb-5">{form.description}</p>}
+      <h2 className="text-lg font-bold text-gray-800 mb-1 dark:text-gray-100">{form.title}</h2>
+      {form.description && <p className="text-sm text-gray-500 mb-5 dark:text-gray-400">{form.description}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {form.fields.map(field => (
@@ -238,11 +238,11 @@ export default function FormFillPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <ClipboardList size={22} />
           הטפסים שלי
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">
           {forms.filter(f => !getSubmission(f.id)).length} טפסים ממתינים למילוי
         </p>
       </div>

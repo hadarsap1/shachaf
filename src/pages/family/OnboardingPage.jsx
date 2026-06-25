@@ -105,7 +105,7 @@ export default function OnboardingPage() {
     : unlinked
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4 py-8" dir="rtl">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4 py-8 dark:bg-gray-900" dir="rtl">
       <img src="/logo.png" alt="שחף" className="h-12 w-auto mb-6 opacity-80" />
 
       {/* Progress dots */}
@@ -132,15 +132,15 @@ export default function OnboardingPage() {
         ))}
       </div>
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-card border border-gray-100 p-6">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-card border border-gray-100 p-6 dark:bg-gray-800 dark:border-gray-700">
 
         {/* ── Step 0: Profile ────────────────────────────────────────────── */}
         {step === 0 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">ברוכים הבאים!</h2>
-            <p className="text-sm text-gray-500 mb-5">נתחיל בכמה פרטים בסיסיים</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1 dark:text-white">ברוכים הבאים!</h2>
+            <p className="text-sm text-gray-500 mb-5 dark:text-gray-400">נתחיל בכמה פרטים בסיסיים</p>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">שם מלא</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">שם מלא</label>
             <input
               className="input-field mb-4"
               value={name}
@@ -149,7 +149,7 @@ export default function OnboardingPage() {
               dir="rtl"
             />
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">טלפון</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">טלפון</label>
             <input
               className="input-field mb-6"
               value={phone}
@@ -173,20 +173,20 @@ export default function OnboardingPage() {
         {/* ── Step 1: Children ───────────────────────────────────────────── */}
         {step === 1 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">חיבור ילדים</h2>
-            <p className="text-sm text-gray-500 mb-4">חפשו את שם ילדכם ולחצו "זה הילד שלי"</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1 dark:text-white">חיבור ילדים</h2>
+            <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">חפשו את שם ילדכם ולחצו "זה הילד שלי"</p>
 
             {linked.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-semibold text-green-700 mb-2">ילדים מחוברים</p>
+                <p className="text-xs font-semibold text-green-700 mb-2 dark:text-green-300">ילדים מחוברים</p>
                 <div className="space-y-2">
                   {linked.map(c => (
-                    <div key={c.id} className="flex items-center gap-3 bg-green-50 rounded-xl px-3 py-2">
-                      <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
+                    <div key={c.id} className="flex items-center gap-3 bg-green-50 rounded-xl px-3 py-2 dark:bg-green-900/20">
+                      <CheckCircle size={16} className="text-green-600 flex-shrink-0 dark:text-green-400" />
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{c.name}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{c.name}</p>
                         {c.classId && classNames[c.classId] && (
-                          <p className="text-xs text-gray-500">{classNames[c.classId]}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{classNames[c.classId]}</p>
                         )}
                       </div>
                     </div>
@@ -217,11 +217,11 @@ export default function OnboardingPage() {
             ) : (
               <div className="space-y-2 max-h-56 overflow-y-auto mb-4">
                 {filtered.map(c => (
-                  <div key={c.id} className="flex items-center gap-3 border border-gray-100 rounded-xl px-3 py-2 hover:bg-gray-50">
+                  <div key={c.id} className="flex items-center gap-3 border border-gray-100 rounded-xl px-3 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800">{c.name}</p>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{c.name}</p>
                       {c.classId && classNames[c.classId] && (
-                        <p className="text-xs text-gray-500">{classNames[c.classId]}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{classNames[c.classId]}</p>
                       )}
                     </div>
                     <button
@@ -249,20 +249,20 @@ export default function OnboardingPage() {
         {/* ── Step 2: Co-parent ──────────────────────────────────────────── */}
         {step === 2 && (
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">הזמנת בן/ת זוג</h2>
-            <p className="text-sm text-gray-500 mb-4">הזמינו את בן/ת הזוג להצטרף לאפליקציה</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1 dark:text-white">הזמנת בן/ת זוג</h2>
+            <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">הזמינו את בן/ת הזוג להצטרף לאפליקציה</p>
 
             {coDone ? (
               <div className="flex flex-col items-center py-6 gap-3">
                 <CheckCircle size={40} className="text-green-500" />
-                <p className="font-semibold text-green-700">ההזמנה נשלחה בהצלחה</p>
+                <p className="font-semibold text-green-700 dark:text-green-300">ההזמנה נשלחה בהצלחה</p>
                 <button onClick={() => setStep(3)} className="btn-primary w-full mt-2">
                   המשך
                 </button>
               </div>
             ) : (
               <>
-                <label className="block text-sm font-medium text-gray-700 mb-1">שם</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">שם</label>
                 <input
                   className="input-field mb-3"
                   value={coName}
@@ -270,7 +270,7 @@ export default function OnboardingPage() {
                   placeholder="שם בן/ת הזוג"
                   dir="rtl"
                 />
-                <label className="block text-sm font-medium text-gray-700 mb-1">אימייל</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">אימייל</label>
                 <input
                   className="input-field mb-3"
                   value={coEmail}
@@ -279,7 +279,7 @@ export default function OnboardingPage() {
                   type="email"
                   dir="ltr"
                 />
-                <label className="block text-sm font-medium text-gray-700 mb-1">טלפון (אופציונלי)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">טלפון (אופציונלי)</label>
                 <input
                   className="input-field mb-4"
                   value={coPhone}
@@ -288,7 +288,7 @@ export default function OnboardingPage() {
                   type="tel"
                   dir="ltr"
                 />
-                {coError && <p className="text-sm text-red-600 mb-3">{coError}</p>}
+                {coError && <p className="text-sm text-red-600 mb-3 dark:text-red-400">{coError}</p>}
                 <button
                   onClick={inviteCoParent}
                   disabled={!coName.trim() || !coEmail.trim() || busy}
@@ -309,8 +309,8 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div className="text-center py-4">
             <div className="text-5xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">הכל מוכן!</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-white">הכל מוכן!</h2>
+            <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">
               ברוכים הבאים לקהילת שחף.<br />
               המשיכו ללוח הבית שלכם.
             </p>

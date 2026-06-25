@@ -97,18 +97,18 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm dark:border-gray-700">
         <table className="w-full text-sm text-right">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-gray-50 border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
             <tr>
-              <th className="px-4 py-2.5 font-semibold text-gray-600">שם</th>
-              <th className="px-4 py-2.5 font-semibold text-gray-600">אימייל</th>
-              <th className="px-4 py-2.5 font-semibold text-gray-600">טלפון</th>
-              <th className="px-4 py-2.5 font-semibold text-gray-600">כתובת</th>
-              <th className="px-4 py-2.5 font-semibold text-gray-600">סטטוס</th>
+              <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">שם</th>
+              <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">אימייל</th>
+              <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">טלפון</th>
+              <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">כתובת</th>
+              <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">סטטוס</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {rows.map((row, i) => {
               const invalid = !row.email
               const missingName = !row.name
@@ -148,7 +148,7 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
       <div className="mt-4 flex items-center justify-between gap-3">
         <button
           onClick={onClear}
-          className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50"
         >
           ביטול
         </button>
@@ -175,12 +175,12 @@ function PendingTable({ pending, onDelete, onRefresh, loading }) {
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={onRefresh}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400 dark:hover:bg-gray-700"
           title="רענן"
         >
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
-        <h2 className="text-base font-bold text-gray-700">ממתינים לרישום</h2>
+        <h2 className="text-base font-bold text-gray-700 dark:text-gray-200">ממתינים לרישום</h2>
       </div>
 
       {loading ? (
@@ -192,30 +192,30 @@ function PendingTable({ pending, onDelete, onRefresh, loading }) {
           אין רשומות ממתינות
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm dark:border-gray-700">
           <table className="w-full text-sm text-right">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
               <tr>
-                <th className="px-4 py-2.5 font-semibold text-gray-600">שם</th>
-                <th className="px-4 py-2.5 font-semibold text-gray-600">אימייל</th>
-                <th className="px-4 py-2.5 font-semibold text-gray-600">טלפון</th>
-                <th className="px-4 py-2.5 font-semibold text-gray-600">כתובת</th>
-                <th className="px-4 py-2.5 font-semibold text-gray-600">שדות חסרים</th>
+                <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">שם</th>
+                <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">אימייל</th>
+                <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">טלפון</th>
+                <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">כתובת</th>
+                <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">שדות חסרים</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {pending.map(fam => (
-                <tr key={fam.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-2.5 font-medium text-gray-800">{fam.name || '—'}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-gray-600" dir="ltr">{fam.email}</td>
-                  <td className="px-4 py-2.5 text-gray-700">{fam.phone || <span className="text-gray-400">—</span>}</td>
-                  <td className="px-4 py-2.5 text-gray-700">{fam.address || <span className="text-gray-400">—</span>}</td>
+                <tr key={fam.id} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50">
+                  <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-100">{fam.name || '—'}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-gray-600 dark:text-gray-300" dir="ltr">{fam.email}</td>
+                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{fam.phone || <span className="text-gray-400">—</span>}</td>
+                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{fam.address || <span className="text-gray-400">—</span>}</td>
                   <td className="px-4 py-2.5"><MissingBadges row={fam} /></td>
                   <td className="px-4 py-2.5">
                     <button
                       onClick={() => onDelete(fam.id)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors dark:hover:bg-red-900/20"
                       title="מחק"
                     >
                       <Trash2 size={15} />
@@ -380,14 +380,14 @@ export default function AdminImportPage() {
     <div className="page-container rtl" dir="rtl">
       {/* Page header */}
       <div className="flex items-center justify-end mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-          <Upload size={22} />
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
+          <span className="text-xl leading-none">📥</span>
           ייבוא משפחות
         </h1>
       </div>
 
       {/* Tab switcher */}
-      <div className="flex border-b border-gray-200 mb-6">
+      <div className="flex border-b border-gray-200 mb-6 dark:border-gray-700">
         {TABS.map(t => (
           <button
             key={t.key}
@@ -406,7 +406,7 @@ export default function AdminImportPage() {
 
       {/* Success banner */}
       {importedCount !== null && (
-        <div className="mb-5 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+        <div className="mb-5 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
           <CheckCircle2 size={16} className="flex-shrink-0" />
           יובאו {importedCount} רשומות בהצלחה
         </div>
@@ -414,7 +414,7 @@ export default function AdminImportPage() {
 
       {/* Error banner */}
       {parseError && (
-        <div className="mb-5 flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div className="mb-5 flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
           <AlertCircle size={16} className="flex-shrink-0" />
           {parseError}
         </div>
@@ -437,7 +437,7 @@ export default function AdminImportPage() {
           >
             <Upload size={36} className={clsx('transition-colors', dragging ? 'text-primary-600' : 'text-gray-400')} />
             <div>
-              <p className="font-semibold text-gray-700">גרור לכאן קובץ Excel או CSV</p>
+              <p className="font-semibold text-gray-700 dark:text-gray-200">גרור לכאן קובץ Excel או CSV</p>
               <p className="text-sm text-gray-400 mt-0.5">או</p>
             </div>
             <button

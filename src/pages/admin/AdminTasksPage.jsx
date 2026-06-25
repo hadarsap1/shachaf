@@ -94,10 +94,10 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'משימה חדשה' : 'עריכת משימה'}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'משימה חדשה' : 'עריכת משימה'}</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -159,11 +159,11 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
               ))}
             </div>
             {currentAudience === 'class' && (
-              <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
+              <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-40 overflow-y-auto dark:bg-gray-900">
                 {classes.length === 0 && <p className="text-sm text-gray-400 text-center py-1">אין כיתות במערכת</p>}
                 {classes.map(cls => (
                   <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
-                    <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                    <span className="text-sm text-gray-700 flex items-center gap-1.5 dark:text-gray-200">
                       {cls.name}
                       <span className="w-2 h-2 rounded-full inline-block flex-shrink-0"
                         style={{ backgroundColor: cls.color || '#1B3B70' }} />
@@ -197,12 +197,12 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
           </div>
         </div>
 
-        <div className="px-4 py-4 border-t border-gray-100 flex gap-2">
+        <div className="px-4 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
           <button onClick={handleSave} className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2">
             <Check size={15} />
             שמור
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm">
+          <button onClick={onClose} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700 dark:hover:bg-gray-700/50">
             ביטול
           </button>
         </div>
@@ -297,11 +297,11 @@ export default function AdminTasksPage() {
           משימה חדשה
         </button>
         <div>
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-            <CheckSquare size={22} />
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
+            <span className="text-xl leading-none">✅</span>
             ניהול משימות
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5 text-right">{tasks.length} משימות</p>
+          <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{tasks.length} משימות</p>
         </div>
       </div>
 
@@ -350,7 +350,7 @@ export default function AdminTasksPage() {
         <div className="space-y-2">
           {filtered.map(task => (
             <div key={task.id}
-              className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
               onClick={() => { setEditing(task); setConfirmDelete(null) }}>
               <div className="flex items-start gap-3">
                 {/* Status toggle */}
@@ -375,7 +375,7 @@ export default function AdminTasksPage() {
                     </span>
                   </div>
                   {task.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-1 dark:text-gray-400">{task.description}</p>
                   )}
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 justify-end flex-wrap">
                     <span className="flex items-center gap-1">
@@ -391,7 +391,7 @@ export default function AdminTasksPage() {
                 <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => { setEditing(task); setConfirmDelete(null) }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors dark:hover:bg-primary-900/30"
                     title="ערוך"
                   >
                     <Edit2 size={14} />
@@ -407,7 +407,7 @@ export default function AdminTasksPage() {
                       </button>
                       <button
                         onClick={() => setConfirmDelete(null)}
-                        className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100"
+                        className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                       >
                         ביטול
                       </button>
@@ -415,7 +415,7 @@ export default function AdminTasksPage() {
                   ) : (
                     <button
                       onClick={() => setConfirmDelete(task.id)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors dark:hover:bg-red-900/20"
                       title="מחק"
                     >
                       <Trash2 size={14} />

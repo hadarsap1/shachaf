@@ -111,12 +111,12 @@ function EventDetailPanel({ event, onClose }) {
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
       <div
-        className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right"
+        className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800"
         dir="rtl"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700">
               <X size={18} />
             </button>
             {/* Link to edit in AdminEventsPage */}
@@ -124,19 +124,19 @@ function EventDetailPanel({ event, onClose }) {
               to="/admin/events"
               state={{ editEvent: event }}
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors dark:hover:bg-primary-900/30"
               title="ערוך אירוע"
             >
               <Edit2 size={16} />
             </Link>
           </div>
-          <h2 className="font-bold text-gray-800">פרטי אירוע</h2>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">פרטי אירוע</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
           {/* Type badge + audience */}
           <div className="flex items-center justify-end gap-2 flex-wrap">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
               {targetLabel()}
             </span>
             <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
@@ -145,17 +145,17 @@ function EventDetailPanel({ event, onClose }) {
           </div>
 
           {/* Title */}
-          <h3 className="text-lg font-bold text-gray-900 text-right leading-snug">{event.title}</h3>
+          <h3 className="text-lg font-bold text-gray-900 text-right leading-snug dark:text-white">{event.title}</h3>
 
           {/* Description */}
           {event.description && (
-            <p className="text-sm text-gray-600 text-right leading-relaxed">{event.description}</p>
+            <p className="text-sm text-gray-600 text-right leading-relaxed dark:text-gray-300">{event.description}</p>
           )}
 
           {/* Meta */}
           <div className="space-y-2">
             {event.date && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+              <div className="flex items-center gap-2 text-sm text-gray-600 justify-end dark:text-gray-300">
                 <span>
                   {eventDate.toLocaleDateString('he-IL', {
                     weekday: 'long',
@@ -169,7 +169,7 @@ function EventDetailPanel({ event, onClose }) {
               </div>
             )}
             {event.location && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+              <div className="flex items-center gap-2 text-sm text-gray-600 justify-end dark:text-gray-300">
                 <span>{event.location}</span>
                 <MapPin size={15} className="text-primary-400 flex-shrink-0" />
               </div>
@@ -178,18 +178,18 @@ function EventDetailPanel({ event, onClose }) {
         </div>
 
         {/* Actions */}
-        <div className="px-5 py-4 border-t border-gray-100 space-y-2">
+        <div className="px-5 py-4 border-t border-gray-100 space-y-2 dark:border-gray-700">
           <div className="flex gap-2">
             <button
               onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
-              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-colors font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-primary-900/30"
             >
               <Plus size={14} />
               Google Calendar
             </button>
             <button
               onClick={handleDownloadICS}
-              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-colors font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
             >
               <Calendar size={14} />
               יומן (.ics)
@@ -198,7 +198,7 @@ function EventDetailPanel({ event, onClose }) {
           <Link
             to="/admin/events"
             onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary-200 text-sm text-primary-700 hover:bg-primary-50 transition-colors font-medium"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary-200 text-sm text-primary-700 hover:bg-primary-50 transition-colors font-medium dark:hover:bg-primary-900/30 dark:text-primary-300"
           >
             <Edit2 size={14} />
             עריכת אירוע
@@ -233,11 +233,11 @@ export default function AdminCalendarPage() {
     <div className="page-container rtl" dir="rtl">
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-          <Calendar size={22} />
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
+          <span className="text-xl leading-none">📅</span>
           לוח שנה
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5 text-right">{events.length} אירועים</p>
+        <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{events.length} אירועים</p>
       </div>
 
       {/* ── Filter chips ── */}

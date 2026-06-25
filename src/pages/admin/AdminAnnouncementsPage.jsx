@@ -52,10 +52,10 @@ function AnnPanel({ ann, isNew, onSave, onClose, allClasses }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'הודעה חדשה' : 'עריכת הודעה'}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'הודעה חדשה' : 'עריכת הודעה'}</h2>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 btn-primary text-sm py-1.5 px-3">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             שמור
@@ -63,7 +63,7 @@ function AnnPanel({ ann, isNew, onSave, onClose, allClasses }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</div>}
+          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
 
           <div>
             <label className="label">כותרת</label>
@@ -94,11 +94,11 @@ function AnnPanel({ ann, isNew, onSave, onClose, allClasses }) {
               ))}
             </div>
             {currentAudience === 'class' && (
-              <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-48 overflow-y-auto">
+              <div className="mt-2 bg-gray-50 rounded-xl px-4 py-3 space-y-2 max-h-48 overflow-y-auto dark:bg-gray-900">
                 {allClasses.length === 0 && <p className="text-sm text-gray-400 text-center py-1">אין כיתות במערכת</p>}
                 {allClasses.map(cls => (
                   <label key={cls.id} className="flex items-center justify-end gap-2 cursor-pointer">
-                    <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                    <span className="text-sm text-gray-700 flex items-center gap-1.5 dark:text-gray-200">
                       {cls.name}
                       <span className="w-2.5 h-2.5 rounded-full inline-block"
                         style={{ backgroundColor: cls.color || '#1B3B70' }} />
@@ -170,11 +170,11 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
       <div className="flex items-center justify-between mb-6">
         {!embedded && (
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">הודעות כלליות</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{announcements.length} הודעות</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">הודעות כלליות</h1>
+            <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{announcements.length} הודעות</p>
           </div>
         )}
-        {embedded && <p className="text-sm text-gray-500">{announcements.length} הודעות</p>}
+        {embedded && <p className="text-sm text-gray-500 dark:text-gray-400">{announcements.length} הודעות</p>}
         <button
           onClick={() => { setSelected(blankAnn()); setIsNew(true) }}
           className="btn-primary flex items-center gap-2"
@@ -184,7 +184,7 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
         </button>
       </div>
 
-      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -202,7 +202,7 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
       ) : (
         <div className="space-y-3">
           {announcements.map(ann => (
-            <div key={ann.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-4">
+            <div key={ann.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-4 dark:bg-gray-800 dark:border-gray-700">
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -231,16 +231,16 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
                       })()}
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-800 mt-1">{ann.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">{ann.body}</p>
+                  <h3 className="font-semibold text-gray-800 mt-1 dark:text-gray-100">{ann.title}</h3>
+                  <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed dark:text-gray-400">{ann.body}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={() => { setSelected(ann); setIsNew(false) }}
-                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl">
+                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl dark:hover:bg-primary-900/30">
                     <Edit2 size={15} />
                   </button>
                   <button onClick={() => handleDelete(ann.id)} disabled={deleting === ann.id}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl">
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl dark:hover:bg-red-900/20">
                     {deleting === ann.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                   </button>
                 </div>

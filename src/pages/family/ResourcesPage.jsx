@@ -35,24 +35,24 @@ export default function ResourcesPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-2xl leading-none">📖</span>
           מידע שימושי
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">קישורים וכלים חשובים לקהילה</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">קישורים וכלים חשובים לקהילה</p>
       </div>
 
       {resources.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <BookOpen size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין מידע עדיין</p>
+          <p className="font-semibold text-gray-500 dark:text-gray-400">אין מידע עדיין</p>
           <p className="text-sm mt-1">הצוות יוסיף קישורים שימושיים בקרוב</p>
         </div>
       )}
 
       {categories.map(cat => (
         <section key={cat} className="mb-6">
-          <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1">{cat}</h2>
+          <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 dark:text-gray-400">{cat}</h2>
           <div className="space-y-2">
             {resources.filter(r => r.category === cat).map(resource => {
               const { icon: Icon, bg, color } = ICON_MAP[resource.iconType] || ICON_MAP.link
@@ -68,9 +68,9 @@ export default function ResourcesPage() {
                     <Icon size={16} className={color} />
                   </div>
                   <div className="flex-1 text-right min-w-0">
-                    <div className="font-semibold text-gray-800 text-sm">{resource.title}</div>
+                    <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{resource.title}</div>
                     {resource.description && (
-                      <div className="text-xs text-gray-500 mt-0.5 truncate">{resource.description}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{resource.description}</div>
                     )}
                   </div>
                   <ExternalLink size={14} className="text-gray-300 group-hover:text-primary-400 transition-colors flex-shrink-0" />

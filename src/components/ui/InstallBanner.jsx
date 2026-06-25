@@ -79,7 +79,7 @@ export default function InstallBanner() {
           {!ios && (
             <button
               onClick={install}
-              className="mt-2 flex items-center gap-1.5 text-xs font-semibold bg-white text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+              className="mt-2 flex items-center gap-1.5 text-xs font-semibold bg-white text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors dark:bg-gray-800 dark:hover:bg-primary-900/30 dark:text-primary-300"
             >
               <Download size={13} />
               התקן עכשיו

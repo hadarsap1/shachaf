@@ -53,31 +53,31 @@ export default function EmergencySchedulePage() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
-          <AlertTriangle size={20} className="text-red-600" />
+        <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 dark:bg-red-900/30">
+          <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-gray-900">{mode?.title || 'שגרת חירום'}</h1>
-          {mode?.message && <p className="text-sm text-gray-500 mt-0.5">{mode.message}</p>}
+          <h1 className="text-xl font-black text-gray-900 dark:text-white">{mode?.title || 'שגרת חירום'}</h1>
+          {mode?.message && <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{mode.message}</p>}
         </div>
       </div>
 
       {/* Date navigation */}
-      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-card px-4 py-3 mb-5">
+      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-card px-4 py-3 mb-5 dark:bg-gray-800 dark:border-gray-700">
         <button
           onClick={() => setDate(d => addDays(d, 1))}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           <ChevronLeft size={18} />
         </button>
         <div className="text-center">
-          <p className="font-bold text-gray-800 text-sm">{formatDate(date)}</p>
+          <p className="font-bold text-gray-800 text-sm dark:text-gray-100">{formatDate(date)}</p>
           <p className="text-xs text-gray-400">{date}</p>
         </div>
         <button
           onClick={() => setDate(d => addDays(d, -1))}
           disabled={date <= new Date().toISOString().slice(0, 10)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           <ChevronRight size={18} />
         </button>
@@ -91,10 +91,10 @@ export default function EmergencySchedulePage() {
           {myClasses.map(cls => {
             const slots = schedules[cls.id] || []
             return (
-              <div key={cls.id} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
+              <div key={cls.id} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                   <span className="text-xs text-gray-400">{slots.length} שיעורים</span>
-                  <h2 className="font-bold text-gray-800">{cls.name}</h2>
+                  <h2 className="font-bold text-gray-800 dark:text-gray-100">{cls.name}</h2>
                 </div>
 
                 {slots.length === 0 ? (
@@ -102,7 +102,7 @@ export default function EmergencySchedulePage() {
                     אין שיעורים מתוכננים ליום זה
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 dark:divide-gray-700">
                     {slots.map((sl, i) => (
                       <div key={i} className="px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
@@ -121,9 +121,9 @@ export default function EmergencySchedulePage() {
                             )}
                           </div>
                           <div className="text-right flex-1">
-                            <p className="font-semibold text-gray-800 text-sm">{sl.subject}</p>
+                            <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{sl.subject}</p>
                             {sl.time && <p className="text-xs text-gray-400 mt-0.5" dir="ltr">{sl.time}</p>}
-                            {sl.notes && <p className="text-xs text-gray-500 mt-1">{sl.notes}</p>}
+                            {sl.notes && <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">{sl.notes}</p>}
                           </div>
                         </div>
                       </div>
