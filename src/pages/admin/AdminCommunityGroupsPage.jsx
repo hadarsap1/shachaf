@@ -44,10 +44,10 @@ function TableFieldEditor({ field, onChange }) {
         <thead>
           <tr>
             {field.columns.map((col, ci) => (
-              <th key={ci} className="border border-gray-200 bg-gray-50 p-0">
+              <th key={ci} className="border border-gray-200 bg-gray-50 p-0 dark:bg-gray-900 dark:border-gray-700">
                 <div className="flex items-center">
                   <input value={col} onChange={e => setCol(ci, e.target.value)}
-                    className="flex-1 bg-transparent text-xs font-semibold text-gray-700 px-2 py-1.5 outline-none text-right min-w-0"
+                    className="flex-1 bg-transparent text-xs font-semibold text-gray-700 px-2 py-1.5 outline-none text-right min-w-0 dark:text-gray-200"
                     placeholder={`עמודה ${ci + 1}`} dir="rtl" />
                   {field.columns.length > 1 && (
                     <button onClick={() => removeCol(ci)} className="px-1 text-red-400 hover:text-red-600 flex-shrink-0">
@@ -57,7 +57,7 @@ function TableFieldEditor({ field, onChange }) {
                 </div>
               </th>
             ))}
-            <th className="border border-gray-200 bg-gray-50 w-8">
+            <th className="border border-gray-200 bg-gray-50 w-8 dark:bg-gray-900 dark:border-gray-700">
               <button onClick={addCol} className="w-full h-full flex items-center justify-center text-gray-400 hover:text-primary-600 py-1.5">
                 <Plus size={13} />
               </button>
@@ -68,12 +68,12 @@ function TableFieldEditor({ field, onChange }) {
           {field.rows.map((row, ri) => (
             <tr key={ri}>
               {row.map((cell, ci) => (
-                <td key={ci} className="border border-gray-200 p-0">
+                <td key={ci} className="border border-gray-200 p-0 dark:border-gray-700">
                   <input value={cell} onChange={e => setCell(ri, ci, e.target.value)}
                     className="w-full px-2 py-1.5 text-xs outline-none text-right" dir="rtl" />
                 </td>
               ))}
-              <td className="border border-gray-200 w-8 text-center">
+              <td className="border border-gray-200 w-8 text-center dark:border-gray-700">
                 <button onClick={() => removeRow(ri)} className="text-red-400 hover:text-red-600 px-1">
                   <X size={11} />
                 </button>
@@ -82,7 +82,7 @@ function TableFieldEditor({ field, onChange }) {
           ))}
         </tbody>
       </table>
-      <button onClick={addRow} className="mt-1.5 text-xs text-gray-500 hover:text-primary-600 flex items-center gap-1">
+      <button onClick={addRow} className="mt-1.5 text-xs text-gray-500 hover:text-primary-600 flex items-center gap-1 dark:text-gray-400">
         <Plus size={12} /> הוסף שורה
       </button>
     </div>
@@ -91,7 +91,7 @@ function TableFieldEditor({ field, onChange }) {
 
 function FieldEditor({ field, onChange, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-200">
+    <div className="bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
       <div className="flex items-center gap-2">
         <div className="flex flex-col gap-0.5">
           <button onClick={onMoveUp} disabled={isFirst} className="text-gray-300 hover:text-gray-500 disabled:opacity-30"><ChevronUp size={14} /></button>
@@ -144,7 +144,7 @@ function MemberSearch({ communityUsers, onSelect }) {
 
   return (
     <div className="relative" ref={ref}>
-      <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 focus-within:border-primary-400 focus-within:bg-white transition-colors">
+      <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 focus-within:border-primary-400 focus-within:bg-white transition-colors dark:bg-gray-900 dark:border-gray-700">
         <Search size={14} className="text-gray-400 flex-shrink-0" />
         <input
           value={query}
@@ -156,7 +156,7 @@ function MemberSearch({ communityUsers, onSelect }) {
         />
       </div>
       {open && filtered.length > 0 && (
-        <div className="absolute top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto">
+        <div className="absolute top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
           {filtered.map(u => (
             <button
               key={u.uid}
@@ -168,7 +168,7 @@ function MemberSearch({ communityUsers, onSelect }) {
                 {u.name?.[0] || '?'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
+                <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{u.name}</p>
                 {u.phone && <p className="text-xs text-gray-400" dir="ltr">{u.phone}</p>}
               </div>
             </button>
@@ -215,10 +215,10 @@ function GroupPanel({ group, isNew, onSave, onClose, communityUsers, allUsers })
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'קבוצה חדשה' : 'עריכת קבוצה'}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'קבוצה חדשה' : 'עריכת קבוצה'}</h2>
           <button onClick={handleSave} disabled={saving || !draft.name?.trim()}
             className="btn-primary text-sm py-1.5 px-3">
             {saving ? '...' : 'שמור'}
@@ -291,7 +291,7 @@ function GroupPanel({ group, isNew, onSave, onClose, communityUsers, allUsers })
             <div className="flex gap-2">
               {FIELD_TYPES.map(({ type, label, icon: Icon }) => (
                 <button key={type} type="button" onClick={() => addField(type)}
-                  className="flex-1 flex items-center justify-center gap-1 text-xs border border-dashed border-gray-300 rounded-xl py-2 text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors">
+                  className="flex-1 flex items-center justify-center gap-1 text-xs border border-dashed border-gray-300 rounded-xl py-2 text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors dark:text-gray-400">
                   <Icon size={12} /> {label}
                 </button>
               ))}
@@ -306,13 +306,13 @@ function GroupPanel({ group, isNew, onSave, onClose, communityUsers, allUsers })
             {memberUsers.length > 0 && (
               <div className="mt-3 space-y-1.5">
                 {memberUsers.map(u => (
-                  <div key={u.uid} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                  <div key={u.uid} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
                     <button onClick={() => removeMember(u.uid)}
                       className="p-1 text-red-400 hover:text-red-600">
                       <X size={13} />
                     </button>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-800">{u.name}</p>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{u.name}</p>
                       {u.phone && <p className="text-xs text-gray-400" dir="ltr">{u.phone}</p>}
                     </div>
                   </div>
@@ -371,8 +371,8 @@ export default function AdminCommunityGroupsPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🤝</span>קבוצות קהילה</h1>
-          <p className="text-sm text-gray-500 mt-0.5">ניהול קבוצות וחברות</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🤝</span>קבוצות קהילה</h1>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">ניהול קבוצות וחברות</p>
         </div>
         <button onClick={() => { setSelected(blank()); setIsNew(true) }}
           className="btn-primary flex items-center gap-2">
@@ -394,14 +394,14 @@ export default function AdminCommunityGroupsPage() {
           {groups.map(g => {
             const Icon = ICON_MAP[g.icon] || Users
             return (
-              <div key={g.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4">
+              <div key={g.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4 dark:bg-gray-800 dark:border-gray-700">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: (g.color || '#1B3B70') + '20' }}>
                   <Icon size={22} style={{ color: g.color || '#1B3B70' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-800">{g.name}</div>
-                  {g.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{g.description}</p>}
+                  <div className="font-semibold text-gray-800 dark:text-gray-100">{g.name}</div>
+                  {g.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 dark:text-gray-400">{g.description}</p>}
                   <p className="text-xs text-gray-400 mt-1">{(g.memberUids || []).length} חברים</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">

@@ -127,13 +127,13 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full max-h-screen" dir="rtl">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-100 bg-white">
+      <div className="px-4 py-4 border-b border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700">
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <div className="p-2 bg-primary-600 rounded-xl">
             <Sparkles size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-gray-800 text-sm">עוזר חכם</h1>
+            <h1 className="font-bold text-gray-800 text-sm dark:text-gray-100">עוזר חכם</h1>
             <p className="text-xs text-green-600 flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse-dot" />
               מחובר
@@ -185,7 +185,7 @@ export default function ChatPage() {
               <div className="w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0">
                 <Bot size={14} className="text-white" />
               </div>
-              <div className="bg-white shadow-card border border-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm">
+              <div className="bg-white shadow-card border border-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm dark:bg-gray-800 dark:border-gray-700">
                 <div className="flex gap-1">
                   <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -209,7 +209,7 @@ export default function ChatPage() {
                 <button
                   key={i}
                   onClick={() => sendMessage(q)}
-                  className="text-xs bg-white text-primary-600 border border-primary-200 px-3 py-1.5 rounded-full hover:bg-primary-50 hover:border-primary-300 transition-colors shadow-sm"
+                  className="text-xs bg-white text-primary-600 border border-primary-200 px-3 py-1.5 rounded-full hover:bg-primary-50 hover:border-primary-300 transition-colors shadow-sm dark:bg-gray-800"
                 >
                   {q}
                 </button>
@@ -220,7 +220,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="px-4 py-3 bg-white border-t border-gray-100">
+      <div className="px-4 py-3 bg-white border-t border-gray-100 dark:bg-gray-800 dark:border-gray-700">
         <div className="max-w-2xl mx-auto flex gap-2">
           <button
             onClick={() => sendMessage()}

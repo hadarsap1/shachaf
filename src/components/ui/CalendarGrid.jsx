@@ -131,7 +131,7 @@ function WeekEventCard({ event, onClick, classColorMap, isConflict }) {
       )}
       style={{ borderRightColor: color }}
     >
-      <p className="text-xs font-semibold text-gray-800 truncate leading-snug flex items-center gap-1">
+      <p className="text-xs font-semibold text-gray-800 truncate leading-snug flex items-center gap-1 dark:text-gray-100">
         {isConflict && <span className="text-orange-500 flex-shrink-0" title="ניגוד זמנים">⚠</span>}
         {event.title}
       </p>
@@ -150,9 +150,9 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
   return (
     <div className="w-full" dir="rtl">
       {/* Day-name header */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
         {DAY_NAMES.map(name => (
-          <div key={name} className="py-2 text-center text-xs font-semibold text-gray-500">
+          <div key={name} className="py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400">
             {name}
           </div>
         ))}
@@ -226,19 +226,19 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
   return (
     <div dir="rtl">
       {/* Desktop: 7-column grid */}
-      <div className="hidden sm:grid grid-cols-7 gap-px bg-gray-100 rounded-xl overflow-hidden">
+      <div className="hidden sm:grid grid-cols-7 gap-px bg-gray-100 rounded-xl overflow-hidden dark:bg-gray-800">
         {weekDays.map((day, idx) => {
           const isToday   = day.key === today
           const dayEvents = eventsByDay[day.key] || []
 
           return (
-            <div key={day.key} className="bg-white min-h-48 flex flex-col">
+            <div key={day.key} className="bg-white min-h-48 flex flex-col dark:bg-gray-800">
               {/* Column header */}
               <div className={clsx(
                 'py-2 px-1 text-center border-b border-gray-100',
                 isToday && 'bg-primary-50'
               )}>
-                <p className="text-xs text-gray-500">{DAY_NAMES[idx]}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{DAY_NAMES[idx]}</p>
                 <span className={clsx(
                   'text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto',
                   isToday ? 'bg-primary-600 text-white' : 'text-gray-700'
@@ -277,7 +277,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                 )}>
                   {day.date.getDate()}
                 </span>
-                <span className="text-sm font-semibold text-gray-700">{DAY_NAMES[idx]}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{DAY_NAMES[idx]}</span>
               </div>
               {dayEvents.length > 0 ? (
                 <div className="space-y-1">
@@ -366,17 +366,17 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
         <div className="flex items-center gap-1">
           <button
             onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400"
             aria-label="הקודם"
           >
             <ChevronRight size={18} />
           </button>
-          <h2 className="font-bold text-gray-800 text-base min-w-24 text-center">
+          <h2 className="font-bold text-gray-800 text-base min-w-24 text-center dark:text-gray-100">
             {headerLabel}
           </h2>
           <button
             onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400"
             aria-label="הבא"
           >
             <ChevronLeft size={18} />
@@ -385,7 +385,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
 
         {/* Left (DOM-last in RTL): view toggle + today */}
         <div className="flex items-center gap-1">
-          <div className="flex items-center rounded-full border border-gray-200 overflow-hidden">
+          <div className="flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-700">
             <button
               onClick={() => setView('month')}
               className={clsx(
@@ -411,7 +411,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           </div>
           <button
             onClick={goToToday}
-            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700"
           >
             היום
           </button>

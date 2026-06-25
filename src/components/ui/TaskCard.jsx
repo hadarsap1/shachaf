@@ -109,7 +109,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
             {task.dueDate && (
               <div className="flex items-center gap-1 mt-1.5">
                 <Clock size={12} className="text-gray-400" />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   יעד: {new Date(task.dueDate).toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}
                 </span>
               </div>
@@ -127,7 +127,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
       {expanded && (
         <div className={clsx('border-t px-4 pb-4 pt-3 space-y-3', config.border, config.bg)}>
           {task.description && (
-            <p className="text-sm text-gray-700 leading-relaxed">{task.description}</p>
+            <p className="text-sm text-gray-700 leading-relaxed dark:text-gray-200">{task.description}</p>
           )}
 
           <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
                 href={task.resourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150"
+                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150 dark:bg-gray-800"
               >
                 <ExternalLink size={13} />
                 פתח קישור

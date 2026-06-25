@@ -69,7 +69,7 @@ export default function AdminMessagesPage() {
       </div>
 
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto dark:bg-gray-800">
         {[{ id: 'messages', label: 'פניות' }, { id: 'committees', label: 'הודעות לוועדות' }, { id: 'announcements', label: 'הודעות כלליות' }].map(t => (
           <button
             key={t.id}
@@ -124,34 +124,34 @@ export default function AdminMessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       {!msg.read && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />}
-                      <span className="font-semibold text-sm text-gray-800 truncate">
+                      <span className="font-semibold text-sm text-gray-800 truncate dark:text-gray-100">
                         {committeeNames[msg.committeeId] || 'ועדה'}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 dark:text-gray-400">
                       <User size={11} />
                       {msg.userName}
                     </div>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(msg.createdAt)}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 line-clamp-2">{msg.body}</p>
+                <p className="text-xs text-gray-500 mt-2 line-clamp-2 dark:text-gray-400">{msg.body}</p>
               </button>
             ))}
           </div>
           {selectedCMsg && (
             <div className="card p-5 space-y-4">
               <div>
-                <h2 className="font-bold text-gray-800 text-base">
+                <h2 className="font-bold text-gray-800 text-base dark:text-gray-100">
                   {committeeNames[selectedCMsg.committeeId] || 'ועדה'}
                 </h2>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1"><User size={12} />{selectedCMsg.userName}</span>
                 </div>
                 <div className="text-xs text-gray-400 mt-0.5">{formatDate(selectedCMsg.createdAt)}</div>
               </div>
               <hr />
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedCMsg.body}</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selectedCMsg.body}</p>
             </div>
           )}
         </div>
@@ -190,16 +190,16 @@ export default function AdminMessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       {!msg.read && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />}
-                      <span className="font-semibold text-sm text-gray-800 truncate">{msg.subject}</span>
+                      <span className="font-semibold text-sm text-gray-800 truncate dark:text-gray-100">{msg.subject}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 dark:text-gray-400">
                       <User size={11} />
                       {msg.userName} · {ROLE_LABELS[msg.userRole] || msg.userRole}
                     </div>
                   </div>
                   <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(msg.createdAt)}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 line-clamp-2">{msg.body}</p>
+                <p className="text-xs text-gray-500 mt-2 line-clamp-2 dark:text-gray-400">{msg.body}</p>
               </button>
             ))}
           </div>
@@ -208,8 +208,8 @@ export default function AdminMessagesPage() {
           {selected && (
             <div className="card p-5 space-y-4">
               <div>
-                <h2 className="font-bold text-gray-800 text-base">{selected.subject}</h2>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                <h2 className="font-bold text-gray-800 text-base dark:text-gray-100">{selected.subject}</h2>
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1"><User size={12} />{selected.userName}</span>
                   <span className="flex items-center gap-1"><Mail size={12} />{selected.userEmail}</span>
                   <span>{ROLE_LABELS[selected.userRole] || selected.userRole}</span>
@@ -217,7 +217,7 @@ export default function AdminMessagesPage() {
                 <div className="text-xs text-gray-400 mt-0.5">{formatDate(selected.createdAt)}</div>
               </div>
               <hr />
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{selected.body}</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selected.body}</p>
               <a
                 href={`mailto:${selected.userEmail}?subject=Re: ${encodeURIComponent(selected.subject)}`}
                 className="btn-primary text-sm py-2 px-4 inline-flex items-center gap-2"

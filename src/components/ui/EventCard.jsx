@@ -49,7 +49,7 @@ export default function EventCard({ event, onCardClick }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <h3 className="font-semibold text-gray-800 text-sm leading-tight">{event.title}</h3>
+            <h3 className="font-semibold text-gray-800 text-sm leading-tight dark:text-gray-100">{event.title}</h3>
             {event.isRequired && (
               <span className="badge bg-accent-50 text-accent-700 border border-accent-200 text-xs mt-1">כולם מוזמנים</span>
             )}
@@ -59,23 +59,23 @@ export default function EventCard({ event, onCardClick }) {
           </span>
         </div>
 
-        <p className="text-xs text-gray-600 leading-relaxed mb-3">{event.description}</p>
+        <p className="text-xs text-gray-600 leading-relaxed mb-3 dark:text-gray-300">{event.description}</p>
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <Calendar size={13} className="text-primary-400" />
             <span>
               {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
           {event.time && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <Clock size={13} className="text-primary-400" />
               <span>{event.time}</span>
             </div>
           )}
           {event.location && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <MapPin size={13} className="text-primary-400" />
               <span>{event.location}</span>
             </div>
@@ -83,7 +83,7 @@ export default function EventCard({ event, onCardClick }) {
         </div>
 
         {!isPast && (
-          <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+          <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
               className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium"
@@ -93,7 +93,7 @@ export default function EventCard({ event, onCardClick }) {
             </button>
             <button
               onClick={e => { e.stopPropagation(); handleDownloadICS() }}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             >
               <Calendar size={13} />
               יומן (.ics)
@@ -101,7 +101,7 @@ export default function EventCard({ event, onCardClick }) {
           </div>
         )}
         {isPast && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <span className="text-xs text-gray-400">האירוע הסתיים</span>
           </div>
         )}

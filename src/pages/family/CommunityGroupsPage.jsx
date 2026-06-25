@@ -32,13 +32,13 @@ function GroupFields({ fields }) {
       {fields.map((f, i) => {
         if (f.type === 'text') return (
           <div key={i}>
-            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5">{f.label}</p>}
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{f.value}</p>
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap dark:text-gray-200">{f.value}</p>
           </div>
         )
         if (f.type === 'link') return (
           <div key={i}>
-            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5">{f.label}</p>}
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
             <a
               href={f.value}
               target="_blank"
@@ -52,16 +52,16 @@ function GroupFields({ fields }) {
         )
         if (f.type === 'table' && f.columns?.length) return (
           <div key={i}>
-            {f.label && <p className="text-xs font-semibold text-gray-500 mb-1">{f.label}</p>}
-            <div className="overflow-x-auto rounded-xl border border-gray-100">
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-1 dark:text-gray-400">{f.label}</p>}
+            <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
               <table className="w-full text-xs" dir="rtl">
-                <thead className="bg-gray-50">
-                  <tr>{f.columns.map((c, ci) => <th key={ci} className="px-3 py-2 text-right font-semibold text-gray-600">{c}</th>)}</tr>
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>{f.columns.map((c, ci) => <th key={ci} className="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-300">{c}</th>)}</tr>
                 </thead>
                 <tbody>
                   {(f.rows || []).map((row, ri) => (
-                    <tr key={ri} className="border-t border-gray-100">
-                      {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-700">{cell}</td>)}
+                    <tr key={ri} className="border-t border-gray-100 dark:border-gray-700">
+                      {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-700 dark:text-gray-200">{cell}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -130,11 +130,11 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
   const canDelete = (item) => isAdmin || item.uid === uid
 
   return (
-    <div className="space-y-4 mt-4 pt-4 border-t border-gray-100">
+    <div className="space-y-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
       {/* Links */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-gray-500 flex items-center gap-1"><Link2 size={12} />קישורים מחברי הקבוצה</p>
+          <p className="text-xs font-semibold text-gray-500 flex items-center gap-1 dark:text-gray-400"><Link2 size={12} />קישורים מחברי הקבוצה</p>
           {isMember && (
             <button onClick={() => setShowLinkForm(v => !v)}
               className="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-0.5 font-medium">
@@ -144,7 +144,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
         </div>
 
         {showLinkForm && (
-          <div className="bg-gray-50 rounded-xl p-3 space-y-2 mb-3">
+          <div className="bg-gray-50 rounded-xl p-3 space-y-2 mb-3 dark:bg-gray-900">
             <input
               value={linkLabel} onChange={e => setLinkLabel(e.target.value)}
               placeholder="תיאור הקישור (אופציונלי)"
@@ -159,7 +159,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             />
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setShowLinkForm(false); setLinkLabel(''); setLinkUrl('') }}
-                className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100">ביטול</button>
+                className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400">ביטול</button>
               <button onClick={handleAddLink} disabled={savingLink || !linkUrl.trim()}
                 className="text-xs text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-[background-color] duration-150">
                 {savingLink ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}שמור
@@ -194,7 +194,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
       {/* Files */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-gray-500 flex items-center gap-1"><Paperclip size={12} />קבצים מחברי הקבוצה</p>
+          <p className="text-xs font-semibold text-gray-500 flex items-center gap-1 dark:text-gray-400"><Paperclip size={12} />קבצים מחברי הקבוצה</p>
           {isMember && (
             <>
               <button onClick={() => fileInputRef.current?.click()}
@@ -276,7 +276,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
       )}
 
       {showForm && (
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+        <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100 dark:bg-gray-900 dark:border-gray-700">
           <input value={form.title} onChange={set('title')} placeholder="שם האירוע *" className="w-full input text-sm text-right" />
           <div className="flex gap-2">
             <input value={form.date} onChange={set('date')} type="date" className="flex-1 input text-sm" />
@@ -286,7 +286,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100">ביטול</button>
+            <button onClick={() => setShowForm(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400">ביטול</button>
             <button onClick={handleCreate} disabled={saving || !form.title.trim() || !form.date}
               className="text-xs text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-[background-color] duration-150">
               {saving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}שמור
@@ -303,15 +303,15 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
             const d = new Date(ev.date)
             const canDel = isAdmin || ev.createdBy === uid
             return (
-              <div key={ev.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white group">
+              <div key={ev.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white group dark:bg-gray-800 dark:border-gray-700">
                 <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-50 flex flex-col items-center justify-center text-primary-700">
                   <span className="text-xs font-bold tabular-nums leading-tight">{d.getDate()}</span>
                   <span className="text-[10px] leading-tight">{d.toLocaleDateString('he-IL', { month: 'short' })}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800">{ev.title}</p>
-                  {ev.time && <p className="text-xs text-gray-500 tabular-nums">{ev.time}</p>}
-                  {ev.location && <p className="text-xs text-gray-500 truncate">{ev.location}</p>}
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{ev.title}</p>
+                  {ev.time && <p className="text-xs text-gray-500 tabular-nums dark:text-gray-400">{ev.time}</p>}
+                  {ev.location && <p className="text-xs text-gray-500 truncate dark:text-gray-400">{ev.location}</p>}
                   {ev.description && <p className="text-xs text-gray-400 mt-0.5 truncate">{ev.description}</p>}
                 </div>
                 {canDel && (
@@ -445,7 +445,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
       <div className="p-5">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -454,7 +454,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-bold text-gray-800">{group.name}</h3>
+              <h3 className="font-bold text-gray-800 dark:text-gray-100">{group.name}</h3>
               <button
                 onClick={handleJoin}
                 disabled={joining}
@@ -468,7 +468,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
                 {joining ? <Loader2 size={11} className="animate-spin inline" /> : isMember ? '✓ חבר' : '+ הצטרף'}
               </button>
             </div>
-            {group.description && <p className="text-sm text-gray-500 mt-1">{group.description}</p>}
+            {group.description && <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">{group.description}</p>}
             {memberUids.length > 0 && (
               <p className="text-xs text-gray-400 mt-1 tabular-nums">{memberUids.length} חברים</p>
             )}
@@ -540,10 +540,10 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
                 onClick={() => setSelectedPerson(m)}
                 className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right"
               >
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0 dark:bg-gray-800 dark:text-gray-400">
                   {m.name?.[0] || '?'}
                 </div>
-                <span className="flex-1 text-sm font-medium text-gray-700 truncate">{m.name}</span>
+                <span className="flex-1 text-sm font-medium text-gray-700 truncate dark:text-gray-200">{m.name}</span>
                 <ChevronLeft size={14} className="text-gray-300 flex-shrink-0" />
               </button>
             ))
@@ -577,11 +577,11 @@ export default function CommunityGroupsPage() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white">
           <span className="text-2xl leading-none">🤝</span>
           קבוצות קהילה
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">הצטרפו לקבוצות לפי תחומי עניין</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">הצטרפו לקבוצות לפי תחומי עניין</p>
       </div>
 
       {loading ? (
@@ -589,7 +589,7 @@ export default function CommunityGroupsPage() {
       ) : groups.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Heart size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין קבוצות קהילה עדיין</p>
+          <p className="font-semibold text-gray-500 dark:text-gray-400">אין קבוצות קהילה עדיין</p>
           <p className="text-sm mt-1">הנהלת הקהילה תפתח קבוצות בהתאם לתחומי העניין</p>
         </div>
       ) : (

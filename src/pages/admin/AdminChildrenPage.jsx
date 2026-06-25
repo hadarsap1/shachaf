@@ -132,10 +132,10 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'הוספת ילד/ה' : `עריכה: ${draft.name}`}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'הוספת ילד/ה' : `עריכה: ${draft.name}`}</h2>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 btn-primary text-sm py-1.5 px-3">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             שמור
@@ -180,7 +180,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                 className="input w-full text-sm pe-9"
               />
               {parentSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                   {parentSuggestions.map(u => (
                     <button key={u.uid} onClick={() => handleLink(u.uid)}
                       className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-right">
@@ -297,10 +297,10 @@ function ImportPanel({ classes, onImport, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800 flex items-center gap-2"><Upload size={16} />ייבוא ילדים</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 flex items-center gap-2 dark:text-gray-100"><Upload size={16} />ייבוא ילדים</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -315,9 +315,9 @@ function ImportPanel({ classes, onImport, onClose }) {
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
                 onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
               <button onClick={() => fileRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-10 text-center hover:border-primary-300 hover:bg-primary-50/30 transition-colors">
+                className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-10 text-center hover:border-primary-300 hover:bg-primary-50/30 transition-colors dark:border-gray-700">
                 <Upload size={28} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-sm font-medium text-gray-500">לחץ לבחירת קובץ CSV / Excel</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">לחץ לבחירת קובץ CSV / Excel</p>
               </button>
             </>
           ) : (
@@ -433,8 +433,8 @@ export default function AdminChildrenPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🧒</span>ניהול ילדים</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{children.length} ילדים</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🧒</span>ניהול ילדים</h1>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{children.length} ילדים</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowImport(true)} className="btn-outline flex items-center gap-2 text-sm">
@@ -473,7 +473,7 @@ export default function AdminChildrenPage() {
           {!search && !filterClass && <p className="text-sm mt-1">הוסף ידנית או ייבא קובץ CSV</p>}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
           {filtered.map((child, i) => {
             const cls = classMap[child.classId]
             return (
@@ -488,7 +488,7 @@ export default function AdminChildrenPage() {
                   {cls?.name || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-800 text-sm">{child.name}</div>
+                  <div className="font-medium text-gray-800 text-sm dark:text-gray-100">{child.name}</div>
                   <div className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
                     {cls ? `כיתה ${cls.name}` : 'כיתה לא ידועה'}
                     {child.parentUids?.length > 0 && (

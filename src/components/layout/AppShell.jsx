@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import { getMessages } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
-import { Menu, X, LogOut, ChevronDown, Upload, UserRound, Sparkles } from 'lucide-react'
+import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
 import clsx from 'clsx'
 
 // ── Emoji icon map (used across nav + bottom bar) ──────────────────────────────
@@ -173,14 +174,14 @@ function UserMenu({ user, logout }) {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl shadow-modal border border-gray-100 overflow-hidden z-50">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <div className="text-sm font-semibold text-gray-800">{user?.name}</div>
-            <div className="text-xs text-gray-500">{user?.email}</div>
+        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-modal border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+            <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{user?.name}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</div>
           </div>
           <button
             onClick={() => { setOpen(false); logout() }}
-            className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             <LogOut size={16} />
             התנתקות
@@ -188,6 +189,24 @@ function UserMenu({ user, logout }) {
         </div>
       )}
     </div>
+  )
+}
+
+// ── ThemeToggle ────────────────────────────────────────────────────────────────
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme()
+  return (
+    <button
+      onClick={toggleTheme}
+      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+      aria-label={theme === 'dark' ? 'עבור למצב בהיר' : 'עבור למצב כהה'}
+    >
+      {theme === 'dark'
+        ? <Sun size={18} className="flex-shrink-0" />
+        : <Moon size={18} className="flex-shrink-0" />
+      }
+      {theme === 'dark' ? 'מצב בהיר' : 'מצב כהה'}
+    </button>
   )
 }
 
@@ -220,6 +239,7 @@ function SidebarContent({ links, unreadMessages, isAdmin, viewAs, activateViewAs
             כניסה כהורה
           </button>
         )}
+        <ThemeToggle />
         <UserMenu user={user} logout={logout} />
       </div>
     </>
@@ -229,6 +249,7 @@ function SidebarContent({ links, unreadMessages, isAdmin, viewAs, activateViewAs
 // ── AppShell ───────────────────────────────────────────────────────────────────
 export default function AppShell() {
   const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, allRoles, activateViewAs, deactivateViewAs } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
@@ -262,7 +283,7 @@ export default function AppShell() {
   const sidebarBg = 'bg-[#0d1b35]'
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Desktop sidebar */}
       <aside className={clsx('hidden md:flex flex-col w-64 flex-shrink-0', sidebarBg)} dir="rtl">
         <SidebarContent
@@ -308,6 +329,7 @@ export default function AppShell() {
                   כניסה כהורה
                 </button>
               )}
+              <ThemeToggle />
               <UserMenu user={user} logout={logout} />
             </div>
           </aside>
@@ -329,20 +351,26 @@ export default function AppShell() {
         )}
 
         {/* Mobile topbar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm" dir="rtl">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm" dir="rtl">
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="פתח תפריט"
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
           >
             <Menu size={20} />
           </button>
           {pageTitle ? (
-            <span className="font-bold text-gray-800 text-sm">{pageTitle}</span>
+            <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">{pageTitle}</span>
           ) : (
             <img src="/logo.png" alt="שחף" className="h-8 w-auto" />
           )}
-          <div className="w-9" />
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+            aria-label={theme === 'dark' ? 'עבור למצב בהיר' : 'עבור למצב כהה'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
         </header>
 
         <main key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in">
@@ -353,7 +381,7 @@ export default function AppShell() {
 
         {/* Mobile bottom nav */}
         {bottomLinks.length > 0 && (
-          <nav className="md:hidden flex items-center justify-around border-t border-gray-100 bg-white px-2 py-1 pb-[env(safe-area-inset-bottom)] flex-shrink-0">
+          <nav className="md:hidden flex items-center justify-around border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 pb-[env(safe-area-inset-bottom)] flex-shrink-0">
             {bottomLinks.map(link => {
               const active = pathname === link.to || (link.to !== '/dashboard' && link.to !== '/admin' && pathname.startsWith(link.to))
               const emoji = NAV_EMOJI[link.to] || '•'
@@ -361,7 +389,7 @@ export default function AppShell() {
                 <Link key={link.to} to={link.to}
                   className={clsx(
                     'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 relative',
-                    active ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
+                    active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                   )}>
                   <span className={clsx('text-2xl leading-none', active ? 'scale-110' : '')} style={{ filter: active ? 'none' : 'grayscale(0.3)' }}>
                     {emoji}

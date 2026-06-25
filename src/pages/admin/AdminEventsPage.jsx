@@ -105,7 +105,7 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
         </div>
       </button>
       {open && (
-        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
           {classes.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-4">אין כיתות במערכת</p>
           )}
@@ -113,7 +113,7 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
             const checked = selected.includes(cls.id)
             return (
               <label key={cls.id} className="flex items-center justify-end gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors">
-                <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                <span className="text-sm text-gray-700 flex items-center gap-1.5 dark:text-gray-200">
                   {cls.name}
                   <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
                     style={{ backgroundColor: cls.color || '#1B3B70' }} />
@@ -195,10 +195,10 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800">{isNew ? 'אירוע חדש' : 'עריכת אירוע'}</h2>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'אירוע חדש' : 'עריכת אירוע'}</h2>
           <div className="w-8" />
         </div>
 
@@ -278,11 +278,11 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
             />
           )}
 
-          <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+          <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 dark:bg-gray-900">
             <input type="checkbox" id="required-toggle" checked={!!draft.required}
               onChange={e => set('required', e.target.checked)}
               className="w-4 h-4 accent-primary-600" />
-            <label htmlFor="required-toggle" className="text-sm text-gray-700 cursor-pointer">כולם מוזמנים (סמן כאירוע לכולם)</label>
+            <label htmlFor="required-toggle" className="text-sm text-gray-700 cursor-pointer dark:text-gray-200">כולם מוזמנים (סמן כאירוע לכולם)</label>
           </div>
 
           {allCommittees.length > 0 && (
@@ -326,7 +326,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-200 hover:border-primary-300 rounded-xl py-6 flex flex-col items-center gap-2 text-gray-400 hover:text-primary-500 transition-colors"
+                className="w-full border-2 border-dashed border-gray-200 hover:border-primary-300 rounded-xl py-6 flex flex-col items-center gap-2 text-gray-400 hover:text-primary-500 transition-colors dark:border-gray-700"
               >
                 <ImagePlus size={22} />
                 <span className="text-sm">הוסף תמונה</span>
@@ -336,12 +336,12 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
 
         </div>
 
-        <div className="px-4 py-4 border-t border-gray-100 flex gap-2">
+        <div className="px-4 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
           <button onClick={handleSave} disabled={saving} className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2">
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
             {saving ? 'שומר...' : 'שמור'}
           </button>
-          <button onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700">
             ביטול
           </button>
         </div>
@@ -457,12 +457,12 @@ export default function AdminEventsPage() {
             <span className="text-xl leading-none">📅</span>
             ניהול אירועים
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5 text-right">{events.length} אירועים</p>
+          <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{events.length} אירועים</p>
         </div>
       </div>
 
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto">
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit me-auto dark:bg-gray-800">
         {[{ id: 'events', label: 'אירועים' }, { id: 'calendar', label: 'לוח שנה' }].map(t => (
           <button
             key={t.id}
@@ -596,14 +596,14 @@ export default function AdminEventsPage() {
                   {/* Content */}
                   <div className="flex-1 text-right min-w-0">
                     <div className="flex items-center gap-2 justify-end flex-wrap mb-0.5">
-                      <span className="font-semibold text-gray-800 text-sm">{event.title}</span>
+                      <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{event.title}</span>
                       <span className={typeConf || 'badge'}>{typeLabel}</span>
                       {event.required && (
                         <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium">כולם מוזמנים</span>
                       )}
                     </div>
                     {event.description && (
-                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">{event.description}</p>
+                      <p className="text-xs text-gray-500 mb-1 line-clamp-1 dark:text-gray-400">{event.description}</p>
                     )}
                     <div className="flex items-center gap-3 text-xs text-gray-400 justify-end flex-wrap">
                       {event.date && (
@@ -649,7 +649,7 @@ export default function AdminEventsPage() {
                         </button>
                         <button
                           onClick={() => setConfirmDelete(null)}
-                          className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100"
+                          className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100 dark:text-gray-400"
                         >
                           ביטול
                         </button>

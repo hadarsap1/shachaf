@@ -13,12 +13,12 @@ function SlidePanel({ title, sub, children, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
           <div className="text-right">
-            <h2 className="font-bold text-gray-800">{title}</h2>
-            {sub && <p className="text-xs text-gray-500">{sub}</p>}
+            <h2 className="font-bold text-gray-800 dark:text-gray-100">{title}</h2>
+            {sub && <p className="text-xs text-gray-500 dark:text-gray-400">{sub}</p>}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
         <h1 className="text-2xl font-black text-primary-800 flex items-center gap-2"><span className="text-xl leading-none">🏛️</span>מסך הבית</h1>
-        <p className="text-sm text-gray-500 mt-0.5">סקירה כללית של קהילת שחף</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">סקירה כללית של קהילת שחף</p>
       </div>
 
       {loading ? (
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             {/* Task status */}
             <div className="card p-5">
-              <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+              <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 dark:text-gray-200">
                 <CheckSquare size={16} className="text-primary-600" />
                 סטטוס משימות
               </h2>
@@ -97,10 +97,10 @@ export default function AdminDashboard() {
                   ].map(item => (
                     <div key={item.label}>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-500">{item.count}</span>
-                        <span className="font-medium text-gray-600">{item.label}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{item.count}</span>
+                        <span className="font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden dark:bg-gray-800">
                         <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${item.pct}%` }} />
                       </div>
                     </div>
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
 
             {/* Quick actions */}
             <div className="card p-5">
-              <h2 className="font-bold text-gray-700 mb-4">פעולות מהירות</h2>
+              <h2 className="font-bold text-gray-700 mb-4 dark:text-gray-200">פעולות מהירות</h2>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { to: '/admin/users',    label: 'ניהול משפחות',  icon: Activity,     color: 'bg-primary-50 text-primary-600 border-primary-200' },
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
                 <Link to="/admin/messages" className="text-xs text-primary-600 hover:underline">הצג הכל</Link>
-                <h2 className="font-bold text-gray-700 flex items-center gap-2">
+                <h2 className="font-bold text-gray-700 flex items-center gap-2 dark:text-gray-200">
                   <MessageSquare size={16} className="text-primary-600" />
                   הודעות אחרונות
                   {unreadMessages > 0 && (
@@ -156,10 +156,10 @@ export default function AdminDashboard() {
                       </span>
                       <div className="flex items-center gap-1.5">
                         {!msg.read && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />}
-                        <span className="font-semibold text-gray-800 text-sm">{msg.subject}</span>
+                        <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{msg.subject}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{msg.userName} · {msg.body}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{msg.userName} · {msg.body}</p>
                   </Link>
                 ))}
               </div>
@@ -174,8 +174,8 @@ export default function AdminDashboard() {
                 {tasks.map(t => (
                   <div key={t.id} className={clsx('bg-gray-50 rounded-xl p-3 text-right',
                     t.status === 'done' && 'opacity-60')}>
-                    <div className="font-medium text-gray-800 text-sm">{t.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="font-medium text-gray-800 text-sm dark:text-gray-100">{t.title}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                       {t.status === 'done' ? '✓ הושלם' : t.status === 'in_progress' ? 'בתהליך' : 'ממתין'}
                     </div>
                   </div>
@@ -195,8 +195,8 @@ export default function AdminDashboard() {
                   .map(ev => (
                     <Link key={ev.id} to="/admin/events" onClick={() => setActivePanel(null)}
                       className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 transition-colors">
-                      <div className="font-semibold text-gray-800 text-sm">{ev.title}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">
+                      <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{ev.title}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                         {new Date(ev.date).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'long' })}
                         {ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}
                       </div>
@@ -215,9 +215,9 @@ export default function AdminDashboard() {
                 {messages.filter(m => !m.read).map(msg => (
                   <Link key={msg.id} to="/admin/messages" onClick={() => setActivePanel(null)}
                     className="block bg-blue-50 rounded-xl p-3 text-right hover:bg-blue-100 transition-colors">
-                    <div className="font-semibold text-gray-800 text-sm">{msg.subject}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{msg.userName}</div>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{msg.body}</p>
+                    <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{msg.subject}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{msg.userName}</div>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2 dark:text-gray-400">{msg.body}</p>
                   </Link>
                 ))}
               </div>

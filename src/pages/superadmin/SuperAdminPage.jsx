@@ -102,7 +102,7 @@ export default function SuperAdminPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={loadUsers} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500" title="רענן">
+        <button onClick={loadUsers} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 dark:text-gray-400" title="רענן">
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
         <div>
@@ -110,13 +110,13 @@ export default function SuperAdminPage() {
             <span className="text-xl leading-none">🛡️</span>
             ניהול הרשאות
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5 text-right">{users.length} משתמשים רשומים</p>
+          <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{users.length} משתמשים רשומים</p>
         </div>
       </div>
 
       {/* View As */}
       <section className="mb-6">
-        <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right flex items-center gap-1.5 justify-end">
+        <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right flex items-center gap-1.5 justify-end dark:text-gray-400">
           <Eye size={13} />
           צפה באפליקציה בתור
         </h2>
@@ -165,7 +165,7 @@ export default function SuperAdminPage() {
           {/* Admins section */}
           {admins.length > 0 && (
             <section className="mb-6">
-              <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right">
+              <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right dark:text-gray-400">
                 מנהלים פעילים ({admins.length})
               </h2>
               <div className="space-y-2">
@@ -177,11 +177,11 @@ export default function SuperAdminPage() {
                     }
                     <div className="flex-1 text-right min-w-0">
                       <div className="flex items-center gap-2 justify-end flex-wrap">
-                        <span className="font-semibold text-gray-800 text-sm">{u.name}</span>
+                        <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{u.name}</span>
                         {saved === u.uid && <Check size={13} className="text-green-500" />}
                         {u.uid === me?.uid && <span className="text-xs text-gray-400">(אני)</span>}
                       </div>
-                      <p className="text-xs text-gray-500">{u.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{u.email}</p>
                       {u.classAdminFor?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5 justify-end">
                           {u.classAdminFor.map(cid => {
@@ -209,7 +209,7 @@ export default function SuperAdminPage() {
 
           {/* All members */}
           <section>
-            <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right">
+            <h2 className="font-bold text-gray-500 text-xs uppercase tracking-wide mb-3 px-1 text-right dark:text-gray-400">
               כל המשתמשים ({members.length})
             </h2>
             <div className="space-y-2">
@@ -217,11 +217,11 @@ export default function SuperAdminPage() {
                 <div key={u.uid} className="card p-3 flex items-center gap-3">
                   {u.avatar
                     ? <img src={u.avatar} alt="" className="w-9 h-9 rounded-full flex-shrink-0" />
-                    : <div className="avatar w-9 h-9 bg-gray-100 text-gray-600 text-sm flex-shrink-0">{u.name?.[0]}</div>
+                    : <div className="avatar w-9 h-9 bg-gray-100 text-gray-600 text-sm flex-shrink-0 dark:bg-gray-800 dark:text-gray-300">{u.name?.[0]}</div>
                   }
                   <div className="flex-1 text-right min-w-0">
                     <div className="flex items-center gap-1.5 justify-end">
-                      <span className="font-medium text-gray-800 text-sm">{u.name}</span>
+                      <span className="font-medium text-gray-800 text-sm dark:text-gray-100">{u.name}</span>
                       {u.uid === me?.uid && <span className="text-xs text-gray-400">(אני)</span>}
                     </div>
                     <p className="text-xs text-gray-400 truncate">{u.email}</p>

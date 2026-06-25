@@ -73,15 +73,15 @@ function CustomizePanel({ config, onChange, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800 flex items-center gap-2">
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 flex items-center gap-2 dark:text-gray-100">
             <Settings2 size={16} className="text-primary-600" />
             התאמת לוח הבית
           </h2>
         </div>
-        <p className="text-xs text-gray-400 px-5 py-3 border-b border-gray-100">
+        <p className="text-xs text-gray-400 px-5 py-3 border-b border-gray-100 dark:border-gray-700">
           הסתר או הצג חלקים, גרור לסידור מחדש
         </p>
         <ul className="flex-1 overflow-y-auto divide-y divide-gray-50">
@@ -98,11 +98,11 @@ function CustomizePanel({ config, onChange, onClose }) {
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => move(idx, -1)} disabled={idx === 0}
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-20 text-gray-500">
+                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-20 text-gray-500 dark:text-gray-400">
                     <ChevronUp size={15} />
                   </button>
                   <button onClick={() => move(idx, 1)} disabled={idx === config.length - 1}
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-20 text-gray-500">
+                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-20 text-gray-500 dark:text-gray-400">
                     <ChevronDown size={15} />
                   </button>
                   <button onClick={() => toggle(w.id)}
@@ -204,7 +204,7 @@ function ActivityFeed({ events, groups, committees, user }) {
               <Icon size={16} />
             </div>
             <div className="flex-1 text-right min-w-0">
-              <div className="text-sm font-medium text-gray-800 truncate">{item.title}</div>
+              <div className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{item.title}</div>
               <div className="text-xs text-gray-400 mt-0.5">{item.sub}</div>
             </div>
             <ArrowLeft size={14} className="text-gray-300 flex-shrink-0" />
@@ -322,7 +322,7 @@ export default function DashboardPage() {
                     <GraduationCap size={16} className="text-primary-600" />
                   </div>
                   <div className="flex-1 text-right">
-                    <div className="text-sm font-semibold text-gray-800">{cls.name}</div>
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{cls.name}</div>
                     {cls.teacherName && <div className="text-xs text-gray-400 mt-0.5">מורה: {cls.teacherName}</div>}
                   </div>
                   <div className="flex gap-2">
@@ -423,8 +423,8 @@ export default function DashboardPage() {
               <MessageCircle size={22} />
             </div>
             <div className="flex-1 text-right">
-              <div className="font-semibold text-gray-800 text-sm">יש לך שאלה?</div>
-              <div className="text-xs text-gray-500 mt-0.5">העוזר החכם שלנו זמין 24/7</div>
+              <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">יש לך שאלה?</div>
+              <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">העוזר החכם שלנו זמין 24/7</div>
             </div>
             <ArrowLeft size={16} className="text-primary-400" />
           </Link>

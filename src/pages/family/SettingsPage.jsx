@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent } from '../../lib/db'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -124,18 +125,18 @@ function TutorialItem({ tutorial }) {
         </span>
         <div className="flex items-center gap-3">
           <span className="text-xl">{tutorial.icon}</span>
-          <span className="font-semibold text-gray-800 text-sm">{tutorial.title}</span>
+          <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{tutorial.title}</span>
         </div>
       </button>
       {open && (
-        <div className="px-4 pb-4 border-t border-gray-100">
+        <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
           <ol className="space-y-2 mt-3">
             {tutorial.steps.map((step, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                   {i + 1}
                 </span>
-                <span className="text-sm text-gray-700 leading-relaxed">{step}</span>
+                <span className="text-sm text-gray-700 leading-relaxed dark:text-gray-200">{step}</span>
               </li>
             ))}
           </ol>
@@ -175,7 +176,7 @@ function CoParentSection({ currentUser, onRegistered }) {
   if (existing) {
     return (
       <section className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end">
+        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end dark:text-gray-200">
           <UserPlus size={16} className="text-primary-600" />
           הורה שני
         </h2>
@@ -184,9 +185,9 @@ function CoParentSection({ currentUser, onRegistered }) {
             {existing.name?.[0] || '?'}
           </div>
           <div className="text-right flex-1">
-            <div className="font-semibold text-gray-800 text-sm">{existing.name}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{existing.email}</div>
-            {existing.phone && <div className="text-xs text-gray-500">{existing.phone}</div>}
+            <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{existing.name}</div>
+            <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{existing.email}</div>
+            {existing.phone && <div className="text-xs text-gray-500 dark:text-gray-400">{existing.phone}</div>}
           </div>
           <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" />
         </div>
@@ -198,14 +199,14 @@ function CoParentSection({ currentUser, onRegistered }) {
   if (done) {
     return (
       <section className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end">
+        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end dark:text-gray-200">
           <UserPlus size={16} className="text-primary-600" />
           הורה שני
         </h2>
         <div className="text-center py-4">
           <CheckCircle2 size={36} className="text-green-500 mx-auto mb-2" />
-          <p className="font-semibold text-gray-800">החשבון נוצר בהצלחה!</p>
-          <p className="text-sm text-gray-500 mt-1">שלחנו לינק לאיפוס סיסמה למייל {form.email}</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-100">החשבון נוצר בהצלחה!</p>
+          <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">שלחנו לינק לאיפוס סיסמה למייל {form.email}</p>
         </div>
       </section>
     )
@@ -213,7 +214,7 @@ function CoParentSection({ currentUser, onRegistered }) {
 
   return (
     <section className="card p-5 mb-6">
-      <h2 className="font-bold text-gray-700 mb-1 flex items-center gap-2 justify-end">
+      <h2 className="font-bold text-gray-700 mb-1 flex items-center gap-2 justify-end dark:text-gray-200">
         <UserPlus size={16} className="text-primary-600" />
         הוסף הורה שני
       </h2>
@@ -312,9 +313,9 @@ function ChildProfileCard({ child }) {
   }
 
   return (
-    <div className="border border-gray-100 rounded-xl p-4 space-y-3">
+    <div className="border border-gray-100 rounded-xl p-4 space-y-3 dark:border-gray-700">
       <div className="flex items-center gap-3 justify-end">
-        <span className="font-semibold text-gray-800 text-sm">{child.name}</span>
+        <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{child.name}</span>
         <label className="relative cursor-pointer group">
           <div className="w-12 h-12 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center text-base font-bold text-primary-600">
             {photoPreview
@@ -369,6 +370,7 @@ function ChildProfileCard({ child }) {
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [coParent, setCoParent] = useState(user?.coParent || null)
@@ -451,12 +453,12 @@ export default function SettingsPage() {
           <span className="text-2xl leading-none">⚙️</span>
           הגדרות
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">פרטים אישיים ומדריכי שימוש</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">פרטים אישיים ומדריכי שימוש</p>
       </div>
 
       {/* Profile section */}
       <section className="card p-5 mb-6">
-        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end">
+        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end dark:text-gray-200">
           <User size={16} className="text-primary-600" />
           פרטים אישיים
         </h2>
@@ -495,7 +497,7 @@ export default function SettingsPage() {
               type="email"
               value={form.email}
               readOnly
-              className="input w-full text-right bg-gray-50 text-gray-500 cursor-not-allowed"
+              className="input w-full text-right bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-gray-900 dark:text-gray-400"
               placeholder="your@email.com"
             />
             <p className="text-xs text-gray-400 mt-1 text-right">לא ניתן לשנות את כתובת האימייל</p>
@@ -612,7 +614,7 @@ export default function SettingsPage() {
       {/* Children profiles */}
       {children.length > 0 && (
         <section className="mb-6">
-          <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2 justify-end">
+          <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2 justify-end dark:text-gray-200">
             <span className="text-base">👦</span>
             פרופיל ילדים
           </h2>
@@ -626,7 +628,7 @@ export default function SettingsPage() {
 
       {/* Tutorials section */}
       <section>
-        <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2 justify-end">
+        <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2 justify-end dark:text-gray-200">
           <span className="text-base">📖</span>
           מדריכי שימוש
         </h2>
@@ -634,6 +636,33 @@ export default function SettingsPage() {
           {TUTORIALS.map(t => (
             <TutorialItem key={t.id} tutorial={t} />
           ))}
+        </div>
+      </section>
+
+      {/* Theme section */}
+      <section className="card p-5 mb-6">
+        <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 justify-end dark:text-gray-200">
+          <span className="text-base">{theme === 'dark' ? '🌙' : '☀️'}</span>
+          מצב תצוגה
+        </h2>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={toggleTheme}
+            className={clsx(
+              'relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none',
+              theme === 'dark' ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
+            )}
+            role="switch"
+            aria-checked={theme === 'dark'}
+          >
+            <span className={clsx(
+              'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200',
+              theme === 'dark' ? 'translate-x-1' : 'translate-x-6'
+            )} />
+          </button>
+          <span className="text-sm text-gray-700 dark:text-gray-200">
+            {theme === 'dark' ? 'מצב כהה' : 'מצב בהיר'}
+          </span>
         </div>
       </section>
     </div>

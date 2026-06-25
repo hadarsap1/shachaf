@@ -175,20 +175,20 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3">
+          <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3 dark:bg-gray-800">
             <img src="/logo.png" alt="שחף" className="h-20 w-auto mx-auto" />
           </div>
           <p className="text-primary-100 text-sm">פלטפורמת קליטה של הקהילה</p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-modal p-6 sm:p-8" dir="rtl">
+        <div className="bg-white rounded-3xl shadow-modal p-6 sm:p-8 dark:bg-gray-800" dir="rtl">
           {mode === 'demo' ? (
             <>
               <div className="flex items-center gap-2 mb-5">
                 <button onClick={() => setMode('login')} className="p-1 text-gray-400 hover:text-gray-600">
                   <ArrowRight size={18} />
                 </button>
-                <h2 className="text-lg font-bold text-gray-800">כניסת דמו</h2>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">כניסת דמו</h2>
               </div>
               <div className="space-y-3">
                 {DEMO_ROLES.map(role => {
@@ -207,7 +207,7 @@ export default function LoginPage() {
                       </div>
                       <div className="text-right flex-1">
                         <div className={`font-semibold text-sm ${role.subtle ? 'text-gray-600' : 'text-gray-800'}`}>{role.label}</div>
-                        <div className="text-xs text-gray-500">{role.sub}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{role.sub}</div>
                       </div>
                       {loading === role.key && <div className="w-5 h-5 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />}
                     </button>
@@ -221,13 +221,13 @@ export default function LoginPage() {
                 <button onClick={() => { setMode('login'); setResetSent(false); setError('') }} className="p-1 text-gray-400 hover:text-gray-600">
                   <ArrowRight size={18} />
                 </button>
-                <h2 className="text-lg font-bold text-gray-800">איפוס סיסמה</h2>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">איפוס סיסמה</h2>
               </div>
               {resetSent ? (
                 <div className="text-center py-6">
                   <div className="text-4xl mb-3">📬</div>
-                  <p className="font-semibold text-gray-800">נשלח מייל לאיפוס</p>
-                  <p className="text-sm text-gray-500 mt-1">בדוק את תיבת הדואר שלך</p>
+                  <p className="font-semibold text-gray-800 dark:text-gray-100">נשלח מייל לאיפוס</p>
+                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">בדוק את תיבת הדואר שלך</p>
                   <button onClick={() => { setMode('login'); setResetSent(false) }} className="mt-4 text-sm text-primary-600 hover:underline">
                     חזרה לכניסה
                   </button>
@@ -235,7 +235,7 @@ export default function LoginPage() {
               ) : (
                 <form onSubmit={handleReset} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 text-right mb-1">כתובת מייל</label>
+                    <label className="block text-sm font-medium text-gray-700 text-right mb-1 dark:text-gray-200">כתובת מייל</label>
                     <div className="relative">
                       <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
@@ -251,10 +251,10 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <h2 className="text-xl font-bold text-gray-800 mb-1 text-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-1 text-center dark:text-gray-100">
                 {mode === 'register' ? 'יצירת חשבון' : 'כניסה לחשבון'}
               </h2>
-              <p className="text-sm text-gray-500 text-center mb-6">
+              <p className="text-sm text-gray-500 text-center mb-6 dark:text-gray-400">
                 {mode === 'register' ? 'הצטרף לפלטפורמת הקליטה של שחף' : 'ברוכים הבאים לשחף'}
               </p>
 
@@ -286,14 +286,14 @@ export default function LoginPage() {
                   target="_blank"
                   rel="noreferrer"
                   onClick={handleGoogleStandaloneClick}
-                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 no-underline"
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 no-underline dark:text-gray-200 dark:border-gray-700"
                 >
                   <GoogleIcon />
                   המשך עם Google
                 </a>
               ) : (
                 <button type="button" onClick={handleGoogle} disabled={googleLoading || loading !== null}
-                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4">
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 dark:text-gray-200 dark:border-gray-700">
                   {googleLoading
                     ? <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                     : <GoogleIcon />
@@ -303,21 +303,21 @@ export default function LoginPage() {
               )}
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-gray-200" />
+                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
                 <span className="text-xs text-gray-400">או</span>
-                <div className="flex-1 h-px bg-gray-200" />
+                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
               </div>
 
               <form onSubmit={mode === 'register' ? handleRegister : handleLogin} className="space-y-4">
                 {mode === 'register' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 text-right mb-1">שם מלא</label>
+                      <label className="block text-sm font-medium text-gray-700 text-right mb-1 dark:text-gray-200">שם מלא</label>
                       <input value={name} onChange={e => setName(e.target.value)} required
                         placeholder="שם מלא" className="input w-full text-right" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 text-right mb-2">
+                      <label className="block text-sm font-medium text-gray-700 text-right mb-2 dark:text-gray-200">
                         מה הקשר שלך לקהילה? <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span>
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -343,7 +343,7 @@ export default function LoginPage() {
                   </>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 text-right mb-1">כתובת מייל</label>
+                  <label className="block text-sm font-medium text-gray-700 text-right mb-1 dark:text-gray-200">כתובת מייל</label>
                   <div className="relative">
                     <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
@@ -351,7 +351,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 text-right mb-1">סיסמה</label>
+                  <label className="block text-sm font-medium text-gray-700 text-right mb-1 dark:text-gray-200">סיסמה</label>
                   <div className="relative">
                     <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required

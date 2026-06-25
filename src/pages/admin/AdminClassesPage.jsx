@@ -68,7 +68,7 @@ function PeopleEditor({ people, onChange, showTitle = false, placeholder = 'שם
   return (
     <div className="space-y-3">
       {people.map((p, i) => (
-        <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+        <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2 dark:bg-gray-900">
           <div className="flex gap-2">
             <input value={p.name} onChange={e => update(i, 'name', e.target.value)}
               placeholder={placeholder} className="input flex-1 text-sm py-1.5" />
@@ -106,12 +106,12 @@ function ScheduleEditor({ schedule = {}, onChange }) {
     <div className="overflow-x-auto -mx-5 px-0">
       <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="sticky right-0 z-10 bg-white w-16 px-2 py-2 text-gray-400 font-medium text-right border-l border-gray-100">
+          <tr className="border-b border-gray-200 dark:border-gray-700">
+            <th className="sticky right-0 z-10 bg-white w-16 px-2 py-2 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               שיעור
             </th>
             {SCHEDULE_DAYS.map(d => (
-              <th key={d} className="px-1 py-2 text-center text-gray-600 font-semibold min-w-[68px]">
+              <th key={d} className="px-1 py-2 text-center text-gray-600 font-semibold min-w-[68px] dark:text-gray-300">
                 {d}
               </th>
             ))}
@@ -122,14 +122,14 @@ function ScheduleEditor({ schedule = {}, onChange }) {
             if (period.isBreak) return (
               <tr key={period.id}>
                 <td colSpan={SCHEDULE_DAYS.length + 1}
-                  className="py-1 px-3 text-[10px] text-gray-400 text-center bg-gray-50 border-y border-gray-100 italic">
+                  className="py-1 px-3 text-[10px] text-gray-400 text-center bg-gray-50 border-y border-gray-100 italic dark:bg-gray-900 dark:border-gray-700">
                   — {period.label} —
                 </td>
               </tr>
             )
             return (
-              <tr key={period.id} className="border-t border-gray-100 hover:bg-gray-50/50">
-                <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-500 font-semibold text-center border-l border-gray-100">
+              <tr key={period.id} className="border-t border-gray-100 hover:bg-gray-50/50 dark:border-gray-700">
+                <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-500 font-semibold text-center border-l border-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
                   {period.label}
                 </td>
                 {SCHEDULE_DAYS.map((_, di) => {
@@ -139,7 +139,7 @@ function ScheduleEditor({ schedule = {}, onChange }) {
                       <input
                         value={schedule[key] || ''}
                         onChange={e => set(key, e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-1.5 py-1.5 text-xs text-center focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 bg-white placeholder-gray-300"
+                        className="w-full rounded-lg border border-gray-200 px-1.5 py-1.5 text-xs text-center focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 bg-white placeholder-gray-300 dark:bg-gray-800 dark:border-gray-700"
                         placeholder="—"
                         dir="rtl"
                       />
@@ -296,23 +296,23 @@ function ClassChildrenTab({ classId, classColor }) {
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
             onChange={e => e.target.files?.[0] && parseImportFile(e.target.files[0])} />
           <button onClick={() => fileRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-5 text-center hover:border-primary-300 hover:bg-primary-50/30 transition-colors">
+            className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-5 text-center hover:border-primary-300 hover:bg-primary-50/30 transition-colors dark:border-gray-700">
             <Upload size={20} className="mx-auto text-gray-300 mb-1.5" />
             <p className="text-sm font-medium text-gray-400">ייבוא מ-Excel / CSV</p>
             <p className="text-xs text-gray-300 mt-0.5">עמודת "שם" בלבד — הכיתה נקבעת אוטומטית</p>
           </button>
         </>
       ) : (
-        <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+        <div className="bg-gray-50 rounded-2xl p-4 space-y-3 dark:bg-gray-900">
           <div className="flex items-center justify-between">
             <button onClick={() => setImportRows(null)} className="text-xs text-gray-400 hover:text-gray-600">
               ביטול
             </button>
-            <span className="text-sm font-medium text-gray-700">{importRows.length} ילדים לייבוא</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{importRows.length} ילדים לייבוא</span>
           </div>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {importRows.map((name, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1 bg-white rounded-lg">
+              <div key={i} className="flex items-center gap-2 text-sm text-gray-700 px-2 py-1 bg-white rounded-lg dark:bg-gray-800 dark:text-gray-200">
                 <Check size={12} className="text-secondary-500 flex-shrink-0" />
                 {name}
               </div>
@@ -341,13 +341,13 @@ function ClassChildrenTab({ classId, classColor }) {
           <p className="text-xs text-gray-400 text-right">{children.length} ילדים</p>
           {children.map(child => (
             <div key={child.id}
-              className="bg-gray-50 rounded-xl px-3 py-2">
+              className="bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
                   style={{ backgroundColor: classColor || '#1B3B70' }}>
                   {child.name?.[0] || '?'}
                 </div>
-                <span className="flex-1 text-sm text-gray-800">{child.name}</span>
+                <span className="flex-1 text-sm text-gray-800 dark:text-gray-100">{child.name}</span>
                 {child.birthDate && (
                   <span className="text-[10px] text-gray-400">
                     {new Date(child.birthDate).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })}
@@ -374,7 +374,7 @@ function ClassChildrenTab({ classId, classColor }) {
               </div>
               {editingBirth === child.id && (
                 <div className="mt-2 flex items-center gap-2 pe-1">
-                  <label className="text-xs text-gray-500 flex-shrink-0">תאריך לידה:</label>
+                  <label className="text-xs text-gray-500 flex-shrink-0 dark:text-gray-400">תאריך לידה:</label>
                   <input type="date"
                     value={child.birthDate || ''}
                     onChange={e => { handleBirthDate(child, e.target.value); setEditingBirth(null) }}
@@ -405,14 +405,14 @@ function ClassAdminsTab({ adminUids, allUsers, onAdd, onRemove, saving }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-gray-500">מנהלי כיתה יכולים לנהל את רשימת הילדים, האירועים וההודעות של הכיתה שלהם.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">מנהלי כיתה יכולים לנהל את רשימת הילדים, האירועים וההודעות של הכיתה שלהם.</p>
 
       <div className="relative">
         <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="חיפוש הורה לפי שם או מייל" className="input w-full text-sm pe-9" />
         {suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
             {suggestions.map(u => (
               <button key={u.uid} onClick={() => { onAdd(u.uid); setSearch('') }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-right">
@@ -420,7 +420,7 @@ function ClassAdminsTab({ adminUids, allUsers, onAdd, onRemove, saving }) {
                   {u.name?.[0] || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-800 truncate">{u.name}</div>
+                  <div className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{u.name}</div>
                   <div className="text-xs text-gray-400 truncate">{u.email}</div>
                 </div>
               </button>
@@ -437,7 +437,7 @@ function ClassAdminsTab({ adminUids, allUsers, onAdd, onRemove, saving }) {
                 {u.name?.[0] || '?'}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-800 truncate">{u.name}</div>
+                <div className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{u.name}</div>
                 <div className="text-xs text-gray-400 truncate">{u.email}</div>
               </div>
               <button onClick={() => onRemove(u.uid)} disabled={saving}
@@ -516,10 +516,10 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800 flex items-center gap-2">
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0 dark:border-gray-700">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 flex items-center gap-2 dark:text-gray-100">
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: draft.color || CLASS_COLORS[0] }} />
             {isNew ? 'כיתה חדשה' : `כיתה ${draft.name}`}
           </h2>
@@ -530,7 +530,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
           </button>
         </div>
 
-        <div className="flex overflow-x-auto border-b border-gray-100 flex-shrink-0 scrollbar-hide">
+        <div className="flex overflow-x-auto border-b border-gray-100 flex-shrink-0 scrollbar-hide dark:border-gray-700">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={clsx(
@@ -579,7 +579,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
 
           {tab === 'schedule' && (
             <>
-              <p className="text-xs text-gray-500">מלא את המקצועות לפי שיעור ויום. ניתן להשאיר תאים ריקים.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">מלא את המקצועות לפי שיעור ויום. ניתן להשאיר תאים ריקים.</p>
               <ScheduleEditor
                 schedule={draft.schedule || {}}
                 onChange={s => set('schedule', s)}
@@ -614,7 +614,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
 
           {tab === 'committee' && (
             <>
-              <p className="text-xs text-gray-500">חברי ועד כיתה — יופיעו בדף הכיתה לכלל ההורים.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">חברי ועד כיתה — יופיעו בדף הכיתה לכלל ההורים.</p>
               <PeopleEditor people={draft.committee || []} onChange={v => set('committee', v)}
                 showTitle placeholder="שם הורה" />
             </>
@@ -686,8 +686,8 @@ export default function AdminClassesPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🎓</span>ניהול כיתות</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{classes.length} כיתות</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🎓</span>ניהול כיתות</h1>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{classes.length} כיתות</p>
         </div>
         <button onClick={() => { setSelected(blankClass()); setIsNew(true) }}
           className="btn-primary flex items-center gap-2">
@@ -717,18 +717,18 @@ export default function AdminClassesPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {filtered.map(cls => (
             <div key={cls.id}
-              className="bg-white rounded-2xl shadow-card border border-gray-100 p-4 flex items-center gap-4">
+              className="bg-white rounded-2xl shadow-card border border-gray-100 p-4 flex items-center gap-4 dark:bg-gray-800 dark:border-gray-700">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
                 style={{ backgroundColor: cls.color || CLASS_COLORS[0] }}>
                 {cls.name || '?'}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-gray-800">
+                <div className="font-semibold text-gray-800 dark:text-gray-100">
                   כיתה {cls.name}
                   <span className="text-xs font-normal text-gray-400 ms-2">שכבה {cls.grade}</span>
                 </div>
                 {cls.teacherContact?.name && (
-                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 dark:text-gray-400">
                     <Users size={11} /> {cls.teacherContact.name}
                   </div>
                 )}

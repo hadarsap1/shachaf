@@ -72,7 +72,7 @@ export default function EventsPage() {
     <div className="page-container rtl" dir="rtl">
       {/* ── Page header ── */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center rounded-full border border-gray-200 overflow-hidden">
+        <div className="flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-700">
           <button
             onClick={() => setDisplayMode('calendar')}
             className={clsx(
@@ -104,7 +104,7 @@ export default function EventsPage() {
             <span className="text-2xl leading-none">📅</span>
             אירועים קרובים
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export default function EventsPage() {
           {filteredEvents.length === 0 && (
             <div className="text-center py-16 text-gray-400">
               <Calendar size={44} className="mx-auto mb-4 opacity-25" />
-              <p className="font-semibold text-gray-500">אין אירועים קרובים</p>
+              <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
               <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
             </div>
           )}
@@ -168,7 +168,7 @@ export default function EventsPage() {
       {!loading && displayMode === 'calendar' && filteredEvents.length === 0 && (
         <div className="text-center py-16 text-gray-400 mt-4">
           <Calendar size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין אירועים קרובים</p>
+          <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
           <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
         </div>
       )}

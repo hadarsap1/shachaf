@@ -284,14 +284,14 @@ function FAQItem({ q, a }) {
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-start justify-between gap-3 py-3.5 px-1 text-right"
       >
-        <span className="text-sm font-medium text-gray-800 flex-1">{q}</span>
+        <span className="text-sm font-medium text-gray-800 flex-1 dark:text-gray-100">{q}</span>
         {open
           ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
           : <ChevronDown size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />}
       </button>
       {open && (
         <div className="pb-4 px-1">
-          <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+          <p className="text-sm text-gray-600 leading-relaxed dark:text-gray-300">{a}</p>
         </div>
       )}
     </div>
@@ -324,11 +324,11 @@ export default function HelpPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white">
           <span className="text-2xl leading-none">❓</span>
           עזרה ושאלות נפוצות
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
           כל מה שצריך לדעת על האפליקציה
         </p>
       </div>
@@ -341,14 +341,14 @@ export default function HelpPage() {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="חיפוש בשאלות ותשובות..."
-          className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-right placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition"
+          className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-right placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition dark:bg-gray-800 dark:border-gray-700"
         />
       </div>
 
       {q && visibleSections.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <Search size={36} className="mx-auto mb-3 opacity-30" />
-          <p className="font-semibold text-gray-500">לא נמצאו תוצאות</p>
+          <p className="font-semibold text-gray-500 dark:text-gray-400">לא נמצאו תוצאות</p>
           <p className="text-sm mt-1">נסו מילת חיפוש אחרת</p>
         </div>
       )}
@@ -357,7 +357,7 @@ export default function HelpPage() {
         {visibleSections.map(section => {
           const Icon = section.icon
           return (
-            <div key={section.id} className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+            <div key={section.id} className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
               <div className={clsx('flex items-center gap-3 px-5 py-4', section.bg)}>
                 <div className={clsx('p-2 rounded-xl bg-white/60', section.color)}>
                   <Icon size={18} />

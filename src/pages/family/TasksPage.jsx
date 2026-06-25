@@ -72,7 +72,7 @@ export default function TasksPage() {
             <span className="text-2xl leading-none">✅</span>
             המשימות שלי
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{doneTasks.length} מתוך {myTasks.length} הושלמו</p>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{doneTasks.length} מתוך {myTasks.length} הושלמו</p>
         </div>
         <ProgressRing percent={progress} size={64} strokeWidth={6} />
       </div>
@@ -118,11 +118,11 @@ export default function TasksPage() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{milestone.icon}</span>
-                <h2 className="font-bold text-gray-700 text-sm">{milestone.title}</h2>
+                <h2 className="font-bold text-gray-700 text-sm dark:text-gray-200">{milestone.title}</h2>
               </div>
               <div className="flex items-center gap-2">
-                <div className="text-xs text-gray-500">{done}/{milestoneTasks.length}</div>
-                <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="text-xs text-gray-500 dark:text-gray-400">{done}/{milestoneTasks.length}</div>
+                <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden dark:bg-gray-800">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-primary-400 to-secondary-400 transition-all duration-500"
                     style={{ width: `${pct}%` }}
@@ -142,7 +142,7 @@ export default function TasksPage() {
       {filtered.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <CheckSquare size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">
+          <p className="font-semibold text-gray-500 dark:text-gray-400">
             {filter === 'all' ? 'אין משימות פעילות כרגע' : 'אין משימות בסטטוס זה'}
           </p>
           <p className="text-sm mt-1">

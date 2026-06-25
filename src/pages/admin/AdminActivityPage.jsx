@@ -61,7 +61,7 @@ export default function AdminActivityPage() {
           <span className="text-xl leading-none">📊</span>
           יומן פעילות
         </h1>
-        <p className="text-sm text-gray-500 mt-0.5">{loading ? '...' : `${logs.length} פעולות מוקלטות`}</p>
+        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{loading ? '...' : `${logs.length} פעולות מוקלטות`}</p>
       </div>
 
       {loading ? (
@@ -86,8 +86,8 @@ export default function AdminActivityPage() {
                       <Icon size={14} className={log.color} />
                     </div>
                     <div className="flex-1 text-right">
-                      <div className="text-sm font-semibold text-gray-800">{log.title}</div>
-                      <p className="text-xs text-gray-500 mt-0.5">{log.detail}</p>
+                      <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{log.title}</div>
+                      <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{log.detail}</p>
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">
                       {log.date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}

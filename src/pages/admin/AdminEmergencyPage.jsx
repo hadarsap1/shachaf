@@ -73,13 +73,13 @@ export default function AdminEmergencyPage() {
           <AlertTriangle size={20} className="text-red-600" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🚨</span>מצב חירום</h1>
-          <p className="text-sm text-gray-500">ניהול שגרת חירום ולוח שיעורים יומי</p>
+          <h1 className="text-xl font-black text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🚨</span>מצב חירום</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">ניהול שגרת חירום ולוח שיעורים יומי</p>
         </div>
       </div>
 
       {/* Mode toggle card */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 mb-6">
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 mb-6 dark:bg-gray-800 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setMode(m => ({ ...m, active: !m.active }))}
@@ -93,14 +93,14 @@ export default function AdminEmergencyPage() {
               mode.active ? 'translate-x-7' : 'translate-x-0'
             )} />
           </button>
-          <h2 className="font-bold text-gray-800">
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">
             {mode.active ? '🔴 שגרת חירום פעילה' : '⚪ שגרת חירום כבויה'}
           </h2>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1 text-right">כותרת (מוצגת להורים)</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1 text-right dark:text-gray-400">כותרת (מוצגת להורים)</label>
             <input
               type="text"
               value={mode.title}
@@ -111,7 +111,7 @@ export default function AdminEmergencyPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1 text-right">הודעה להורים</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1 text-right dark:text-gray-400">הודעה להורים</label>
             <textarea
               value={mode.message}
               onChange={e => setMode(m => ({ ...m, message: e.target.value }))}
@@ -134,8 +134,8 @@ export default function AdminEmergencyPage() {
       </div>
 
       {/* Daily schedule editor */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5">
-        <h2 className="font-bold text-gray-800 mb-4 text-right">לוח שיעורים יומי לפי כיתה</h2>
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 dark:bg-gray-800 dark:border-gray-700">
+        <h2 className="font-bold text-gray-800 mb-4 text-right dark:text-gray-100">לוח שיעורים יומי לפי כיתה</h2>
 
         <div className="flex gap-3 mb-4 flex-wrap">
           <select
@@ -165,7 +165,7 @@ export default function AdminEmergencyPage() {
           <>
             <div className="space-y-3 mb-4">
               {slots.map((sl, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-3 relative">
+                <div key={i} className="bg-gray-50 rounded-xl p-3 relative dark:bg-gray-900">
                   <button
                     onClick={() => removeSlot(i)}
                     className="absolute top-2 left-2 p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
@@ -209,7 +209,7 @@ export default function AdminEmergencyPage() {
 
             <button
               onClick={addSlot}
-              className="w-full py-2 rounded-xl border border-dashed border-gray-300 text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 flex items-center justify-center gap-2 mb-3"
+              className="w-full py-2 rounded-xl border border-dashed border-gray-300 text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 flex items-center justify-center gap-2 mb-3 dark:text-gray-400"
             >
               <Plus size={14} />
               הוסף שיעור

@@ -57,27 +57,27 @@ export default function EmergencySchedulePage() {
           <AlertTriangle size={20} className="text-red-600" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-gray-900">{mode?.title || 'שגרת חירום'}</h1>
-          {mode?.message && <p className="text-sm text-gray-500 mt-0.5">{mode.message}</p>}
+          <h1 className="text-xl font-black text-gray-900 dark:text-white">{mode?.title || 'שגרת חירום'}</h1>
+          {mode?.message && <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{mode.message}</p>}
         </div>
       </div>
 
       {/* Date navigation */}
-      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-card px-4 py-3 mb-5">
+      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 shadow-card px-4 py-3 mb-5 dark:bg-gray-800 dark:border-gray-700">
         <button
           onClick={() => setDate(d => addDays(d, 1))}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"
         >
           <ChevronLeft size={18} />
         </button>
         <div className="text-center">
-          <p className="font-bold text-gray-800 text-sm">{formatDate(date)}</p>
+          <p className="font-bold text-gray-800 text-sm dark:text-gray-100">{formatDate(date)}</p>
           <p className="text-xs text-gray-400">{date}</p>
         </div>
         <button
           onClick={() => setDate(d => addDays(d, -1))}
           disabled={date <= new Date().toISOString().slice(0, 10)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30 dark:text-gray-400"
         >
           <ChevronRight size={18} />
         </button>
@@ -91,10 +91,10 @@ export default function EmergencySchedulePage() {
           {myClasses.map(cls => {
             const slots = schedules[cls.id] || []
             return (
-              <div key={cls.id} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
+              <div key={cls.id} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                   <span className="text-xs text-gray-400">{slots.length} שיעורים</span>
-                  <h2 className="font-bold text-gray-800">{cls.name}</h2>
+                  <h2 className="font-bold text-gray-800 dark:text-gray-100">{cls.name}</h2>
                 </div>
 
                 {slots.length === 0 ? (
@@ -121,9 +121,9 @@ export default function EmergencySchedulePage() {
                             )}
                           </div>
                           <div className="text-right flex-1">
-                            <p className="font-semibold text-gray-800 text-sm">{sl.subject}</p>
+                            <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{sl.subject}</p>
                             {sl.time && <p className="text-xs text-gray-400 mt-0.5" dir="ltr">{sl.time}</p>}
-                            {sl.notes && <p className="text-xs text-gray-500 mt-1">{sl.notes}</p>}
+                            {sl.notes && <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">{sl.notes}</p>}
                           </div>
                         </div>
                       </div>
