@@ -12,45 +12,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 
-const NAV_LINKS = {
-  new_family: [
-    { to: '/dashboard',    label: 'בית',          icon: Home },
-    { to: '/class',        label: 'הכיתה שלי',    icon: GraduationCap },
-    { to: '/class-roster', label: 'ספריית כיתה',  icon: Users },
-    { to: '/tasks',        label: 'משימות',        icon: CheckSquare },
-    { to: '/events',       label: 'אירועים',       icon: Calendar },
-    { to: '/committees',   label: 'ועדות',         icon: Network },
-    { to: '/community',    label: 'קבוצות קהילה', icon: Heart },
-    { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
-    { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
-    { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
-    { to: '/help',         label: 'עזרה',          icon: HelpCircle },
-    { to: '/settings',     label: 'הגדרות',        icon: SlidersHorizontal },
-  ],
-  host_family: [
-    { to: '/dashboard',    label: 'בית',          icon: Home },
-    { to: '/class',        label: 'הכיתה שלי',    icon: GraduationCap },
-    { to: '/class-roster', label: 'ספריית כיתה',  icon: Users },
-    { to: '/families',     label: 'המשפחות שלי',  icon: Users },
-    { to: '/events',       label: 'אירועים',       icon: Calendar },
-    { to: '/committees',   label: 'ועדות',         icon: Network },
-    { to: '/community',    label: 'קבוצות קהילה', icon: Heart },
-    { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
-    { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
-    { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
-    { to: '/help',         label: 'עזרה',          icon: HelpCircle },
-    { to: '/settings',     label: 'הגדרות',        icon: SlidersHorizontal },
-  ],
-  community: [
-    { to: '/dashboard',  label: 'בית',          icon: Home },
-    { to: '/events',     label: 'אירועים',       icon: Calendar },
-    { to: '/committees', label: 'ועדות',         icon: Network },
-    { to: '/community',  label: 'קבוצות קהילה', icon: Heart },
-    { to: '/resources',  label: 'מידע שימושי',  icon: BookOpen },
-    { to: '/contact',    label: 'צור קשר',      icon: MessageSquare },
-    { to: '/help',       label: 'עזרה',          icon: HelpCircle },
-    { to: '/settings',   label: 'הגדרות',        icon: SlidersHorizontal },
-  ],
+const ADMIN_NAV_LINKS = {
   admin: [
     { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
     { to: '/admin/users', label: 'משפחות', icon: Users },
@@ -86,12 +48,49 @@ const NAV_LINKS = {
   ],
 }
 
-const BOTTOM_NAV = {
-  new_family:  ['/dashboard', '/class', '/events', '/forms'],
-  host_family: ['/dashboard', '/class', '/events', '/families'],
-  community:   ['/dashboard', '/events', '/resources', '/contact'],
-  admin:       ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
-  super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
+// Build member nav dynamically from the union of all roles.
+// Order: dashboard → class section → families → tasks/forms → events/committees/community → resources/contact → help/settings
+function buildMemberNav(allRoles, classIds) {
+  const links = []
+  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
+
+  links.push({ to: '/dashboard', label: 'בית', icon: Home })
+
+  if (hasClass) {
+    links.push({ to: '/class',        label: 'הכיתה שלי',   icon: GraduationCap })
+    links.push({ to: '/class-roster', label: 'ספריית כיתה', icon: Users })
+  }
+
+  if (allRoles.has('host_family')) {
+    links.push({ to: '/families', label: 'המשפחות שלי', icon: Users })
+  }
+
+  if (allRoles.has('new_family') || allRoles.has('host_family')) {
+    links.push({ to: '/tasks', label: 'משימות', icon: CheckSquare })
+  }
+
+  links.push({ to: '/events',     label: 'אירועים',       icon: Calendar })
+  links.push({ to: '/committees', label: 'ועדות',         icon: Network })
+  links.push({ to: '/community',  label: 'קבוצות קהילה', icon: Heart })
+
+  if (allRoles.has('new_family') || allRoles.has('host_family')) {
+    links.push({ to: '/forms', label: 'הטפסים שלי', icon: ClipboardList })
+  }
+
+  links.push({ to: '/resources', label: 'מידע שימושי', icon: BookOpen })
+  links.push({ to: '/contact',   label: 'צור קשר',     icon: MessageSquare })
+  links.push({ to: '/help',      label: 'עזרה',         icon: HelpCircle })
+  links.push({ to: '/settings',  label: 'הגדרות',       icon: SlidersHorizontal })
+
+  return links
+}
+
+function getMemberBottomNav(allRoles, classIds) {
+  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
+  const hasForms = allRoles.has('new_family') || allRoles.has('host_family')
+  if (hasClass && hasForms) return ['/dashboard', '/class', '/events', '/forms']
+  if (hasClass)             return ['/dashboard', '/class', '/events', '/resources']
+  return ['/dashboard', '/events', '/resources', '/contact']
 }
 
 const ROLE_LABEL = {
@@ -101,6 +100,8 @@ const ROLE_LABEL = {
   admin:       'מנהל',
   super_admin: 'מנהל ראשי',
 }
+
+const ADMIN_BOTTOM_NAV = ['/admin', '/admin/users', '/admin/tasks', '/admin/messages']
 
 function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
   const { pathname } = useLocation()
@@ -179,17 +180,27 @@ function UserMenu({ user, logout }) {
 }
 
 export default function AppShell() {
-  const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, activateViewAs, deactivateViewAs } = useAuth()
+  const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, allRoles, activateViewAs, deactivateViewAs } = useAuth()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
-  const baseLinks = NAV_LINKS[effectiveRole] || []
+
+  const showAdminNav = isAdmin && !viewAs
+  let baseLinks
+  let bottomNavPaths
+  if (showAdminNav) {
+    baseLinks = ADMIN_NAV_LINKS[effectiveRole] || ADMIN_NAV_LINKS.admin
+    bottomNavPaths = ADMIN_BOTTOM_NAV
+  } else {
+    baseLinks = buildMemberNav(allRoles, user?.classIds)
+    bottomNavPaths = getMemberBottomNav(allRoles, user?.classIds)
+  }
+
   // Class admins who are not global admins get an import link injected
-  const links = isClassAdmin
+  const links = isClassAdmin && !isAdmin
     ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload }]
     : baseLinks
 
-  const bottomNavPaths = BOTTOM_NAV[effectiveRole] || []
   const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
 
   const activeLink = links.find(l =>

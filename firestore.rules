@@ -30,10 +30,11 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.uid == userId;
 
-      // Users can update their own profile but cannot change their own role
+      // Users can update their own profile but cannot change their own role or extra roles
       allow update: if request.auth != null
                     && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role;
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.get('roles', []) == resource.data.get('roles', []);
 
       // Admins and super_admins can update any user including changing roles
       // but only super_admins can assign the super_admin role
