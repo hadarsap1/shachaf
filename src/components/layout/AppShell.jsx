@@ -8,7 +8,7 @@ import {
   LayoutDashboard, BookOpen, Menu, X,
   LogOut, ChevronDown, Activity, SlidersHorizontal,
   ClipboardList, Shield, MessageSquare, GraduationCap,
-  Baby, HelpCircle, Network, Upload, AlertTriangle, Heart, Eye,
+  Baby, HelpCircle, Network, Upload, AlertTriangle, Heart, UserRound,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -65,15 +65,7 @@ const NAV_LINKS = {
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
-    { divider: true, label: 'כהורה' },
-    { to: '/dashboard', label: 'בית', icon: Home },
-    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
-    { to: '/events', label: 'אירועים (הורה)', icon: Calendar },
-    { to: '/committees', label: 'ועדות (הורה)', icon: Network },
-    { to: '/community', label: 'קבוצות קהילה (הורה)', icon: Heart },
-    { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
-    { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   super_admin: [
     { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
@@ -90,15 +82,7 @@ const NAV_LINKS = {
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
     { to: '/super/admins', label: 'מנהלים', icon: Shield },
-    { divider: true, label: 'כהורה' },
-    { to: '/dashboard', label: 'בית', icon: Home },
-    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
-    { to: '/events', label: 'אירועים (הורה)', icon: Calendar },
-    { to: '/committees', label: 'ועדות (הורה)', icon: Network },
-    { to: '/community', label: 'קבוצות קהילה (הורה)', icon: Heart },
-    { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
-    { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
 }
 
@@ -231,21 +215,20 @@ export default function AppShell() {
 
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {links.map((link, i) => link.divider
-            ? <div key={`div-${i}`} className="pt-3 pb-1 px-1"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary-300/70">{link.label}</p></div>
-            : <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} />
-          )}
+          {links.map(link => (
+            <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} />
+          ))}
         </nav>
 
         {/* User section */}
         <div className="px-3 py-4 border-t border-primary-600 space-y-2">
           {isAdmin && !viewAs && (
             <button
-              onClick={() => activateViewAs('community')}
+              onClick={() => activateViewAs('new_family')}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-primary-200 hover:bg-primary-600/50 hover:text-white transition-[background-color,color] duration-150"
             >
-              <Eye size={14} className="flex-shrink-0" />
-              עבור למצב הורה
+              <UserRound size={14} className="flex-shrink-0" />
+              כניסה כהורה
             </button>
           )}
           <UserMenu user={user} logout={logout} />
@@ -272,19 +255,18 @@ export default function AppShell() {
               </div>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {links.map((link, i) => link.divider
-                ? <div key={`div-${i}`} className="pt-3 pb-1 px-1"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary-300/70">{link.label}</p></div>
-                : <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
-              )}
+              {links.map(link => (
+                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+              ))}
             </nav>
             <div className="px-3 py-4 border-t border-primary-600 space-y-2">
               {isAdmin && !viewAs && (
                 <button
-                  onClick={() => { activateViewAs('community'); setSidebarOpen(false) }}
+                  onClick={() => { activateViewAs('new_family'); setSidebarOpen(false) }}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-primary-200 hover:bg-primary-600/50 hover:text-white transition-[background-color,color] duration-150"
                 >
-                  <Eye size={14} className="flex-shrink-0" />
-                  עבור למצב הורה
+                  <UserRound size={14} className="flex-shrink-0" />
+                  כניסה כהורה
                 </button>
               )}
               <UserMenu user={user} logout={logout} />
@@ -297,13 +279,13 @@ export default function AppShell() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* View-as banner */}
         {viewAs && (
-          <div className="flex items-center justify-between bg-amber-500 text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
-            <button onClick={deactivateViewAs} className="flex items-center gap-1 hover:underline text-white/90">
-              ← חזרה למנהל
+          <div className="flex items-center justify-between bg-primary-800 text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
+            <button onClick={deactivateViewAs} className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-xs transition-[background-color] duration-150">
+              ← חזור לממשק מנהל
             </button>
-            <span className="flex items-center gap-1.5">
-              <Eye size={14} />
-              מצב הורה
+            <span className="flex items-center gap-1.5 text-xs text-white/80">
+              <UserRound size={13} />
+              ממשק הורה
             </span>
           </div>
         )}
