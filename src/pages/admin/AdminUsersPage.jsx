@@ -40,6 +40,12 @@ const ROLES = [
   { value: 'super_admin', label: 'מנהל ראשי' },
 ]
 
+// Additional roles that can be stacked on top of the primary role
+const EXTRA_ROLES = [
+  { value: 'new_family',  label: 'משפחה חדשה' },
+  { value: 'host_family', label: 'משפחה מארחת' },
+]
+
 const ROLE_STYLE = {
   new_family:  'bg-primary-50 text-primary-700 border-primary-200',
   host_family: 'bg-secondary-50 text-secondary-700 border-secondary-200',
@@ -129,7 +135,7 @@ function InvitePanel({ onClose }) {
 
 // ── User detail panel ────────────────────────────────────────────────────────
 
-function UserDetailPanel({ user, onClose, onRoleChange, saving, onProfileSaved }) {
+function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, onProfileSaved }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ name: user.name || '', phone: user.phone || '', address: user.address || '' })
   const [profileSaving, setProfileSaving] = useState(false)
@@ -254,7 +260,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, saving, onProfileSaved }
 
           {/* Role */}
           <div>
-            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">הרשאה</label>
+            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">הרשאה ראשית</label>
             <select
               value={user.role || 'new_family'}
               disabled={saving === user.uid}
@@ -266,6 +272,43 @@ function UserDetailPanel({ user, onClose, onRoleChange, saving, onProfileSaved }
             >
               {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
+          </div>
+
+          {/* Extra roles */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">תפקידים נוספים</label>
+            <div className="flex flex-wrap gap-2">
+              {EXTRA_ROLES.map(r => {
+                const extraRoles = user.roles || []
+                const checked = extraRoles.includes(r.value) || user.role === r.value
+                const isPrimary = user.role === r.value
+                return (
+                  <label key={r.value} className={clsx(
+                    'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border cursor-pointer select-none transition-colors',
+                    isPrimary
+                      ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400'
+                      : checked
+                        ? 'bg-primary-50 border-primary-300 text-primary-700'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-primary-300'
+                  )}>
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      disabled={saving === user.uid || isPrimary}
+                      checked={checked}
+                      onChange={() => {
+                        const current = user.roles || []
+                        const next = checked
+                          ? current.filter(v => v !== r.value)
+                          : [...current, r.value]
+                        onRolesChange(user, next)
+                      }}
+                    />
+                    {r.label}
+                  </label>
+                )
+              })}
+            </div>
           </div>
         </div>
 
@@ -318,6 +361,21 @@ export default function AdminUsersPage() {
       console.error('changeRole error:', err)
       setError(`שגיאה בשינוי הרשאה: ${err.code || err.message}`)
       setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, role: user.role } : prev)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const changeRoles = async (user, newRoles) => {
+    setError('')
+    setSaving(user.uid)
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { roles: newRoles })
+      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, roles: newRoles } : u))
+      setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, roles: newRoles } : prev)
+    } catch (err) {
+      console.error('changeRoles error:', err)
+      setError(`שגיאה בעדכון תפקידים: ${err.code || err.message}`)
     } finally {
       setSaving(null)
     }
@@ -441,6 +499,7 @@ export default function AdminUsersPage() {
           user={selectedUser}
           saving={saving}
           onRoleChange={(user, role) => changeRole(user, role)}
+          onRolesChange={(user, roles) => changeRoles(user, roles)}
           onClose={() => setSelectedUser(null)}
           onProfileSaved={(updated) => {
             setUsers(prev => prev.map(u => u.uid === updated.uid ? { ...u, ...updated } : u))

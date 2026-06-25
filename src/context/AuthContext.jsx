@@ -168,18 +168,27 @@ export function AuthProvider({ children }) {
 
   const isAdmin        = user?.role === 'admin' || user?.role === 'super_admin'
   const isSuperAdmin   = user?.role === 'super_admin'
-  const isHostFamily   = user?.role === 'host_family'
-  const isNewFamily    = user?.role === 'new_family'
-  const isCommunity    = user?.role === 'community'
+
+  // allRoles = union of primary role + extra roles array. 'community' is always included.
+  const allRoles = new Set([
+    'community',
+    user?.role,
+    ...(user?.roles || []),
+  ].filter(Boolean))
+
+  const isHostFamily   = allRoles.has('host_family')
+  const isNewFamily    = allRoles.has('new_family')
+  const isCommunity    = true  // everyone is always a community member
   const isClassAdmin   = !isAdmin && (user?.classAdminFor || []).length > 0
   const effectiveRole  = viewAs || user?.role
-  const needsOnboarding = user?.role === 'new_family' && !user?.onboardingComplete
+  const needsOnboarding = isNewFamily && !user?.onboardingComplete && !isAdmin
 
   return (
     <AuthContext.Provider value={{
       user, loading,
       loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword, logout,
       isAdmin, isSuperAdmin, isHostFamily, isNewFamily, isCommunity, isClassAdmin,
+      allRoles,
       viewAs, effectiveRole, activateViewAs, deactivateViewAs,
       needsOnboarding, markOnboardingComplete, updateUserState,
     }}>
