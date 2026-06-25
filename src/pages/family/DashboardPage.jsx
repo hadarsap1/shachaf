@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   getTasks, saveTask, getEvents, getForms, getSubmissionsForFamily,
-  getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees,
+  getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
 } from '../../lib/db'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
@@ -11,13 +11,14 @@ import EventDetailPanel from '../../components/ui/EventDetailPanel'
 import {
   CheckSquare, Calendar, MessageCircle, ArrowLeft, ClipboardList,
   Loader2, AlertTriangle, Heart, Network, Users, Settings2, GripVertical,
-  Eye, EyeOff, ChevronUp, ChevronDown, X,
+  Eye, EyeOff, ChevronUp, ChevronDown, X, GraduationCap,
 } from 'lucide-react'
 import clsx from 'clsx'
 
 // ── Widget registry ────────────────────────────────────────────────────────────
 const WIDGET_DEFS = [
-  { id: 'events',    label: 'אירועים קרובים',  icon: Calendar },
+  { id: 'class',     label: 'הכיתה שלי',         icon: GraduationCap },
+  { id: 'events',    label: 'אירועים קרובים',     icon: Calendar },
   { id: 'activity',  label: 'פעילות קהילה',    icon: Heart },
   { id: 'tasks',     label: 'משימות לביצוע',   icon: CheckSquare },
   { id: 'forms',     label: 'טפסים למילוי',    icon: ClipboardList },
@@ -221,6 +222,7 @@ export default function DashboardPage() {
   const [events, setEvents]         = useState([])
   const [groups, setGroups]         = useState([])
   const [committees, setCommittees] = useState([])
+  const [myClasses, setMyClasses]   = useState([])
   const [pendingForms, setPendingForms] = useState(0)
   const [loading, setLoading]       = useState(true)
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -229,6 +231,7 @@ export default function DashboardPage() {
   const [showCustomize, setShowCustomize] = useState(false)
 
   const isFamily = allRoles?.has('new_family') || allRoles?.has('host_family')
+  const hasClass = (user?.classIds || []).length > 0
 
   useEffect(() => {
     getEmergencyMode().then(m => { if (m?.active) setEmergency(m) })
@@ -245,10 +248,14 @@ export default function DashboardPage() {
       isFamily ? getChildrenByParent(user.uid) : Promise.resolve([]),
       getHobbyGroups(),
       getCommittees(),
-    ]).then(([taskData, eventData, allForms, allSubs, children, groupData, committeeData]) => {
+      hasClass ? getClasses() : Promise.resolve([]),
+    ]).then(([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses]) => {
       setTasks(taskData)
       setGroups(groupData)
       setCommittees(committeeData)
+      if (hasClass) {
+        setMyClasses(allClasses.filter(c => (user.classIds || []).includes(c.id)))
+      }
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
         const tg = ev.targetGroups || []
@@ -295,6 +302,40 @@ export default function DashboardPage() {
 
   const renderWidget = (id) => {
     switch (id) {
+      case 'class':
+        if (!hasClass || myClasses.length === 0) return null
+        return (
+          <section key="class" className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <Link to="/class" className="text-xs text-primary-600 flex items-center gap-1 hover:underline">
+                לכיתה <ArrowLeft size={12} />
+              </Link>
+              <div className="section-title flex items-center gap-2">
+                <GraduationCap size={18} className="text-primary-600" />
+                הכיתה שלי
+              </div>
+            </div>
+            <div className="card divide-y divide-gray-50">
+              {myClasses.map(cls => (
+                <div key={cls.id} className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <GraduationCap size={16} className="text-primary-600" />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <div className="text-sm font-semibold text-gray-800">{cls.name}</div>
+                    {cls.teacherName && <div className="text-xs text-gray-400 mt-0.5">מורה: {cls.teacherName}</div>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Link to="/class" className="text-xs text-primary-600 hover:underline flex items-center gap-0.5">
+                      <Users size={12} /> ספריה
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+
       case 'events':
         return (
           <section key="events" className="mb-6">
