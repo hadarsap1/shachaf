@@ -3,85 +3,102 @@ import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getMessages } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
-import {
-  Home, CheckSquare, Calendar, Users,
-  LayoutDashboard, BookOpen, Menu, X,
-  LogOut, ChevronDown, Activity, SlidersHorizontal,
-  ClipboardList, Shield, MessageSquare, GraduationCap,
-  Baby, HelpCircle, Network, Upload, AlertTriangle, Heart, UserRound,
-} from 'lucide-react'
+import { Menu, X, LogOut, ChevronDown, Upload, UserRound, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
+
+// ── Emoji icon map (used across nav + bottom bar) ──────────────────────────────
+export const NAV_EMOJI = {
+  '/dashboard':       '🏠',
+  '/class':           '🎓',
+  '/class-roster':    '👥',
+  '/families':        '👨‍👩‍👧',
+  '/tasks':           '✅',
+  '/events':          '📅',
+  '/committees':      '🔗',
+  '/community':       '🤝',
+  '/forms':           '📋',
+  '/resources':       '📖',
+  '/contact':         '💬',
+  '/help':            '❓',
+  '/settings':        '⚙️',
+  '/admin':           '🏛️',
+  '/admin/users':     '👥',
+  '/admin/classes':   '🎓',
+  '/admin/children':  '🧒',
+  '/admin/committees':'🛡️',
+  '/admin/community': '🤝',
+  '/admin/tasks':     '✅',
+  '/admin/events':    '📅',
+  '/admin/forms':     '📋',
+  '/admin/resources': '📖',
+  '/admin/messages':  '💬',
+  '/admin/activity':  '📊',
+  '/admin/emergency': '🚨',
+  '/admin/import':    '📥',
+  '/super/admins':    '🛡️',
+}
 
 const ADMIN_NAV_LINKS = {
   admin: [
-    { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
-    { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
-    { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
-    { to: '/admin/committees', label: 'ועדות', icon: Shield },
-    { to: '/admin/community', label: 'קבוצות קהילה', icon: Heart },
-    { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
-    { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
-    { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
-    { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
-    { to: '/admin/activity', label: 'פעילות', icon: Activity },
-    { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
+    { to: '/admin',            label: 'מסך הבית' },
+    { to: '/admin/users',      label: 'משפחות' },
+    { to: '/admin/classes',    label: 'כיתות' },
+    { to: '/admin/children',   label: 'ילדים', sub: true },
+    { to: '/admin/committees', label: 'ועדות' },
+    { to: '/admin/community',  label: 'קבוצות קהילה' },
+    { to: '/admin/tasks',      label: 'משימות' },
+    { to: '/admin/events',     label: 'אירועים' },
+    { to: '/admin/forms',      label: 'טפסים' },
+    { to: '/admin/resources',  label: 'מידע שימושי' },
+    { to: '/admin/messages',   label: 'הודעות', badge: true },
+    { to: '/admin/activity',   label: 'פעילות' },
+    { to: '/admin/emergency',  label: 'מצב חירום' },
+    { to: '/help',             label: 'עזרה' },
   ],
   super_admin: [
-    { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
-    { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
-    { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
-    { to: '/admin/committees', label: 'ועדות', icon: Shield },
-    { to: '/admin/community', label: 'קבוצות קהילה', icon: Heart },
-    { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
-    { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
-    { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
-    { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
-    { to: '/admin/activity', label: 'פעילות', icon: Activity },
-    { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
-    { to: '/super/admins', label: 'מנהלים', icon: Shield },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
+    { to: '/admin',            label: 'מסך הבית' },
+    { to: '/admin/users',      label: 'משפחות' },
+    { to: '/admin/classes',    label: 'כיתות' },
+    { to: '/admin/children',   label: 'ילדים', sub: true },
+    { to: '/admin/committees', label: 'ועדות' },
+    { to: '/admin/community',  label: 'קבוצות קהילה' },
+    { to: '/admin/tasks',      label: 'משימות' },
+    { to: '/admin/events',     label: 'אירועים' },
+    { to: '/admin/forms',      label: 'טפסים' },
+    { to: '/admin/resources',  label: 'מידע שימושי' },
+    { to: '/admin/messages',   label: 'הודעות', badge: true },
+    { to: '/admin/activity',   label: 'פעילות' },
+    { to: '/admin/emergency',  label: 'מצב חירום' },
+    { to: '/super/admins',     label: 'מנהלים' },
+    { to: '/help',             label: 'עזרה' },
   ],
 }
 
-// Build member nav dynamically from the union of all roles.
-// Order: dashboard → class section → families → tasks/forms → events/committees/community → resources/contact → help/settings
 function buildMemberNav(allRoles, classIds) {
   const links = []
   const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
 
-  links.push({ to: '/dashboard', label: 'בית', icon: Home })
-
+  links.push({ to: '/dashboard', label: 'בית' })
   if (hasClass) {
-    links.push({ to: '/class',        label: 'הכיתה שלי',   icon: GraduationCap })
-    links.push({ to: '/class-roster', label: 'ספריית כיתה', icon: Users })
+    links.push({ to: '/class',        label: 'הכיתה שלי' })
+    links.push({ to: '/class-roster', label: 'ספריית כיתה' })
   }
+  if (allRoles.has('host_family'))
+    links.push({ to: '/families', label: 'המשפחות שלי' })
+  if (allRoles.has('new_family') || allRoles.has('host_family'))
+    links.push({ to: '/tasks', label: 'משימות' })
 
-  if (allRoles.has('host_family')) {
-    links.push({ to: '/families', label: 'המשפחות שלי', icon: Users })
-  }
+  links.push({ to: '/events',     label: 'אירועים' })
+  links.push({ to: '/committees', label: 'ועדות' })
+  links.push({ to: '/community',  label: 'קבוצות קהילה' })
 
-  if (allRoles.has('new_family') || allRoles.has('host_family')) {
-    links.push({ to: '/tasks', label: 'משימות', icon: CheckSquare })
-  }
+  if (allRoles.has('new_family') || allRoles.has('host_family'))
+    links.push({ to: '/forms', label: 'הטפסים שלי' })
 
-  links.push({ to: '/events',     label: 'אירועים',       icon: Calendar })
-  links.push({ to: '/committees', label: 'ועדות',         icon: Network })
-  links.push({ to: '/community',  label: 'קבוצות קהילה', icon: Heart })
-
-  if (allRoles.has('new_family') || allRoles.has('host_family')) {
-    links.push({ to: '/forms', label: 'הטפסים שלי', icon: ClipboardList })
-  }
-
-  links.push({ to: '/resources', label: 'מידע שימושי', icon: BookOpen })
-  links.push({ to: '/contact',   label: 'צור קשר',     icon: MessageSquare })
-  links.push({ to: '/help',      label: 'עזרה',         icon: HelpCircle })
-  links.push({ to: '/settings',  label: 'הגדרות',       icon: SlidersHorizontal })
-
+  links.push({ to: '/resources', label: 'מידע שימושי' })
+  links.push({ to: '/contact',   label: 'צור קשר' })
+  links.push({ to: '/help',      label: 'עזרה' })
+  links.push({ to: '/settings',  label: 'הגדרות' })
   return links
 }
 
@@ -93,35 +110,29 @@ function getMemberBottomNav(allRoles, classIds) {
   return ['/dashboard', '/events', '/resources', '/contact']
 }
 
-const ROLE_LABEL = {
-  new_family:  'משפחה חדשה',
-  host_family: 'משפחה מארחת',
-  community:   'חבר קהילה',
-  admin:       'מנהל',
-  super_admin: 'מנהל ראשי',
-}
-
 const ADMIN_BOTTOM_NAV = ['/admin', '/admin/users', '/admin/tasks', '/admin/messages']
 
-function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
+// ── NavLink ────────────────────────────────────────────────────────────────────
+function NavLink({ to, label, onClick, unread = 0, sub = false }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/dashboard' && to !== '/admin' && pathname.startsWith(to))
+  const emoji = NAV_EMOJI[to] || '•'
 
   return (
     <Link
       to={to}
       onClick={onClick}
       className={clsx(
-        'flex items-center gap-3 rounded-xl font-medium transition-[background-color,color] duration-150',
-        sub
-          ? 'px-3 py-2 text-xs me-4'
-          : 'px-3 py-2.5 text-sm',
+        'flex items-center gap-3 rounded-2xl font-medium transition-all duration-150 select-none',
+        sub ? 'px-3 py-2 text-sm me-3' : 'px-4 py-3 text-base',
         active
-          ? sub ? 'bg-primary-500/60 text-white' : 'bg-primary-600 text-white shadow-sm'
-          : sub ? 'text-primary-200 hover:bg-primary-600/40 hover:text-white' : 'text-primary-100 hover:bg-primary-600/50 hover:text-white'
+          ? 'bg-white/15 text-white'
+          : 'text-white/70 hover:bg-white/8 hover:text-white'
       )}
     >
-      <Icon size={sub ? 14 : 18} className="flex-shrink-0" />
+      <span className={clsx('flex-shrink-0 leading-none', sub ? 'text-base' : 'text-xl')} aria-hidden>
+        {emoji}
+      </span>
       <span className="flex-1">{label}</span>
       {unread > 0 && (
         <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
@@ -132,6 +143,7 @@ function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
   )
 }
 
+// ── UserMenu ───────────────────────────────────────────────────────────────────
 function UserMenu({ user, logout }) {
   const [open, setOpen] = useState(false)
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
@@ -141,34 +153,34 @@ function UserMenu({ user, logout }) {
     community:   'חבר קהילה',
     admin:       'מנהל',
     super_admin: 'מנהל ראשי',
-  }[user?.role] || ''
+  }[user?.role] || 'חבר קהילה'
 
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-primary-600/50 transition-[background-color] duration-150 w-full"
+        className="flex items-center gap-2 px-3 py-2 rounded-2xl hover:bg-white/10 transition-colors w-full"
       >
         {isUrl(user?.avatar)
-          ? <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0 object-cover" />
-          : <div className="avatar w-8 h-8 text-sm bg-accent-400 flex-shrink-0">{user?.name?.[0] || '?'}</div>
+          ? <img src={user.avatar} alt="" className="w-8 h-8 rounded-full flex-shrink-0 object-cover ring-2 ring-white/20" />
+          : <div className="avatar w-8 h-8 text-sm bg-white/20 text-white flex-shrink-0">{user?.name?.[0] || '?'}</div>
         }
         <div className="text-right flex-1 min-w-0">
           <div className="text-sm font-semibold text-white truncate">{user?.name}</div>
-          <div className="text-xs text-primary-200">{roleLabel}</div>
+          <div className="text-xs text-white/50">{roleLabel}</div>
         </div>
-        <ChevronDown size={14} className={clsx('text-primary-200 transition-transform', open && 'rotate-180')} />
+        <ChevronDown size={14} className={clsx('text-white/40 transition-transform flex-shrink-0', open && 'rotate-180')} />
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-xl shadow-modal border border-gray-100 overflow-hidden z-50">
+        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl shadow-modal border border-gray-100 overflow-hidden z-50">
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="text-sm font-semibold text-gray-800">{user?.name}</div>
             <div className="text-xs text-gray-500">{user?.email}</div>
           </div>
           <button
             onClick={() => { setOpen(false); logout() }}
-            className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-[background-color] duration-150"
+            className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut size={16} />
             התנתקות
@@ -179,6 +191,42 @@ function UserMenu({ user, logout }) {
   )
 }
 
+// ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
+function SidebarContent({ links, unreadMessages, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
+  return (
+    <>
+      {/* Logo */}
+      <div className="px-4 py-4 border-b border-white/10">
+        <div className="bg-white/95 rounded-2xl px-4 py-2.5">
+          <img src="/logo.png" alt="שחף" className="h-10 w-auto mx-auto" />
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {links.map(link => (
+          <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={onClose} />
+        ))}
+      </nav>
+
+      {/* Bottom section */}
+      <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3">
+        {isAdmin && !viewAs && (
+          <button
+            onClick={() => { activateViewAs('new_family'); onClose?.() }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <span className="text-lg" aria-hidden>👤</span>
+            כניסה כהורה
+          </button>
+        )}
+        <UserMenu user={user} logout={logout} />
+      </div>
+    </>
+  )
+}
+
+// ── AppShell ───────────────────────────────────────────────────────────────────
 export default function AppShell() {
   const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, allRoles, activateViewAs, deactivateViewAs } = useAuth()
   const { pathname } = useLocation()
@@ -186,8 +234,7 @@ export default function AppShell() {
   const [unreadMessages, setUnreadMessages] = useState(0)
 
   const showAdminNav = isAdmin && !viewAs
-  let baseLinks
-  let bottomNavPaths
+  let baseLinks, bottomNavPaths
   if (showAdminNav) {
     baseLinks = ADMIN_NAV_LINKS[effectiveRole] || ADMIN_NAV_LINKS.admin
     bottomNavPaths = ADMIN_BOTTOM_NAV
@@ -196,9 +243,8 @@ export default function AppShell() {
     bottomNavPaths = getMemberBottomNav(allRoles, user?.classIds)
   }
 
-  // Class admins who are not global admins get an import link injected
   const links = isClassAdmin && !isAdmin
-    ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload }]
+    ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות' }]
     : baseLinks
 
   const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
@@ -213,51 +259,33 @@ export default function AppShell() {
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
   }, [isAdmin])
 
+  const sidebarBg = 'bg-[#0d1b35]'
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-primary-700 text-white flex-shrink-0" dir="rtl">
-        {/* Logo */}
-        <div className="px-3 py-3 border-b border-primary-600">
-          <div className="bg-white/95 rounded-2xl px-4 py-2.5">
-            <img src="/logo.png" alt="שחף" className="h-10 w-auto mx-auto" />
-          </div>
-        </div>
-
-        {/* Nav links */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {links.map(link => (
-            <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} />
-          ))}
-        </nav>
-
-        {/* User section */}
-        <div className="px-3 py-4 border-t border-primary-600 space-y-2">
-          {isAdmin && !viewAs && (
-            <button
-              onClick={() => activateViewAs('new_family')}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-primary-200 hover:bg-primary-600/50 hover:text-white transition-[background-color,color] duration-150"
-            >
-              <UserRound size={14} className="flex-shrink-0" />
-              כניסה כהורה
-            </button>
-          )}
-          <UserMenu user={user} logout={logout} />
-        </div>
+      {/* Desktop sidebar */}
+      <aside className={clsx('hidden md:flex flex-col w-64 flex-shrink-0', sidebarBg)} dir="rtl">
+        <SidebarContent
+          links={links}
+          unreadMessages={unreadMessages}
+          isAdmin={isAdmin}
+          viewAs={viewAs}
+          activateViewAs={activateViewAs}
+          user={user}
+          logout={logout}
+        />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute top-0 right-0 h-full w-72 bg-primary-700 flex flex-col animate-slide-up" dir="rtl">
-            {/* In RTL, justify-between puts the first child on the visual RIGHT and the second on the LEFT.
-                The sidebar slides in from the right, so the close button should be on the visual right (first child). */}
-            <div className="flex items-center justify-between px-3 py-3 border-b border-primary-600">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <aside className={clsx('absolute top-0 right-0 h-full w-72 flex flex-col animate-slide-up', sidebarBg)} dir="rtl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <button
                 onClick={() => setSidebarOpen(false)}
                 aria-label="סגור תפריט"
-                className="p-1.5 rounded-lg text-primary-200 hover:text-white hover:bg-primary-600/50"
+                className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10"
               >
                 <X size={20} />
               </button>
@@ -265,18 +293,18 @@ export default function AppShell() {
                 <img src="/logo.png" alt="שחף" className="h-8 w-auto" />
               </div>
             </div>
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
               {links.map(link => (
                 <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
-            <div className="px-3 py-4 border-t border-primary-600 space-y-2">
+            <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3">
               {isAdmin && !viewAs && (
                 <button
                   onClick={() => { activateViewAs('new_family'); setSidebarOpen(false) }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-primary-200 hover:bg-primary-600/50 hover:text-white transition-[background-color,color] duration-150"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors"
                 >
-                  <UserRound size={14} className="flex-shrink-0" />
+                  <span className="text-lg" aria-hidden>👤</span>
                   כניסה כהורה
                 </button>
               )}
@@ -290,16 +318,16 @@ export default function AppShell() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* View-as banner */}
         {viewAs && (
-          <div className="flex items-center justify-between bg-primary-800 text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
-            <button onClick={deactivateViewAs} className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-xs transition-[background-color] duration-150">
+          <div className="flex items-center justify-between bg-[#0d1b35] text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
+            <button onClick={deactivateViewAs} className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 px-3 py-1 rounded-lg text-xs transition-colors">
               ← חזור לממשק מנהל
             </button>
-            <span className="flex items-center gap-1.5 text-xs text-white/80">
-              <UserRound size={13} />
-              ממשק הורה
+            <span className="flex items-center gap-1.5 text-xs text-white/70">
+              <span>👤</span> ממשק הורה
             </span>
           </div>
         )}
+
         {/* Mobile topbar */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm" dir="rtl">
           <button
@@ -327,23 +355,21 @@ export default function AppShell() {
         {bottomLinks.length > 0 && (
           <nav className="md:hidden flex items-center justify-around border-t border-gray-100 bg-white px-2 py-1 pb-[env(safe-area-inset-bottom)] flex-shrink-0">
             {bottomLinks.map(link => {
-              const Icon = link.icon
               const active = pathname === link.to || (link.to !== '/dashboard' && link.to !== '/admin' && pathname.startsWith(link.to))
+              const emoji = NAV_EMOJI[link.to] || '•'
               return (
                 <Link key={link.to} to={link.to}
                   className={clsx(
-                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-[background-color,color] duration-150 relative',
-                    active
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-400 hover:text-gray-600'
+                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 relative',
+                    active ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
                   )}>
-                  <div className="relative">
-                    <Icon size={22} />
-                    {link.badge && unreadMessages > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                  </div>
-                  <span className="text-[11px] font-medium">{link.label}</span>
+                  <span className={clsx('text-2xl leading-none', active ? 'scale-110' : '')} style={{ filter: active ? 'none' : 'grayscale(0.3)' }}>
+                    {emoji}
+                  </span>
+                  <span className="text-[11px] font-medium mt-0.5">{link.label}</span>
+                  {link.badge && unreadMessages > 0 && (
+                    <span className="absolute top-0.5 right-2 w-2 h-2 bg-red-500 rounded-full" />
+                  )}
                 </Link>
               )
             })}

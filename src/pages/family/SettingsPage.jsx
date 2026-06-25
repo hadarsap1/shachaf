@@ -448,7 +448,7 @@ export default function SettingsPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
         <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-          <Settings size={22} />
+          <span className="text-2xl leading-none">⚙️</span>
           הגדרות
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">פרטים אישיים ומדריכי שימוש</p>

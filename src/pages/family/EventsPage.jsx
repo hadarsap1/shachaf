@@ -101,7 +101,7 @@ export default function EventsPage() {
 
         <div className="text-right">
           <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-            <Calendar size={22} />
+            <span className="text-2xl leading-none">📅</span>
             אירועים קרובים
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
