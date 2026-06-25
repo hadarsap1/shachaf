@@ -311,8 +311,8 @@ export default function DashboardPage() {
                 לכיתה <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
-                <GraduationCap size={18} className="text-primary-600" />
-                הכיתה שלי
+                <span className="text-xl leading-none">🎓</span>
+              הכיתה שלי
               </div>
             </div>
             <div className="card divide-y divide-gray-50">
@@ -344,8 +344,8 @@ export default function DashboardPage() {
                 הכל <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
-                <Calendar size={18} className="text-primary-600" />
-                אירועים קרובים
+                <span className="text-xl leading-none">📅</span>
+              אירועים קרובים
               </div>
             </div>
             {events.length === 0 ? (
@@ -368,8 +368,8 @@ export default function DashboardPage() {
           <section key="activity" className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <div className="section-title flex items-center gap-2">
-                <Heart size={18} className="text-primary-600" />
-                פעילות קהילה
+                <span className="text-xl leading-none">🤝</span>
+              פעילות קהילה
               </div>
             </div>
             <ActivityFeed events={events} groups={groups} committees={committees} user={user} />
@@ -385,8 +385,8 @@ export default function DashboardPage() {
                 הכל <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
-                <CheckSquare size={18} className="text-primary-600" />
-                משימות לביצוע
+                <span className="text-xl leading-none">✅</span>
+              משימות לביצוע
               </div>
             </div>
             <div className="space-y-2">

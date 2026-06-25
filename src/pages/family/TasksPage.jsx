@@ -69,7 +69,7 @@ export default function TasksPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-            <CheckSquare size={22} />
+            <span className="text-2xl leading-none">✅</span>
             המשימות שלי
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{doneTasks.length} מתוך {myTasks.length} הושלמו</p>

@@ -142,7 +142,7 @@ export default function ClassRosterPage() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-5">
         <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-          <Users size={22} />
+          <span className="text-2xl leading-none">👥</span>
           ספריית כיתה
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">ילדים ופרטי הורים</p>
