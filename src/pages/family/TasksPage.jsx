@@ -68,7 +68,7 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
             <span className="text-2xl leading-none">✅</span>
             המשימות שלי
           </h1>

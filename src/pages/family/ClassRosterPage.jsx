@@ -18,7 +18,7 @@ function ChildCard({ child, parents }) {
             <p className="text-xs text-gray-400">🐾 {child.pet}</p>
           )}
         </div>
-        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600">
+        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600 dark:bg-primary-900/40">
           {child.photoUrl
             ? <img src={child.photoUrl} alt="" className="w-full h-full object-cover" />
             : child.name?.[0] || '?'
@@ -26,7 +26,7 @@ function ChildCard({ child, parents }) {
         </div>
       </div>
       {parents.length > 0 && (
-        <div className="px-4 py-2 divide-y divide-gray-50">
+        <div className="px-4 py-2 divide-y divide-gray-50 dark:divide-gray-700">
           {parents.map(p => (
             <div key={p.uid} className="flex items-center gap-2 py-2 justify-end">
               <div className="text-right">
@@ -141,7 +141,7 @@ export default function ClassRosterPage() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-5">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-2xl leading-none">👥</span>
           ספריית כיתה
         </h1>

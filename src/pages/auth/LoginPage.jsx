@@ -260,7 +260,7 @@ export default function LoginPage() {
 
               {/* Google */}
               {awaitingGoogleReturn ? (
-                <div className="w-full flex flex-col items-center gap-2 border border-primary-200 bg-primary-50 rounded-xl py-3 px-4 text-sm text-primary-700 mb-4">
+                <div className="w-full flex flex-col items-center gap-2 border border-primary-200 bg-primary-50 rounded-xl py-3 px-4 text-sm text-primary-700 mb-4 dark:text-primary-300 dark:bg-primary-900/30">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                     <span className="font-medium">ממתין לכניסה ב-Google...</span>
@@ -286,14 +286,14 @@ export default function LoginPage() {
                   target="_blank"
                   rel="noreferrer"
                   onClick={handleGoogleStandaloneClick}
-                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 no-underline dark:text-gray-200 dark:border-gray-700"
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 no-underline dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700/50"
                 >
                   <GoogleIcon />
                   המשך עם Google
                 </a>
               ) : (
                 <button type="button" onClick={handleGoogle} disabled={googleLoading || loading !== null}
-                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 dark:text-gray-200 dark:border-gray-700">
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700/50">
                   {googleLoading
                     ? <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                     : <GoogleIcon />

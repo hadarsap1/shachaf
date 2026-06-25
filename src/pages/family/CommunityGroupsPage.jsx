@@ -43,7 +43,7 @@ function GroupFields({ fields }) {
               href={f.value}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-xl transition-[background-color,color] duration-150 max-w-full"
+              className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-xl transition-[background-color,color] duration-150 max-w-full dark:bg-primary-900/30"
             >
               <ExternalLink size={13} className="flex-shrink-0" />
               <span className="truncate">{f.label || 'פתח קישור'}</span>
@@ -159,7 +159,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             />
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setShowLinkForm(false); setLinkLabel(''); setLinkUrl('') }}
-                className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400">ביטול</button>
+                className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">ביטול</button>
               <button onClick={handleAddLink} disabled={savingLink || !linkUrl.trim()}
                 className="text-xs text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-[background-color] duration-150">
                 {savingLink ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}שמור
@@ -286,7 +286,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowForm(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400">ביטול</button>
+            <button onClick={() => setShowForm(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">ביטול</button>
             <button onClick={handleCreate} disabled={saving || !form.title.trim() || !form.date}
               className="text-xs text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-[background-color] duration-150">
               {saving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}שמור
@@ -304,7 +304,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
             const canDel = isAdmin || ev.createdBy === uid
             return (
               <div key={ev.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white group dark:bg-gray-800 dark:border-gray-700">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-50 flex flex-col items-center justify-center text-primary-700">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-50 flex flex-col items-center justify-center text-primary-700 dark:text-primary-300 dark:bg-primary-900/30">
                   <span className="text-xs font-bold tabular-nums leading-tight">{d.getDate()}</span>
                   <span className="text-[10px] leading-tight">{d.toLocaleDateString('he-IL', { month: 'short' })}</span>
                 </div>
@@ -538,7 +538,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
               <button
                 key={m.uid}
                 onClick={() => setSelectedPerson(m)}
-                className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right"
+                className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right dark:hover:bg-gray-700/50"
               >
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0 dark:bg-gray-800 dark:text-gray-400">
                   {m.name?.[0] || '?'}

@@ -30,7 +30,7 @@ function MemberCard({ member, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right"
+      className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 -mx-1 px-1 rounded-lg transition-[background-color] duration-150 text-right dark:hover:bg-gray-700/50"
     >
       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 flex-shrink-0 dark:bg-gray-800 dark:text-gray-400">
         {member.name?.[0] || '?'}
@@ -248,7 +248,7 @@ function CommitteeSummaries({ committee, isAdmin }) {
               <ul className="space-y-1">
                 {s.decisions.map((d, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-gray-700 text-right dark:text-gray-200">
-                    <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">{i + 1}</span>
+                    <span className="w-4 h-4 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 dark:text-primary-300 dark:bg-primary-900/40">{i + 1}</span>
                     {d}
                   </li>
                 ))}
@@ -439,7 +439,7 @@ function CommitteeCard({ committee }) {
       {activePanel === 'message' && !isMember && (
         <div className="px-5 pb-5 border-t border-gray-50 pt-4">
           {sent ? (
-            <div className="flex items-center gap-2 text-green-600 text-sm justify-center py-2">
+            <div className="flex items-center gap-2 text-green-600 text-sm justify-center py-2 dark:text-green-400">
               <CheckCircle2 size={16} />ההודעה נשלחה לוועדה
             </div>
           ) : (

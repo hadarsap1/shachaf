@@ -134,7 +134,7 @@ export default function ChatPage() {
           </div>
           <div>
             <h1 className="font-bold text-gray-800 text-sm dark:text-gray-100">עוזר חכם</h1>
-            <p className="text-xs text-green-600 flex items-center gap-1">
+            <p className="text-xs text-green-600 flex items-center gap-1 dark:text-green-400">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse-dot" />
               מחובר
             </p>
@@ -144,7 +144,7 @@ export default function ChatPage() {
               setMessages([{ id: 1, role: 'assistant', content: `שלום ${user?.name}! 👋\nאיך אוכל לעזור?` }])
               setSuggestions(INITIAL_SUGGESTIONS)
             }}
-            className="mr-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="mr-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors dark:hover:bg-gray-700"
             aria-label="שיחה חדשה"
             title="שיחה חדשה"
           >
@@ -209,7 +209,7 @@ export default function ChatPage() {
                 <button
                   key={i}
                   onClick={() => sendMessage(q)}
-                  className="text-xs bg-white text-primary-600 border border-primary-200 px-3 py-1.5 rounded-full hover:bg-primary-50 hover:border-primary-300 transition-colors shadow-sm dark:bg-gray-800"
+                  className="text-xs bg-white text-primary-600 border border-primary-200 px-3 py-1.5 rounded-full hover:bg-primary-50 hover:border-primary-300 transition-colors shadow-sm dark:bg-gray-800 dark:hover:bg-primary-900/30"
                 >
                   {q}
                 </button>

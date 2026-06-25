@@ -112,7 +112,7 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
           {classes.map(cls => {
             const checked = selected.includes(cls.id)
             return (
-              <label key={cls.id} className="flex items-center justify-end gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors">
+              <label key={cls.id} className="flex items-center justify-end gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50">
                 <span className="text-sm text-gray-700 flex items-center gap-1.5 dark:text-gray-200">
                   {cls.name}
                   <span className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
@@ -197,7 +197,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'אירוע חדש' : 'עריכת אירוע'}</h2>
           <div className="w-8" />
         </div>
@@ -341,7 +341,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
             {saving ? 'שומר...' : 'שמור'}
           </button>
-          <button onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700 dark:hover:bg-gray-700/50">
             ביטול
           </button>
         </div>
@@ -453,7 +453,7 @@ export default function AdminEventsPage() {
           אירוע חדש
         </button>
         <div>
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
             <span className="text-xl leading-none">📅</span>
             ניהול אירועים
           </h1>
@@ -574,17 +574,17 @@ export default function AdminEventsPage() {
 
             return (
               <div key={event.id}
-                className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
                 onClick={() => { setEditing(event); setConfirmDelete(null) }}>
                 <div className="flex items-start gap-3">
                   {/* Date badge */}
-                  <div className="w-12 h-12 rounded-xl bg-primary-50 flex flex-col items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-primary-50 flex flex-col items-center justify-center flex-shrink-0 dark:bg-primary-900/30">
                     {event.date ? (
                       <>
                         <span className="text-xs text-primary-400 font-medium leading-none">
                           {new Date(event.date).toLocaleDateString('he-IL', { month: 'short' })}
                         </span>
-                        <span className="text-lg font-black text-primary-700 leading-tight">
+                        <span className="text-lg font-black text-primary-700 leading-tight dark:text-primary-300">
                           {new Date(event.date).getDate()}
                         </span>
                       </>
@@ -599,7 +599,7 @@ export default function AdminEventsPage() {
                       <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{event.title}</span>
                       <span className={typeConf || 'badge'}>{typeLabel}</span>
                       {event.required && (
-                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium">כולם מוזמנים</span>
+                        <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium dark:bg-blue-900/20 dark:text-blue-400">כולם מוזמנים</span>
                       )}
                     </div>
                     {event.description && (
@@ -633,7 +633,7 @@ export default function AdminEventsPage() {
                     )}
                     <button
                       onClick={() => { setEditing(event); setConfirmDelete(null) }}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors dark:hover:bg-primary-900/30"
                       title="ערוך"
                     >
                       <Edit2 size={14} />
@@ -649,7 +649,7 @@ export default function AdminEventsPage() {
                         </button>
                         <button
                           onClick={() => setConfirmDelete(null)}
-                          className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100 dark:text-gray-400"
+                          className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                         >
                           ביטול
                         </button>
@@ -657,7 +657,7 @@ export default function AdminEventsPage() {
                     ) : (
                       <button
                         onClick={() => setConfirmDelete(event.id)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors dark:hover:bg-red-900/20"
                         title="מחק"
                       >
                         <Trash2 size={14} />

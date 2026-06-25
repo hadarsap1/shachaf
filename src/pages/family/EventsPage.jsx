@@ -100,7 +100,7 @@ export default function EventsPage() {
         </div>
 
         <div className="text-right">
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
             <span className="text-2xl leading-none">📅</span>
             אירועים קרובים
           </h1>

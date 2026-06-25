@@ -15,7 +15,7 @@ function SlidePanel({ title, sub, children, onClose }) {
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <div className="text-right">
             <h2 className="font-bold text-gray-800 dark:text-gray-100">{title}</h2>
             {sub && <p className="text-xs text-gray-500 dark:text-gray-400">{sub}</p>}
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-primary-800 flex items-center gap-2"><span className="text-xl leading-none">🏛️</span>מסך הבית</h1>
+        <h1 className="text-2xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300"><span className="text-xl leading-none">🏛️</span>מסך הבית</h1>
         <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">סקירה כללית של קהילת שחף</p>
       </div>
 
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
               {totalTasks === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-sm text-gray-400 mb-3">אין משימות עדיין</p>
-                  <a href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                  <a href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors font-medium dark:bg-primary-900/30">
                     <CheckSquare size={13} />
                     פרסם משימה ראשונה
                   </a>
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                   .sort((a, b) => new Date(a.date) - new Date(b.date))
                   .map(ev => (
                     <Link key={ev.id} to="/admin/events" onClick={() => setActivePanel(null)}
-                      className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 transition-colors">
+                      className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 transition-colors dark:bg-primary-900/30">
                       <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{ev.title}</div>
                       <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                         {new Date(ev.date).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'long' })}
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
                 )}
                 {messages.filter(m => !m.read).map(msg => (
                   <Link key={msg.id} to="/admin/messages" onClick={() => setActivePanel(null)}
-                    className="block bg-blue-50 rounded-xl p-3 text-right hover:bg-blue-100 transition-colors">
+                    className="block bg-blue-50 rounded-xl p-3 text-right hover:bg-blue-100 transition-colors dark:bg-blue-900/20">
                     <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{msg.subject}</div>
                     <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{msg.userName}</div>
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2 dark:text-gray-400">{msg.body}</p>

@@ -75,7 +75,7 @@ function ScheduleView({ schedule }) {
 function PersonCard({ person }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0">
+      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40">
         {person.name?.[0] || '?'}
       </div>
       <div className="flex-1 min-w-0">
@@ -170,7 +170,7 @@ function ChildNoteCard({ child, parentId, color }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           {saved && (
-            <span className="flex items-center gap-1 text-xs text-green-600">
+            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <Check size={11} /> נשמר
             </span>
           )}
@@ -350,7 +350,7 @@ export default function ClassPage() {
         {/* Announcements */}
         {classAnns.length > 0 && (
           <Section title="הודעות" icon={Megaphone} color={cls?.color || '#1B3B70'}>
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {classAnns.slice(0, 5).map(ann => (
                 <AnnItem key={ann.id} ann={ann} />
               ))}

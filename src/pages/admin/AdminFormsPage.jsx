@@ -35,7 +35,7 @@ function FieldRow({ field, index, total, onChange, onDelete, onMove }) {
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700">
       <div
-        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50"
+        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
         onClick={() => setOpen(!open)}
       >
         <GripVertical size={14} className="text-gray-300 flex-shrink-0" />
@@ -44,17 +44,17 @@ function FieldRow({ field, index, total, onChange, onDelete, onMove }) {
           <span className="text-xs text-gray-400">{FIELD_TYPES.find(t => t.value === field.type)?.label}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {field.required && <span className="text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded">נדרש</span>}
+          {field.required && <span className="text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded dark:bg-primary-900/30">נדרש</span>}
           <button onClick={e => { e.stopPropagation(); onMove(index, -1) }} disabled={index === 0}
-            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30">
+            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 dark:hover:bg-gray-700">
             <ChevronUp size={14} />
           </button>
           <button onClick={e => { e.stopPropagation(); onMove(index, 1) }} disabled={index === total - 1}
-            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30">
+            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 dark:hover:bg-gray-700">
             <ChevronDown size={14} />
           </button>
           <button onClick={e => { e.stopPropagation(); onDelete() }}
-            className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded">
+            className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded dark:hover:bg-red-900/20">
             <Trash2 size={14} />
           </button>
           <span className="text-gray-300">{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
@@ -291,7 +291,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
         >
           שמור כטיוטה
         </button>
-        <button onClick={onCancel} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 dark:border-gray-700">
+        <button onClick={onCancel} className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
           <X size={16} />
         </button>
       </div>
@@ -323,7 +323,7 @@ function SubmissionsPanel({ form, onClose }) {
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
           <div className="text-right">
             <h2 className="font-bold text-gray-800 dark:text-gray-100">{form.title}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">{loading ? 'טוען...' : `${subs.length} תגובות`}</p>
@@ -427,7 +427,7 @@ export default function AdminFormsPage() {
             >
               ← חזור לרשימה
             </button>
-            <h1 className="text-xl font-black text-primary-800">
+            <h1 className="text-xl font-black text-primary-800 dark:text-primary-300">
               {editingForm?.title || 'טופס חדש'}
             </h1>
           </div>
@@ -446,7 +446,7 @@ export default function AdminFormsPage() {
               טופס חדש
             </button>
             <div>
-              <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
+              <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
                 <span className="text-xl leading-none">📋</span>
                 ניהול טפסים
               </h1>
@@ -483,7 +483,7 @@ export default function AdminFormsPage() {
                     </button>
                     <button
                       onClick={() => handleEdit(form)}
-                      className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded-lg transition-colors"
+                      className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded-lg transition-colors dark:bg-primary-900/30"
                     >
                       <Edit2 size={12} />
                       ערוך
@@ -502,7 +502,7 @@ export default function AdminFormsPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(form.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors dark:hover:bg-red-900/20"
                     >
                       <Trash2 size={14} />
                     </button>

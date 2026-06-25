@@ -69,8 +69,8 @@ export default function AdminEmergencyPage() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
-          <AlertTriangle size={20} className="text-red-600" />
+        <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 dark:bg-red-900/30">
+          <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
         </div>
         <div>
           <h1 className="text-xl font-black text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🚨</span>מצב חירום</h1>
@@ -168,7 +168,7 @@ export default function AdminEmergencyPage() {
                 <div key={i} className="bg-gray-50 rounded-xl p-3 relative dark:bg-gray-900">
                   <button
                     onClick={() => removeSlot(i)}
-                    className="absolute top-2 left-2 p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
+                    className="absolute top-2 left-2 p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 dark:hover:bg-red-900/20"
                   >
                     <X size={14} />
                   </button>

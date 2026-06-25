@@ -127,7 +127,9 @@ function WeekEventCard({ event, onClick, classColorMap, isConflict }) {
       onClick={() => onClick(event)}
       className={clsx(
         'w-full text-start border-r-2 rounded-lg px-2 py-1.5 mb-1 transition-colors',
-        isConflict ? 'bg-orange-50 hover:bg-orange-100' : 'bg-gray-50 hover:bg-gray-100'
+        isConflict
+          ? 'bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-900/50'
+          : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700'
       )}
       style={{ borderRightColor: color }}
     >
@@ -366,7 +368,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
         <div className="flex items-center gap-1">
           <button
             onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400 dark:hover:bg-gray-700"
             aria-label="הקודם"
           >
             <ChevronRight size={18} />
@@ -376,7 +378,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           </h2>
           <button
             onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors dark:text-gray-400 dark:hover:bg-gray-700"
             aria-label="הבא"
           >
             <ChevronLeft size={18} />
@@ -411,7 +413,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           </div>
           <button
             onClick={goToToday}
-            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700"
+            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50"
           >
             היום
           </button>

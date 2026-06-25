@@ -75,9 +75,9 @@ function MemberSearch({ communityUsers, onSelect }) {
               key={u.uid}
               type="button"
               onMouseDown={() => pick(u)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 text-right transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 text-right transition-colors dark:hover:bg-primary-900/30"
             >
-              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40">
                 {u.name?.[0] || '?'}
               </div>
               <div className="flex-1 min-w-0">
@@ -125,7 +125,7 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'ועדה חדשה' : 'עריכת ועדה'}</h2>
           <button onClick={handleSave} disabled={saving}
             className="flex items-center gap-1.5 btn-primary text-sm py-1.5 px-3">
@@ -135,7 +135,7 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</div>}
+          {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
 
           <div className="flex gap-3">
             <div className="flex-1">
@@ -207,7 +207,7 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
                     <input value={m.title || ''} onChange={e => updateMember(i, 'title', e.target.value)}
                       placeholder="תפקיד" className="input w-28 text-sm py-1.5" />
                     <button onClick={() => removeMember(i)}
-                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg dark:hover:bg-red-900/20">
                       <X size={14} />
                     </button>
                   </div>
@@ -287,7 +287,7 @@ export default function AdminCommitteesPage() {
         </button>
       </div>
 
-      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+      {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -313,11 +313,11 @@ export default function AdminCommitteesPage() {
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => { setSelected(c); setIsNew(false) }}
-                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl">
+                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl dark:hover:bg-primary-900/30">
                   <Edit2 size={15} />
                 </button>
                 <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl">
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl dark:hover:bg-red-900/20">
                   {deleting === c.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                 </button>
               </div>

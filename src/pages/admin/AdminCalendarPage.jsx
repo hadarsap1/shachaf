@@ -116,7 +116,7 @@ function EventDetailPanel({ event, onClose }) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400">
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700">
               <X size={18} />
             </button>
             {/* Link to edit in AdminEventsPage */}
@@ -124,7 +124,7 @@ function EventDetailPanel({ event, onClose }) {
               to="/admin/events"
               state={{ editEvent: event }}
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors dark:hover:bg-primary-900/30"
               title="ערוך אירוע"
             >
               <Edit2 size={16} />
@@ -182,14 +182,14 @@ function EventDetailPanel({ event, onClose }) {
           <div className="flex gap-2">
             <button
               onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
-              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-colors font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-primary-900/30"
             >
               <Plus size={14} />
               Google Calendar
             </button>
             <button
               onClick={handleDownloadICS}
-              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
+              className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
             >
               <Calendar size={14} />
               יומן (.ics)
@@ -198,7 +198,7 @@ function EventDetailPanel({ event, onClose }) {
           <Link
             to="/admin/events"
             onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary-200 text-sm text-primary-700 hover:bg-primary-50 transition-colors font-medium"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary-200 text-sm text-primary-700 hover:bg-primary-50 transition-colors font-medium dark:hover:bg-primary-900/30 dark:text-primary-300"
           >
             <Edit2 size={14} />
             עריכת אירוע
@@ -233,7 +233,7 @@ export default function AdminCalendarPage() {
     <div className="page-container rtl" dir="rtl">
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
           <span className="text-xl leading-none">📅</span>
           לוח שנה
         </h1>

@@ -59,7 +59,7 @@ export default function AdminMessagesPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-xl leading-none">💬</span>
           הודעות
         </h1>

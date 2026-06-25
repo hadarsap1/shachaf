@@ -96,7 +96,7 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'משימה חדשה' : 'עריכת משימה'}</h2>
         </div>
 
@@ -202,7 +202,7 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
             <Check size={15} />
             שמור
           </button>
-          <button onClick={onClose} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700">
+          <button onClick={onClose} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700 dark:hover:bg-gray-700/50">
             ביטול
           </button>
         </div>
@@ -297,7 +297,7 @@ export default function AdminTasksPage() {
           משימה חדשה
         </button>
         <div>
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
             <span className="text-xl leading-none">✅</span>
             ניהול משימות
           </h1>
@@ -350,7 +350,7 @@ export default function AdminTasksPage() {
         <div className="space-y-2">
           {filtered.map(task => (
             <div key={task.id}
-              className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="card p-4 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
               onClick={() => { setEditing(task); setConfirmDelete(null) }}>
               <div className="flex items-start gap-3">
                 {/* Status toggle */}
@@ -391,7 +391,7 @@ export default function AdminTasksPage() {
                 <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => { setEditing(task); setConfirmDelete(null) }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors dark:hover:bg-primary-900/30"
                     title="ערוך"
                   >
                     <Edit2 size={14} />
@@ -407,7 +407,7 @@ export default function AdminTasksPage() {
                       </button>
                       <button
                         onClick={() => setConfirmDelete(null)}
-                        className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100 dark:text-gray-400"
+                        className="text-xs text-gray-500 hover:text-gray-700 px-1.5 py-1 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                       >
                         ביטול
                       </button>
@@ -415,7 +415,7 @@ export default function AdminTasksPage() {
                   ) : (
                     <button
                       onClick={() => setConfirmDelete(task.id)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors dark:hover:bg-red-900/20"
                       title="מחק"
                     >
                       <Trash2 size={14} />

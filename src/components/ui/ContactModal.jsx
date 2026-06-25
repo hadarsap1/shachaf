@@ -38,7 +38,7 @@ export default function ContactModal({ person, onClose }) {
         style={{ maxHeight: '70vh' }}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700">
             <X size={18} />
           </button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">פרטי קשר</h2>
@@ -47,7 +47,7 @@ export default function ContactModal({ person, onClose }) {
         <div className="flex-1 overflow-y-auto px-5 py-6">
           {/* Avatar + name */}
           <div className="flex flex-col items-center gap-3 mb-6">
-            <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-xl font-bold text-primary-700">
+            <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-xl font-bold text-primary-700 dark:text-primary-300 dark:bg-primary-900/40">
               {initials}
             </div>
             <div className="text-center">
@@ -61,10 +61,10 @@ export default function ContactModal({ person, onClose }) {
             {person.phone && (
               <a
                 href={`tel:${person.phone}`}
-                className="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50 hover:bg-primary-50 hover:border-primary-200 transition-[background-color,border-color] duration-150 dark:bg-gray-900 dark:border-gray-700"
+                className="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50 hover:bg-primary-50 hover:border-primary-200 transition-[background-color,border-color] duration-150 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-primary-900/30"
                 dir="ltr"
               >
-                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 dark:bg-primary-900/40">
                   <Phone size={18} className="text-primary-600" />
                 </div>
                 <div className="flex-1">
@@ -77,10 +77,10 @@ export default function ContactModal({ person, onClose }) {
             {person.phone && (
               <button
                 onClick={openWhatsApp}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-[background-color,border-color] duration-150 dark:bg-gray-900 dark:border-gray-700"
+                className="w-full flex items-center gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50 hover:bg-green-50 hover:border-green-200 transition-[background-color,border-color] duration-150 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-green-900/20"
               >
-                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <MessageCircle size={18} className="text-green-600" />
+                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 dark:bg-green-900/30">
+                  <MessageCircle size={18} className="text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1 text-right">
                   <p className="text-xs text-gray-400">WhatsApp</p>
@@ -95,7 +95,7 @@ export default function ContactModal({ person, onClose }) {
                 className="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50 hover:bg-secondary-50 hover:border-secondary-200 transition-[background-color,border-color] duration-150 dark:bg-gray-900 dark:border-gray-700"
                 dir="ltr"
               >
-                <div className="w-10 h-10 rounded-xl bg-secondary-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-secondary-100 flex items-center justify-center flex-shrink-0 dark:bg-secondary-900/40">
                   <Mail size={18} className="text-secondary-600" />
                 </div>
                 <div className="flex-1">
@@ -118,7 +118,7 @@ export default function ContactModal({ person, onClose }) {
               </p>
               <div className="flex flex-wrap gap-2">
                 {classLabels.map(label => (
-                  <span key={label} className="px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-medium">
+                  <span key={label} className="px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-medium">
                     {label}
                   </span>
                 ))}

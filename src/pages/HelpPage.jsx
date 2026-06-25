@@ -364,7 +364,7 @@ export default function HelpPage() {
                 </div>
                 <h2 className={clsx('font-semibold text-base', section.color)}>{section.title}</h2>
               </div>
-              <div className="px-5 divide-y divide-gray-50">
+              <div className="px-5 divide-y divide-gray-50 dark:divide-gray-700">
                 {section.faqs.map((faq, i) => (
                   <FAQItem key={i} q={faq.q} a={faq.a} />
                 ))}
@@ -374,9 +374,9 @@ export default function HelpPage() {
         })}
       </div>
 
-      <div className="mt-6 bg-primary-50 rounded-2xl p-5 text-center">
+      <div className="mt-6 bg-primary-50 rounded-2xl p-5 text-center dark:bg-primary-900/30">
         <Star size={20} className="mx-auto text-primary-400 mb-2" />
-        <p className="font-semibold text-primary-800 text-sm">לא מצאתם תשובה?</p>
+        <p className="font-semibold text-primary-800 text-sm dark:text-primary-300">לא מצאתם תשובה?</p>
         <p className="text-xs text-primary-600 mt-0.5 mb-3">
           צרו קשר עם צוות בית הספר ונשמח לעזור
         </p>

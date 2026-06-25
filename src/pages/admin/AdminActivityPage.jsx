@@ -57,7 +57,7 @@ export default function AdminActivityPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-xl leading-none">📊</span>
           יומן פעילות
         </h1>
@@ -77,7 +77,7 @@ export default function AdminActivityPage() {
         Object.entries(groups).map(([date, items]) => (
           <section key={date} className="mb-6">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3 px-1">{date}</h2>
-            <div className="card divide-y divide-gray-50">
+            <div className="card divide-y divide-gray-50 dark:divide-gray-700">
               {items.map(log => {
                 const Icon = log.icon
                 return (

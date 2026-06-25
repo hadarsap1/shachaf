@@ -178,11 +178,11 @@ export default function OnboardingPage() {
 
             {linked.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-semibold text-green-700 mb-2">ילדים מחוברים</p>
+                <p className="text-xs font-semibold text-green-700 mb-2 dark:text-green-300">ילדים מחוברים</p>
                 <div className="space-y-2">
                   {linked.map(c => (
-                    <div key={c.id} className="flex items-center gap-3 bg-green-50 rounded-xl px-3 py-2">
-                      <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
+                    <div key={c.id} className="flex items-center gap-3 bg-green-50 rounded-xl px-3 py-2 dark:bg-green-900/20">
+                      <CheckCircle size={16} className="text-green-600 flex-shrink-0 dark:text-green-400" />
                       <div>
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{c.name}</p>
                         {c.classId && classNames[c.classId] && (
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
             ) : (
               <div className="space-y-2 max-h-56 overflow-y-auto mb-4">
                 {filtered.map(c => (
-                  <div key={c.id} className="flex items-center gap-3 border border-gray-100 rounded-xl px-3 py-2 hover:bg-gray-50 dark:border-gray-700">
+                  <div key={c.id} className="flex items-center gap-3 border border-gray-100 rounded-xl px-3 py-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{c.name}</p>
                       {c.classId && classNames[c.classId] && (
@@ -255,7 +255,7 @@ export default function OnboardingPage() {
             {coDone ? (
               <div className="flex flex-col items-center py-6 gap-3">
                 <CheckCircle size={40} className="text-green-500" />
-                <p className="font-semibold text-green-700">ההזמנה נשלחה בהצלחה</p>
+                <p className="font-semibold text-green-700 dark:text-green-300">ההזמנה נשלחה בהצלחה</p>
                 <button onClick={() => setStep(3)} className="btn-primary w-full mt-2">
                   המשך
                 </button>
@@ -288,7 +288,7 @@ export default function OnboardingPage() {
                   type="tel"
                   dir="ltr"
                 />
-                {coError && <p className="text-sm text-red-600 mb-3">{coError}</p>}
+                {coError && <p className="text-sm text-red-600 mb-3 dark:text-red-400">{coError}</p>}
                 <button
                   onClick={inviteCoParent}
                   disabled={!coName.trim() || !coEmail.trim() || busy}

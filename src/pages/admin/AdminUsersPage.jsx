@@ -77,7 +77,7 @@ function InvitePanel({ onClose }) {
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 flex items-center gap-2 dark:text-gray-100">
             <Link2 size={16} className="text-primary-600" />
             הזמנת משפחות
@@ -209,7 +209,7 @@ function AddMemberPanel({ onClose, onCreated }) {
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 flex items-center gap-2 dark:text-gray-100">
             <UserPlus size={16} className="text-primary-600" />
             הוספת חבר ידנית
@@ -218,8 +218,8 @@ function AddMemberPanel({ onClose, onCreated }) {
 
         {done ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-              <Check size={26} className="text-green-600" />
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center dark:bg-green-900/30">
+              <Check size={26} className="text-green-600 dark:text-green-400" />
             </div>
             <p className="font-bold text-gray-800 dark:text-gray-100">המשתמש נוצר בהצלחה!</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">נשלח מייל לאיפוס סיסמה לכתובת {email}</p>
@@ -249,7 +249,7 @@ function AddMemberPanel({ onClose, onCreated }) {
               <RoleChips selected={selectedRoles} onChange={setSelectedRoles} disabled={saving} />
             </div>
 
-            {error && <p className="text-sm text-red-600 text-right bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+            {error && <p className="text-sm text-red-600 text-right bg-red-50 px-3 py-2 rounded-xl dark:bg-red-900/20 dark:text-red-400">{error}</p>}
 
             <p className="text-xs text-gray-400 text-right">לאחר היצירה יישלח מייל לאיפוס סיסמה לכתובת שהוזנה.</p>
 
@@ -295,7 +295,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, o
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">פרטי משתמש</h2>
           <button
             onClick={() => { setEditing(e => !e); setDraft({ name: user.name || '', phone: user.phone || '', address: user.address || '' }) }}
@@ -310,7 +310,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, o
           <div className="flex flex-col items-center gap-3">
             {isUrl(user.avatar)
               ? <img src={user.avatar} alt="" className="w-16 h-16 rounded-full object-cover" />
-              : <div className="avatar w-16 h-16 text-2xl bg-primary-100 text-primary-700">{(draft.name || user.name)?.[0] || '?'}</div>
+              : <div className="avatar w-16 h-16 text-2xl bg-primary-100 text-primary-700 dark:text-primary-300 dark:bg-primary-900/40">{(draft.name || user.name)?.[0] || '?'}</div>
             }
             <div className="text-center">
               <div className="font-bold text-gray-800 text-base dark:text-gray-100">{editing ? draft.name || '—' : user.name}</div>
@@ -414,7 +414,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, o
         {waPhone && (
           <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
             <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors border border-green-200">
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors border border-green-200 dark:bg-green-900/20 dark:text-green-300">
               <MessageCircle size={15} />
               שלח הודעה ב-WhatsApp
             </a>
@@ -498,21 +498,21 @@ export default function AdminUsersPage() {
             הוסף חבר
           </button>
           <button onClick={() => setShowInvite(true)}
-            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700">
+            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50">
             <Link2 size={15} />
             הזמן בקישור
           </button>
           <button onClick={() => navigate('/admin/import')}
-            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700">
+            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50">
             <Upload size={15} />
             ייבוא
           </button>
-          <button onClick={loadUsers} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 dark:text-gray-400" title="רענן">
+          <button onClick={loadUsers} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700" title="רענן">
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
         <div>
-          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
+          <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
             <span className="text-xl leading-none">👥</span>
             ניהול משתמשים
           </h1>
@@ -521,7 +521,7 @@ export default function AdminUsersPage() {
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-right">
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-right dark:bg-red-900/20 dark:text-red-300">
           {error}
         </div>
       )}
@@ -552,11 +552,11 @@ export default function AdminUsersPage() {
             const phone = (() => { const d = (user.phone || '').replace(/\D/g, ''); return d.startsWith('972') ? d : '972' + d.replace(/^0/, '') })()
             return (
               <div key={user.uid}
-                className="card p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="card p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
                 onClick={() => setSelectedUser(user)}>
                 {isUrl(user.avatar)
                   ? <img src={user.avatar} alt="" className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
-                  : <div className="avatar w-10 h-10 text-sm bg-primary-100 text-primary-700 flex-shrink-0">
+                  : <div className="avatar w-10 h-10 text-sm bg-primary-100 text-primary-700 flex-shrink-0 dark:text-primary-300 dark:bg-primary-900/40">
                       {user.name?.[0] || '?'}
                     </div>
                 }
@@ -581,7 +581,7 @@ export default function AdminUsersPage() {
                 {phone && (
                   <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="p-2 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors flex-shrink-0">
+                    className="p-2 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors flex-shrink-0 dark:bg-green-900/20 dark:text-green-400">
                     <MessageCircle size={15} />
                   </a>
                 )}

@@ -118,7 +118,7 @@ function TutorialItem({ tutorial }) {
     <div className="card overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-4 text-right hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between p-4 text-right hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
       >
         <span className="text-gray-400">
           {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -133,7 +133,7 @@ function TutorialItem({ tutorial }) {
           <ol className="space-y-2 mt-3">
             {tutorial.steps.map((step, i) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 dark:text-primary-300 dark:bg-primary-900/40">
                   {i + 1}
                 </span>
                 <span className="text-sm text-gray-700 leading-relaxed dark:text-gray-200">{step}</span>
@@ -180,8 +180,8 @@ function CoParentSection({ currentUser, onRegistered }) {
           <UserPlus size={16} className="text-primary-600" />
           הורה שני
         </h2>
-        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 font-bold text-primary-700">
+        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl dark:bg-green-900/20">
+          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 font-bold text-primary-700 dark:text-primary-300 dark:bg-primary-900/40">
             {existing.name?.[0] || '?'}
           </div>
           <div className="text-right flex-1">
@@ -317,7 +317,7 @@ function ChildProfileCard({ child }) {
       <div className="flex items-center gap-3 justify-end">
         <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{child.name}</span>
         <label className="relative cursor-pointer group">
-          <div className="w-12 h-12 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center text-base font-bold text-primary-600">
+          <div className="w-12 h-12 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center text-base font-bold text-primary-600 dark:bg-primary-900/40">
             {photoPreview
               ? <img src={photoPreview} alt="" className="w-full h-full object-cover" />
               : child.name?.[0] || '?'
@@ -449,7 +449,7 @@ export default function SettingsPage() {
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
-        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
+        <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 dark:text-primary-300">
           <span className="text-2xl leading-none">⚙️</span>
           הגדרות
         </h1>
@@ -466,7 +466,7 @@ export default function SettingsPage() {
           {/* Avatar upload */}
           <div className="flex justify-center">
             <label className="relative cursor-pointer group">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 border-2 border-white shadow">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 border-2 border-white shadow dark:bg-primary-900/40">
                 {avatarPreview
                   ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
                   : user?.name?.[0] || '?'
