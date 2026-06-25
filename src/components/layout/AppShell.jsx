@@ -195,7 +195,7 @@ function UserMenu({ user, logout }) {
 }
 
 export default function AppShell() {
-  const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, deactivateViewAs } = useAuth()
+  const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, activateViewAs, deactivateViewAs } = useAuth()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
@@ -238,7 +238,16 @@ export default function AppShell() {
         </nav>
 
         {/* User section */}
-        <div className="px-3 py-4 border-t border-primary-600">
+        <div className="px-3 py-4 border-t border-primary-600 space-y-2">
+          {isAdmin && !viewAs && (
+            <button
+              onClick={() => activateViewAs('community')}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-primary-200 hover:bg-primary-600/50 hover:text-white transition-[background-color,color] duration-150"
+            >
+              <Eye size={14} className="flex-shrink-0" />
+              עבור למצב הורה
+            </button>
+          )}
           <UserMenu user={user} logout={logout} />
         </div>
       </aside>
@@ -268,7 +277,16 @@ export default function AppShell() {
                 : <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               )}
             </nav>
-            <div className="px-3 py-4 border-t border-primary-600">
+            <div className="px-3 py-4 border-t border-primary-600 space-y-2">
+              {isAdmin && !viewAs && (
+                <button
+                  onClick={() => { activateViewAs('community'); setSidebarOpen(false) }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-primary-200 hover:bg-primary-600/50 hover:text-white transition-[background-color,color] duration-150"
+                >
+                  <Eye size={14} className="flex-shrink-0" />
+                  עבור למצב הורה
+                </button>
+              )}
               <UserMenu user={user} logout={logout} />
             </div>
           </aside>
@@ -281,11 +299,11 @@ export default function AppShell() {
         {viewAs && (
           <div className="flex items-center justify-between bg-amber-500 text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
             <button onClick={deactivateViewAs} className="flex items-center gap-1 hover:underline text-white/90">
-              ← חזרה למנהל ראשי
+              ← חזרה למנהל
             </button>
             <span className="flex items-center gap-1.5">
               <Eye size={14} />
-              מציג כ: {ROLE_LABEL[viewAs]}
+              מצב הורה
             </span>
           </div>
         )}
