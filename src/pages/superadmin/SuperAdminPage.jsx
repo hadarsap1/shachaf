@@ -107,7 +107,7 @@ export default function SuperAdminPage() {
         </button>
         <div>
           <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-            <Shield size={22} />
+            <span className="text-xl leading-none">🛡️</span>
             ניהול הרשאות
           </h1>
           <p className="text-sm text-gray-500 mt-0.5 text-right">{users.length} משתמשים רשומים</p>

@@ -73,7 +73,7 @@ export default function AdminEmergencyPage() {
           <AlertTriangle size={20} className="text-red-600" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-gray-900">מצב חירום</h1>
+          <h1 className="text-xl font-black text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🚨</span>מצב חירום</h1>
           <p className="text-sm text-gray-500">ניהול שגרת חירום ולוח שיעורים יומי</p>
         </div>
       </div>

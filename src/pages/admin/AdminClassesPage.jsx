@@ -686,7 +686,7 @@ export default function AdminClassesPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ניהול כיתות</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🎓</span>ניהול כיתות</h1>
           <p className="text-sm text-gray-500 mt-0.5">{classes.length} כיתות</p>
         </div>
         <button onClick={() => { setSelected(blankClass()); setIsNew(true) }}

@@ -150,7 +150,7 @@ export default function FamiliesPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="mb-6">
         <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-          <Users size={22} />
+          <span className="text-xl leading-none">👨‍👩‍👧</span>
           המשפחות שלי
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">{families.length} משפחות חדשות בטיפולך</p>

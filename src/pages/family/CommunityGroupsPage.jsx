@@ -578,7 +578,7 @@ export default function CommunityGroupsPage() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Heart size={24} className="text-primary-600" />
+          <span className="text-2xl leading-none">🤝</span>
           קבוצות קהילה
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">הצטרפו לקבוצות לפי תחומי עניין</p>

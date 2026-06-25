@@ -433,7 +433,7 @@ export default function AdminChildrenPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ניהול ילדים</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🧒</span>ניהול ילדים</h1>
           <p className="text-sm text-gray-500 mt-0.5">{children.length} ילדים</p>
         </div>
         <div className="flex gap-2">

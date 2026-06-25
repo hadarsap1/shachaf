@@ -381,7 +381,7 @@ export default function AdminImportPage() {
       {/* Page header */}
       <div className="flex items-center justify-end mb-6">
         <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-          <Upload size={22} />
+          <span className="text-xl leading-none">📥</span>
           ייבוא משפחות
         </h1>
       </div>

@@ -371,7 +371,7 @@ export default function AdminCommunityGroupsPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">קבוצות קהילה</h1>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><span className="text-xl leading-none">🤝</span>קבוצות קהילה</h1>
           <p className="text-sm text-gray-500 mt-0.5">ניהול קבוצות וחברות</p>
         </div>
         <button onClick={() => { setSelected(blank()); setIsNew(true) }}

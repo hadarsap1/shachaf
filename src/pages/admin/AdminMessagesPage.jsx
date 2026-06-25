@@ -60,7 +60,7 @@ export default function AdminMessagesPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-xl font-black text-primary-800 flex items-center gap-2">
-          <MessageSquare size={22} />
+          <span className="text-xl leading-none">💬</span>
           הודעות
         </h1>
         {unread > 0 && tab === 'messages' && (

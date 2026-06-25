@@ -298,7 +298,7 @@ export default function AdminTasksPage() {
         </button>
         <div>
           <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
-            <CheckSquare size={22} />
+            <span className="text-xl leading-none">✅</span>
             ניהול משימות
           </h1>
           <p className="text-sm text-gray-500 mt-0.5 text-right">{tasks.length} משימות</p>
