@@ -35,7 +35,6 @@ ${INVITE_URL}`,
 const ROLES = [
   { value: 'new_family',  label: 'משפחה חדשה' },
   { value: 'host_family', label: 'משפחה מארחת' },
-  { value: 'community',   label: 'קהילה' },
   { value: 'admin',       label: 'מנהל' },
   { value: 'super_admin', label: 'מנהל ראשי' },
 ]
@@ -49,7 +48,6 @@ const EXTRA_ROLES = [
 const ROLE_STYLE = {
   new_family:  'bg-primary-50 text-primary-700 border-primary-200',
   host_family: 'bg-secondary-50 text-secondary-700 border-secondary-200',
-  community:   'bg-amber-50 text-amber-700 border-amber-200',
   admin:       'bg-gray-100 text-gray-600 border-gray-200',
   super_admin: 'bg-red-50 text-red-700 border-red-200',
 }
@@ -526,7 +524,7 @@ export default function AdminUsersPage() {
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="חיפוש..." className="input w-full pr-9 text-right py-2 text-sm" />
         </div>
-        {['all', 'new_family', 'host_family', 'community', 'admin'].map(r => (
+        {['all', 'new_family', 'host_family', 'admin'].map(r => (
           <button key={r} onClick={() => setRoleFilter(r)}
             className={clsx('px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
               roleFilter === r ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300')}>
