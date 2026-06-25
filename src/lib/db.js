@@ -552,7 +552,7 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
 
 // Create a new member account directly (admin action).
 // Uses a secondary app so the current admin session is not affected.
-export async function createMember({ name, email, phone, role }) {
+export async function createMember({ name, email, phone, role, roles }) {
   const appName = `new-member-${Date.now()}`
   const secondaryApp = initializeApp(firebaseConfig, appName)
   const secondaryAuth = getAuth(secondaryApp)
@@ -566,7 +566,8 @@ export async function createMember({ name, email, phone, role }) {
     const newUid = cred.user.uid
     await setDoc(doc(secondaryDb, 'users', newUid), {
       name, email, phone: phone || '',
-      role: role || 'new_family',
+      role: role || 'community',
+      roles: roles || [],
       createdAt: serverTimestamp(),
     })
     await sendPasswordResetEmail(secondaryAuth, email)
