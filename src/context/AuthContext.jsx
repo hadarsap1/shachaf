@@ -60,11 +60,25 @@ export function AuthProvider({ children }) {
           if (ps.exists()) pending = ps.data()
         } catch { /* no pending record or permission denied — fine */ }
       }
+      // Read a role the registration form may have stored just before sign-up
+      let selfSelectedRole = null
+      let selfSelectedRoles = []
+      try {
+        const stored = localStorage.getItem('shachaf_reg_role')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          selfSelectedRole  = parsed.role  || null
+          selfSelectedRoles = parsed.roles || []
+          localStorage.removeItem('shachaf_reg_role')
+        }
+      } catch { /* ignore */ }
+
       const newProfile = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || emailKey,
         name: pending?.name || firebaseUser.displayName || emailKey.split('@')[0],
-        role: pending?.role || 'new_family',
+        role: pending?.role || selfSelectedRole || 'community',
+        roles: selfSelectedRoles,
         avatar: firebaseUser.photoURL || '',
         phone: pending?.phone || '',
         address: pending?.address || '',

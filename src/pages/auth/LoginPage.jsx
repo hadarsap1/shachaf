@@ -72,6 +72,7 @@ export default function LoginPage() {
   const [name, setName]           = useState('')
   const [showPass, setShowPass]   = useState(false)
   const [loading, setLoading]     = useState(null)
+  const [regRoles, setRegRoles]   = useState(new Set())
   const [error, setError]         = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -132,10 +133,18 @@ export default function LoginPage() {
     setError('')
     if (!name.trim()) { setError('נא להזין שם'); return }
     setLoading('register')
+    // Persist role selection so fetchUserProfile can pick it up after auth state change
+    if (regRoles.size > 0) {
+      const priority = ['host_family', 'new_family']
+      const primary = priority.find(r => regRoles.has(r)) || 'community'
+      const extras  = [...regRoles].filter(r => r !== primary)
+      try { localStorage.setItem('shachaf_reg_role', JSON.stringify({ role: primary, roles: extras })) } catch {}
+    }
     try {
       await registerWithEmail(email, password, name.trim())
       // useEffect on user handles navigation
     } catch (err) {
+      localStorage.removeItem('shachaf_reg_role')
       setError(firebaseError(err.code))
     } finally {
       setLoading(null)
@@ -301,11 +310,37 @@ export default function LoginPage() {
 
               <form onSubmit={mode === 'register' ? handleRegister : handleLogin} className="space-y-4">
                 {mode === 'register' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 text-right mb-1">שם מלא</label>
-                    <input value={name} onChange={e => setName(e.target.value)} required
-                      placeholder="שם מלא" className="input w-full text-right" />
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 text-right mb-1">שם מלא</label>
+                      <input value={name} onChange={e => setName(e.target.value)} required
+                        placeholder="שם מלא" className="input w-full text-right" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 text-right mb-2">
+                        מה הקשר שלך לקהילה? <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span>
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {[{ value: 'new_family', label: 'משפחה חדשה' }, { value: 'host_family', label: 'משפחה מארחת' }].map(r => {
+                          const on = regRoles.has(r.value)
+                          return (
+                            <button key={r.value} type="button"
+                              onClick={() => setRegRoles(prev => {
+                                const next = new Set(prev)
+                                on ? next.delete(r.value) : next.add(r.value)
+                                return next
+                              })}
+                              className={clsx(
+                                'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                                on ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-400'
+                              )}>
+                              {r.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </>
                 )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 text-right mb-1">כתובת מייל</label>
