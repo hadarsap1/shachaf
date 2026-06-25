@@ -172,8 +172,10 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
             <div
               key={cell.key}
               className={clsx(
-                'border border-gray-100 min-h-16 md:min-h-24 p-1 overflow-hidden',
-                !cell.inMonth && 'bg-gray-50'
+                'border border-gray-100 dark:border-gray-700 min-h-16 md:min-h-24 p-1 overflow-hidden',
+                cell.inMonth
+                  ? 'bg-white dark:bg-gray-800'
+                  : 'bg-gray-50 dark:bg-gray-900'
               )}
             >
               {/* Day number */}
@@ -182,7 +184,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                   'text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full leading-none',
                   isToday
                     ? 'bg-primary-600 text-white font-bold'
-                    : cell.inMonth ? 'text-gray-700' : 'text-gray-300'
+                    : cell.inMonth ? 'text-gray-700 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600'
                 )}>
                   {cell.date.getDate()}
                 </span>
@@ -228,22 +230,22 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
   return (
     <div dir="rtl">
       {/* Desktop: 7-column grid */}
-      <div className="hidden sm:grid grid-cols-7 gap-px bg-gray-100 rounded-xl overflow-hidden dark:bg-gray-800">
+      <div className="hidden sm:grid grid-cols-7 gap-px bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
         {weekDays.map((day, idx) => {
           const isToday   = day.key === today
           const dayEvents = eventsByDay[day.key] || []
 
           return (
-            <div key={day.key} className="bg-white min-h-48 flex flex-col dark:bg-gray-800">
+            <div key={day.key} className="bg-white dark:bg-gray-800 min-h-48 flex flex-col">
               {/* Column header */}
               <div className={clsx(
-                'py-2 px-1 text-center border-b border-gray-100',
-                isToday && 'bg-primary-50'
+                'py-2 px-1 text-center border-b border-gray-100 dark:border-gray-700',
+                isToday ? 'bg-primary-50 dark:bg-primary-900/30' : ''
               )}>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{DAY_NAMES[idx]}</p>
                 <span className={clsx(
                   'text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto',
-                  isToday ? 'bg-primary-600 text-white' : 'text-gray-700'
+                  isToday ? 'bg-primary-600 text-white' : 'text-gray-700 dark:text-gray-200'
                 )}>
                   {day.date.getDate()}
                 </span>
@@ -394,7 +396,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
                 'px-3 py-1.5 text-sm font-medium transition-all',
                 view === 'month'
                   ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               )}
             >
               חודש
@@ -405,7 +407,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
                 'px-3 py-1.5 text-sm font-medium transition-all',
                 view === 'week'
                   ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               )}
             >
               שבוע
