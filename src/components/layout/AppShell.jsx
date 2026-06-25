@@ -65,7 +65,15 @@ const NAV_LINKS = {
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
+    { divider: true, label: 'כהורה' },
+    { to: '/dashboard', label: 'בית', icon: Home },
+    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
+    { to: '/events', label: 'אירועים (הורה)', icon: Calendar },
+    { to: '/committees', label: 'ועדות (הורה)', icon: Network },
+    { to: '/community', label: 'קבוצות קהילה (הורה)', icon: Heart },
+    { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
     { to: '/help', label: 'עזרה', icon: HelpCircle },
+    { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
   super_admin: [
     { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
@@ -81,8 +89,16 @@ const NAV_LINKS = {
     { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
     { to: '/admin/activity', label: 'פעילות', icon: Activity },
     { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
     { to: '/super/admins', label: 'מנהלים', icon: Shield },
+    { divider: true, label: 'כהורה' },
+    { to: '/dashboard', label: 'בית', icon: Home },
+    { to: '/class', label: 'הכיתה שלי', icon: GraduationCap },
+    { to: '/events', label: 'אירועים (הורה)', icon: Calendar },
+    { to: '/committees', label: 'ועדות (הורה)', icon: Network },
+    { to: '/community', label: 'קבוצות קהילה (הורה)', icon: Heart },
+    { to: '/forms', label: 'הטפסים שלי', icon: ClipboardList },
+    { to: '/help', label: 'עזרה', icon: HelpCircle },
+    { to: '/settings', label: 'הגדרות', icon: SlidersHorizontal },
   ],
 }
 
@@ -215,9 +231,10 @@ export default function AppShell() {
 
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {links.map(link => (
-            <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} />
-          ))}
+          {links.map((link, i) => link.divider
+            ? <div key={`div-${i}`} className="pt-3 pb-1 px-1"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary-300/70">{link.label}</p></div>
+            : <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} />
+          )}
         </nav>
 
         {/* User section */}
@@ -246,9 +263,10 @@ export default function AppShell() {
               </div>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {links.map(link => (
-                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
-              ))}
+              {links.map((link, i) => link.divider
+                ? <div key={`div-${i}`} className="pt-3 pb-1 px-1"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary-300/70">{link.label}</p></div>
+                : <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+              )}
             </nav>
             <div className="px-3 py-4 border-t border-primary-600">
               <UserMenu user={user} logout={logout} />
