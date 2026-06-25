@@ -184,7 +184,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                   'text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full leading-none',
                   isToday
                     ? 'bg-primary-600 text-white font-bold'
-                    : cell.inMonth ? 'text-gray-700 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600'
+                    : cell.inMonth ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-400'
                 )}>
                   {cell.date.getDate()}
                 </span>
