@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember } from '../../lib/db'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import {
@@ -128,6 +128,97 @@ function InvitePanel({ onClose }) {
             </div>
           </div>
         </div>
+      </div>
+    </>
+  )
+}
+
+// ── Add member panel ──────────────────────────────────────────────────────────
+
+function AddMemberPanel({ onClose, onCreated }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'new_family' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.name.trim() || !form.email.trim()) return
+    setSaving(true)
+    setError('')
+    try {
+      const newUser = await createMember({ name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), role: form.role })
+      setDone(true)
+      onCreated(newUser)
+    } catch (err) {
+      setError(err.code === 'auth/email-already-in-use' ? 'כתובת המייל כבר רשומה במערכת' : `שגיאה: ${err.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 flex items-center gap-2">
+            <UserPlus size={16} className="text-primary-600" />
+            הוספת חבר ידנית
+          </h2>
+        </div>
+
+        {done ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+              <Check size={26} className="text-green-600" />
+            </div>
+            <p className="font-bold text-gray-800">המשתמש נוצר בהצלחה!</p>
+            <p className="text-sm text-gray-500">נשלח מייל לאיפוס סיסמה לכתובת {form.email}</p>
+            <button onClick={onClose} className="btn-primary mt-4">סגור</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1 text-right">שם מלא *</label>
+              <input value={form.name} onChange={e => set('name', e.target.value)}
+                placeholder="ישראל ישראלי" required
+                className="input w-full text-right" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1 text-right">אימייל *</label>
+              <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                placeholder="example@email.com" required dir="ltr"
+                className="input w-full text-left" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1 text-right">טלפון</label>
+              <input value={form.phone} onChange={e => set('phone', e.target.value)}
+                placeholder="050-0000000" dir="ltr"
+                className="input w-full text-right" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1 text-right">תפקיד</label>
+              <select value={form.role} onChange={e => set('role', e.target.value)}
+                className={clsx('text-sm px-3 py-2 rounded-xl border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 w-full', ROLE_STYLE[form.role] || ROLE_STYLE.new_family)}>
+                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+            </div>
+
+            {error && <p className="text-sm text-red-600 text-right bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+
+            <p className="text-xs text-gray-400 text-right">לאחר היצירה יישלח מייל לאיפוס סיסמה לכתובת שהוזנה.</p>
+
+            <button type="submit" disabled={saving || !form.name.trim() || !form.email.trim()}
+              className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+              {saving ? 'יוצר...' : 'צור חשבון ושלח מייל'}
+            </button>
+          </form>
+        )}
       </div>
     </>
   )
@@ -336,6 +427,7 @@ export default function AdminUsersPage() {
   const [search, setSearch]     = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [showInvite, setShowInvite] = useState(false)
+  const [showAddMember, setShowAddMember] = useState(false)
   const [saving, setSaving]     = useState(null)
   const [error, setError]       = useState('')
   const [selectedUser, setSelectedUser] = useState(null)
@@ -394,9 +486,14 @@ export default function AdminUsersPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowInvite(true)} className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
+          <button onClick={() => setShowAddMember(true)} className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
             <UserPlus size={16} />
-            הזמן משפחה
+            הוסף חבר
+          </button>
+          <button onClick={() => setShowInvite(true)}
+            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+            <Link2 size={15} />
+            הזמן בקישור
           </button>
           <button onClick={() => navigate('/admin/import')}
             className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
@@ -493,6 +590,15 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {showAddMember && (
+        <AddMemberPanel
+          onClose={() => setShowAddMember(false)}
+          onCreated={(newUser) => {
+            setUsers(prev => [newUser, ...prev])
+            setShowAddMember(false)
+          }}
+        />
+      )}
       {showInvite && <InvitePanel onClose={() => setShowInvite(false)} />}
       {selectedUser && (
         <UserDetailPanel

@@ -550,6 +550,33 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
   }
 }
 
+// Create a new member account directly (admin action).
+// Uses a secondary app so the current admin session is not affected.
+export async function createMember({ name, email, phone, role }) {
+  const appName = `new-member-${Date.now()}`
+  const secondaryApp = initializeApp(firebaseConfig, appName)
+  const secondaryAuth = getAuth(secondaryApp)
+  const secondaryDb = getFirestore(secondaryApp)
+  try {
+    const arr = new Uint8Array(9)
+    crypto.getRandomValues(arr)
+    const tempPw = `_Sh${btoa(String.fromCharCode(...arr)).replace(/[+/=]/g, '').slice(0, 8)}!`
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPw)
+    await updateFBProfile(cred.user, { displayName: name })
+    const newUid = cred.user.uid
+    await setDoc(doc(secondaryDb, 'users', newUid), {
+      name, email, phone: phone || '',
+      role: role || 'new_family',
+      createdAt: serverTimestamp(),
+    })
+    await sendPasswordResetEmail(secondaryAuth, email)
+    return { uid: newUid, name, email, phone: phone || '', role: role || 'new_family' }
+  } finally {
+    try { await secondaryAuth.signOut() } catch {}
+    try { await deleteApp(secondaryApp) } catch {}
+  }
+}
+
 // ── Hobby groups ───────────────────────────────────────────────────────────────
 export async function getHobbyGroups() {
   const snap = await getDocs(query(collection(db, 'hobbyGroups'), orderBy('order', 'asc')))
