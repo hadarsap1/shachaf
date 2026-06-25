@@ -133,21 +133,68 @@ function InvitePanel({ onClose }) {
 
 // ── Add member panel ──────────────────────────────────────────────────────────
 
-function AddMemberPanel({ onClose, onCreated }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'new_family' })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+// Derive primary role + extra roles[] from a flat Set of selected role values.
+// Priority: super_admin > admin > host_family > new_family > community
+const ROLE_PRIORITY = ['super_admin', 'admin', 'host_family', 'new_family', 'community']
+function deriveRoles(selected) {
+  const primary = ROLE_PRIORITY.find(r => selected.has(r)) || 'community'
+  const extras  = [...selected].filter(r => r !== primary && r !== 'community')
+  return { role: primary, roles: extras }
+}
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+// Checkboxes shown in the add/edit forms (community is the implicit default, not shown)
+const ROLE_CHIPS = [
+  { value: 'new_family',  label: 'משפחה חדשה' },
+  { value: 'host_family', label: 'משפחה מארחת' },
+  { value: 'admin',       label: 'מנהל' },
+  { value: 'super_admin', label: 'מנהל ראשי' },
+]
+
+function RoleChips({ selected, onChange, disabled }) {
+  const toggle = (v) => {
+    const next = new Set(selected)
+    next.has(v) ? next.delete(v) : next.add(v)
+    onChange(next)
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {ROLE_CHIPS.map(r => {
+        const on = selected.has(r.value)
+        return (
+          <button key={r.value} type="button" disabled={disabled}
+            onClick={() => toggle(r.value)}
+            className={clsx(
+              'px-3 py-1.5 rounded-full text-xs font-medium border transition-all select-none',
+              on
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-primary-400 hover:text-primary-600',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}>
+            {r.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function AddMemberPanel({ onClose, onCreated }) {
+  const [name, setName]   = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [selectedRoles, setSelectedRoles] = useState(new Set())
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState('')
+  const [done, setDone]     = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.email.trim()) return
+    if (!name.trim() || !email.trim()) return
     setSaving(true)
     setError('')
+    const { role, roles } = deriveRoles(selectedRoles)
     try {
-      const newUser = await createMember({ name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), role: form.role })
+      const newUser = await createMember({ name: name.trim(), email: email.trim(), phone: phone.trim(), role, roles })
       setDone(true)
       onCreated(newUser)
     } catch (err) {
@@ -175,42 +222,38 @@ function AddMemberPanel({ onClose, onCreated }) {
               <Check size={26} className="text-green-600" />
             </div>
             <p className="font-bold text-gray-800">המשתמש נוצר בהצלחה!</p>
-            <p className="text-sm text-gray-500">נשלח מייל לאיפוס סיסמה לכתובת {form.email}</p>
+            <p className="text-sm text-gray-500">נשלח מייל לאיפוס סיסמה לכתובת {email}</p>
             <button onClick={onClose} className="btn-primary mt-4">סגור</button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1 text-right">שם מלא *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)}
-                placeholder="ישראל ישראלי" required
-                className="input w-full text-right" />
+              <input value={name} onChange={e => setName(e.target.value)}
+                placeholder="ישראל ישראלי" required className="input w-full text-right" />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1 text-right">אימייל *</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
-                placeholder="example@email.com" required dir="ltr"
-                className="input w-full text-left" />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="example@email.com" required dir="ltr" className="input w-full text-left" />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1 text-right">טלפון</label>
-              <input value={form.phone} onChange={e => set('phone', e.target.value)}
-                placeholder="050-0000000" dir="ltr"
-                className="input w-full text-right" />
+              <input value={phone} onChange={e => setPhone(e.target.value)}
+                placeholder="050-0000000" dir="ltr" className="input w-full text-right" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1 text-right">תפקיד</label>
-              <select value={form.role} onChange={e => set('role', e.target.value)}
-                className={clsx('text-sm px-3 py-2 rounded-xl border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 w-full', ROLE_STYLE[form.role] || ROLE_STYLE.new_family)}>
-                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
+              <label className="text-xs font-medium text-gray-600 block mb-2 text-right">
+                תפקידים <span className="text-gray-400 font-normal">(אופציונלי, ניתן לבחור כמה)</span>
+              </label>
+              <RoleChips selected={selectedRoles} onChange={setSelectedRoles} disabled={saving} />
             </div>
 
             {error && <p className="text-sm text-red-600 text-right bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
 
             <p className="text-xs text-gray-400 text-right">לאחר היצירה יישלח מייל לאיפוס סיסמה לכתובת שהוזנה.</p>
 
-            <button type="submit" disabled={saving || !form.name.trim() || !form.email.trim()}
+            <button type="submit" disabled={saving || !name.trim() || !email.trim()}
               className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
               {saving ? 'יוצר...' : 'צור חשבון ושלח מייל'}
@@ -347,57 +390,23 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, o
             </div>
           )}
 
-          {/* Role */}
+          {/* Roles — unified multi-select chips */}
           <div>
-            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">הרשאה ראשית</label>
-            <select
-              value={user.role || 'new_family'}
+            <label className="text-xs font-medium text-gray-500 block mb-2 text-right">
+              תפקידים <span className="text-gray-400 font-normal">(ניתן לבחור כמה)</span>
+            </label>
+            <RoleChips
               disabled={saving === user.uid}
-              onChange={e => onRoleChange(user, e.target.value)}
-              className={clsx(
-                'text-sm px-3 py-2 rounded-xl border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 w-full disabled:opacity-50',
-                ROLE_STYLE[user.role] || ROLE_STYLE.new_family
-              )}
-            >
-              {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
-          </div>
-
-          {/* Extra roles */}
-          <div>
-            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">תפקידים נוספים</label>
-            <div className="flex flex-wrap gap-2">
-              {EXTRA_ROLES.map(r => {
-                const extraRoles = user.roles || []
-                const checked = extraRoles.includes(r.value) || user.role === r.value
-                const isPrimary = user.role === r.value
-                return (
-                  <label key={r.value} className={clsx(
-                    'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border cursor-pointer select-none transition-colors',
-                    isPrimary
-                      ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400'
-                      : checked
-                        ? 'bg-primary-50 border-primary-300 text-primary-700'
-                        : 'bg-white border-gray-200 text-gray-600 hover:border-primary-300'
-                  )}>
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      disabled={saving === user.uid || isPrimary}
-                      checked={checked}
-                      onChange={() => {
-                        const current = user.roles || []
-                        const next = checked
-                          ? current.filter(v => v !== r.value)
-                          : [...current, r.value]
-                        onRolesChange(user, next)
-                      }}
-                    />
-                    {r.label}
-                  </label>
-                )
-              })}
-            </div>
+              selected={new Set([
+                ...(user.role && user.role !== 'community' ? [user.role] : []),
+                ...(user.roles || []),
+              ])}
+              onChange={(next) => {
+                const { role, roles } = deriveRoles(next)
+                if (role !== user.role) onRoleChange(user, role)
+                onRolesChange(user, roles)
+              }}
+            />
           </div>
         </div>
 
