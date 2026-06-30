@@ -13,19 +13,19 @@ const INVITE_URL = typeof window !== 'undefined' ? `${window.location.origin}/lo
 
 const DEFAULT_MESSAGES = {
   new_family: `היי, קהילת שחף 👋
-בית הספר שחף מזמין אתכם להצטרף לפלטפורמת הקליטה שלנו.
+קהילת שחף מזמינה אתכם להצטרף לפלטפורמת הקליטה שלנו.
 כאן תמצאו את כל המשימות, האירועים והמידע שתצטרכו לקראת תחילת הלימודים.
 
 להרשמה:
 ${INVITE_URL}`,
   host_family: `היי, קהילת שחף 👋
-בית הספר שחף מזמין אותך להצטרף לפלטפורמת הקליטה כמשפחה מארחת.
+קהילת שחף מזמינה אותך להצטרף לפלטפורמת הקליטה כמשפחה מארחת.
 דרכה תוכלו לעקוב אחר המשפחות שבאחריותכם ולהישאר מעודכנים.
 
 להרשמה:
 ${INVITE_URL}`,
   community: `היי, קהילת שחף 👋
-בית הספר שחף מזמין אתכם להצטרף לפלטפורמת הקהילה שלנו.
+קהילת שחף מזמינה אתכם להצטרף לפלטפורמת הקהילה שלנו.
 כאן תמצאו אירועים, מידע שימושי ועדכונים מהקהילה.
 
 להרשמה:
@@ -128,6 +128,13 @@ function InvitePanel({ onClose }) {
 }
 
 // ── User detail panel ────────────────────────────────────────────────────────
+
+const MEMBER_STATUS_LABEL = { active: 'פעיל', inactive: 'לא פעיל', frozen: 'בהקפאה' }
+const MEMBER_STATUS_STYLE = {
+  active:   'bg-green-50 text-green-700 border-green-200',
+  inactive: 'bg-gray-100 text-gray-500 border-gray-200',
+  frozen:   'bg-blue-50 text-blue-700 border-blue-200',
+}
 
 function UserDetailPanel({ user, onClose, onRoleChange, saving, onProfileSaved }) {
   const [editing, setEditing] = useState(false)
@@ -265,6 +272,25 @@ function UserDetailPanel({ user, onClose, onRoleChange, saving, onProfileSaved }
               )}
             >
               {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
+          </div>
+
+          {/* Member status */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 block mb-1.5 text-right">סטטוס חברות</label>
+            <select
+              value={user.memberStatus || 'active'}
+              onChange={async e => {
+                const status = e.target.value
+                await updateDoc(doc(db, 'users', user.uid), { memberStatus: status })
+                onProfileSaved({ ...user, memberStatus: status })
+              }}
+              className={clsx(
+                'text-sm px-3 py-2 rounded-xl border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 w-full',
+                MEMBER_STATUS_STYLE[user.memberStatus || 'active']
+              )}
+            >
+              {Object.entries(MEMBER_STATUS_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
         </div>

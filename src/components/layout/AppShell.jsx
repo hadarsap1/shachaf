@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getMessages } from '../../lib/db'
+import { useLang } from '../../context/LangContext'
+import { getMessages, getChildrenByParent, getClasses } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
+import FeedbackButton from '../ui/FeedbackButton'
 import {
   Home, CheckSquare, Calendar, Users,
   LayoutDashboard, BookOpen, Menu, X,
@@ -12,77 +14,79 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 
-const NAV_LINKS = {
+// Nav config uses translation keys instead of hardcoded labels
+const NAV_CONFIGS = {
   new_family: [
-    { to: '/dashboard',    label: 'בית',          icon: Home },
-    { to: '/class',        label: 'הכיתה שלי',    icon: GraduationCap },
-    { to: '/class-roster', label: 'ספריית כיתה',  icon: Users },
-    { to: '/tasks',        label: 'משימות',        icon: CheckSquare },
-    { to: '/events',       label: 'אירועים',       icon: Calendar },
-    { to: '/committees',   label: 'ועדות',         icon: Network },
-    { to: '/community',    label: 'קבוצות קהילה', icon: Heart },
-    { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
-    { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
-    { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
-    { to: '/help',         label: 'עזרה',          icon: HelpCircle },
-    { to: '/settings',     label: 'הגדרות',        icon: SlidersHorizontal },
+    { to: '/dashboard',    navKey: 'home',          icon: Home },
+    { to: '/class',        navKey: 'myClass',        icon: GraduationCap },
+    { to: '/class-roster', navKey: 'classLibrary',   icon: Users },
+    { to: '/tasks',        navKey: 'tasks',           icon: CheckSquare },
+    { to: '/events',       navKey: 'events',          icon: Calendar },
+    { to: '/committees',   navKey: 'committees',      icon: Network },
+    { to: '/community',    navKey: 'community',       icon: Heart },
+    { to: '/forms',        navKey: 'forms',           icon: ClipboardList },
+    { to: '/resources',    navKey: 'resources',       icon: BookOpen },
+    { to: '/contact',      navKey: 'contact',         icon: MessageSquare },
+    { to: '/help',         navKey: 'help',            icon: HelpCircle },
+    { to: '/settings',     navKey: 'settings',        icon: SlidersHorizontal },
   ],
   host_family: [
-    { to: '/dashboard',    label: 'בית',          icon: Home },
-    { to: '/class',        label: 'הכיתה שלי',    icon: GraduationCap },
-    { to: '/class-roster', label: 'ספריית כיתה',  icon: Users },
-    { to: '/families',     label: 'המשפחות שלי',  icon: Users },
-    { to: '/events',       label: 'אירועים',       icon: Calendar },
-    { to: '/committees',   label: 'ועדות',         icon: Network },
-    { to: '/community',    label: 'קבוצות קהילה', icon: Heart },
-    { to: '/forms',        label: 'הטפסים שלי',   icon: ClipboardList },
-    { to: '/resources',    label: 'מידע שימושי',  icon: BookOpen },
-    { to: '/contact',      label: 'צור קשר',      icon: MessageSquare },
-    { to: '/help',         label: 'עזרה',          icon: HelpCircle },
-    { to: '/settings',     label: 'הגדרות',        icon: SlidersHorizontal },
+    { to: '/dashboard',    navKey: 'home',          icon: Home },
+    { to: '/class',        navKey: 'myClass',        icon: GraduationCap },
+    { to: '/class-roster', navKey: 'classLibrary',   icon: Users },
+    { to: '/families',     navKey: 'families',        icon: Users },
+    { to: '/events',       navKey: 'events',          icon: Calendar },
+    { to: '/committees',   navKey: 'committees',      icon: Network },
+    { to: '/community',    navKey: 'community',       icon: Heart },
+    { to: '/forms',        navKey: 'forms',           icon: ClipboardList },
+    { to: '/resources',    navKey: 'resources',       icon: BookOpen },
+    { to: '/contact',      navKey: 'contact',         icon: MessageSquare },
+    { to: '/help',         navKey: 'help',            icon: HelpCircle },
+    { to: '/settings',     navKey: 'settings',        icon: SlidersHorizontal },
   ],
   community: [
-    { to: '/dashboard',  label: 'בית',          icon: Home },
-    { to: '/events',     label: 'אירועים',       icon: Calendar },
-    { to: '/committees', label: 'ועדות',         icon: Network },
-    { to: '/community',  label: 'קבוצות קהילה', icon: Heart },
-    { to: '/resources',  label: 'מידע שימושי',  icon: BookOpen },
-    { to: '/contact',    label: 'צור קשר',      icon: MessageSquare },
-    { to: '/help',       label: 'עזרה',          icon: HelpCircle },
-    { to: '/settings',   label: 'הגדרות',        icon: SlidersHorizontal },
+    { to: '/dashboard',  navKey: 'home',          icon: Home },
+    { to: '/events',     navKey: 'events',          icon: Calendar },
+    { to: '/committees', navKey: 'committees',      icon: Network },
+    { to: '/community',  navKey: 'community',       icon: Heart },
+    { to: '/resources',  navKey: 'resources',       icon: BookOpen },
+    { to: '/contact',    navKey: 'contact',         icon: MessageSquare },
+    { to: '/help',       navKey: 'help',            icon: HelpCircle },
+    { to: '/settings',   navKey: 'settings',        icon: SlidersHorizontal },
   ],
   admin: [
-    { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
-    { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
-    { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
-    { to: '/admin/committees', label: 'ועדות', icon: Shield },
-    { to: '/admin/community', label: 'קבוצות קהילה', icon: Heart },
-    { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
-    { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
-    { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
-    { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
-    { to: '/admin/activity', label: 'פעילות', icon: Activity },
-    { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
+    { to: '/admin',             navKey: 'adminHome',      icon: LayoutDashboard },
+    { to: '/admin/users',       navKey: 'adminFamilies',  icon: Users },
+    { to: '/admin/classes',     navKey: 'classes',         icon: GraduationCap },
+    { to: '/admin/children',    navKey: 'children',        icon: Baby, sub: true },
+    { to: '/admin/committees',  navKey: 'committees',      icon: Shield },
+    { to: '/admin/community',   navKey: 'community',       icon: Heart },
+    { to: '/admin/tasks',       navKey: 'adminTasks',      icon: CheckSquare },
+    { to: '/admin/events',      navKey: 'adminEvents',     icon: Calendar },
+    { to: '/admin/forms',       navKey: 'adminForms',      icon: ClipboardList },
+    { to: '/admin/resources',   navKey: 'adminResources',  icon: BookOpen },
+    { to: '/admin/messages',    navKey: 'messages',        icon: MessageSquare, badge: true },
+    { to: '/admin/activity',    navKey: 'activity',        icon: Activity },
+    { to: '/admin/emergency',   navKey: 'emergency',       icon: AlertTriangle },
+    { to: '/help',              navKey: 'help',            icon: HelpCircle },
   ],
   super_admin: [
-    { to: '/admin', label: 'מסך הבית', icon: LayoutDashboard },
-    { to: '/admin/users', label: 'משפחות', icon: Users },
-    { to: '/admin/classes', label: 'כיתות', icon: GraduationCap },
-    { to: '/admin/children', label: 'ילדים', icon: Baby, sub: true },
-    { to: '/admin/committees', label: 'ועדות', icon: Shield },
-    { to: '/admin/community', label: 'קבוצות קהילה', icon: Heart },
-    { to: '/admin/tasks', label: 'משימות', icon: CheckSquare },
-    { to: '/admin/events', label: 'אירועים', icon: Calendar },
-    { to: '/admin/forms', label: 'טפסים', icon: ClipboardList },
-    { to: '/admin/resources', label: 'מידע שימושי', icon: BookOpen },
-    { to: '/admin/messages', label: 'הודעות', icon: MessageSquare, badge: true },
-    { to: '/admin/activity', label: 'פעילות', icon: Activity },
-    { to: '/admin/emergency', label: 'מצב חירום', icon: AlertTriangle },
-    { to: '/help', label: 'עזרה', icon: HelpCircle },
-    { to: '/super/admins', label: 'מנהלים', icon: Shield },
+    { to: '/admin',             navKey: 'adminHome',      icon: LayoutDashboard },
+    { to: '/admin/users',       navKey: 'adminFamilies',  icon: Users },
+    { to: '/admin/classes',     navKey: 'classes',         icon: GraduationCap },
+    { to: '/admin/children',    navKey: 'children',        icon: Baby, sub: true },
+    { to: '/admin/committees',  navKey: 'committees',      icon: Shield },
+    { to: '/admin/community',   navKey: 'community',       icon: Heart },
+    { to: '/admin/tasks',       navKey: 'adminTasks',      icon: CheckSquare },
+    { to: '/admin/events',      navKey: 'adminEvents',     icon: Calendar },
+    { to: '/admin/forms',       navKey: 'adminForms',      icon: ClipboardList },
+    { to: '/admin/resources',   navKey: 'adminResources',  icon: BookOpen },
+    { to: '/admin/messages',    navKey: 'messages',        icon: MessageSquare, badge: true },
+    { to: '/admin/activity',    navKey: 'activity',        icon: Activity },
+    { to: '/admin/emergency',   navKey: 'emergency',       icon: AlertTriangle },
+    { to: '/help',              navKey: 'help',            icon: HelpCircle },
+    { to: '/super/admins',      navKey: 'admins',          icon: Shield },
+    { to: '/super/feedback',    navKey: 'feedbackReview',  icon: MessageSquare },
   ],
 }
 
@@ -91,15 +95,7 @@ const BOTTOM_NAV = {
   host_family: ['/dashboard', '/class', '/events', '/families'],
   community:   ['/dashboard', '/events', '/resources', '/contact'],
   admin:       ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
-  super_admin: ['/admin', '/admin/users', '/admin/tasks', '/admin/messages'],
-}
-
-const ROLE_LABEL = {
-  new_family:  'משפחה חדשה',
-  host_family: 'משפחה מארחת',
-  community:   'חבר קהילה',
-  admin:       'מנהל',
-  super_admin: 'מנהל ראשי',
+  super_admin: ['/admin', '/admin/users', '/admin/messages', '/super/admins'],
 }
 
 function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
@@ -133,14 +129,9 @@ function NavLink({ to, label, icon: Icon, onClick, unread = 0, sub = false }) {
 
 function UserMenu({ user, logout }) {
   const [open, setOpen] = useState(false)
+  const { t } = useLang()
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
-  const roleLabel = {
-    new_family:  'משפחה חדשה',
-    host_family: 'משפחה מארחת',
-    community:   'חבר קהילה',
-    admin:       'מנהל',
-    super_admin: 'מנהל ראשי',
-  }[user?.role] || ''
+  const roleLabel = t('roles', user?.role)
 
   return (
     <div className="relative">
@@ -170,7 +161,7 @@ function UserMenu({ user, logout }) {
             className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut size={16} />
-            התנתקות
+            {t('common', 'logout')}
           </button>
         </div>
       )}
@@ -180,13 +171,25 @@ function UserMenu({ user, logout }) {
 
 export default function AppShell() {
   const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, deactivateViewAs } = useAuth()
+  const { t } = useLang()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
-  const baseLinks = NAV_LINKS[effectiveRole] || []
-  // Class admins who are not global admins get an import link injected
+  const [userClassName, setUserClassName] = useState(null)
+  const [sidebarWidth, setSidebarWidth] = useState(256)
+  const dragRef = useRef(null)
+
+  const buildLinks = (configs) =>
+    configs.map(c => ({ ...c, label: t('nav', c.navKey) }))
+
+  const baseConfigs = NAV_CONFIGS[effectiveRole] || []
+  const baseLinks = buildLinks(baseConfigs).map(link =>
+    link.to === '/class' && userClassName
+      ? { ...link, label: `${link.label} · ${userClassName}` }
+      : link
+  )
   const links = isClassAdmin
-    ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות', icon: Upload }]
+    ? [...baseLinks, { to: '/admin/import', navKey: 'importFamilies', icon: Upload, label: t('nav', 'importFamilies') }]
     : baseLinks
 
   const bottomNavPaths = BOTTOM_NAV[effectiveRole] || []
@@ -202,10 +205,46 @@ export default function AppShell() {
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
   }, [isAdmin])
 
+  useEffect(() => {
+    if (!user || !['new_family', 'host_family'].includes(effectiveRole)) return
+    Promise.all([getChildrenByParent(user.uid), getClasses()])
+      .then(([kids, classes]) => {
+        const classId = kids.find(k => k.classId)?.classId
+        if (classId) setUserClassName(classes.find(c => c.id === classId)?.name || null)
+      })
+      .catch(() => {})
+  }, [user, effectiveRole])
+
+  const startSidebarDrag = (e) => {
+    const startX = e.clientX
+    const startW = sidebarWidth
+    const onMove = (ev) => {
+      // RTL: sidebar on right, so dragging left widens it
+      const dx = startX - ev.clientX
+      setSidebarWidth(Math.min(400, Math.max(160, startW + dx)))
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-primary-700 text-white flex-shrink-0" dir="rtl">
+      <aside
+        className="hidden md:flex flex-col bg-primary-700 text-white flex-shrink-0 relative"
+        style={{ width: sidebarWidth }}
+        dir="rtl"
+      >
+        {/* drag handle */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary-400/60 z-10 transition-colors"
+          onMouseDown={startSidebarDrag}
+          ref={dragRef}
+        />
         {/* Logo */}
         <div className="px-3 py-3 border-b border-primary-600">
           <div className="bg-white/95 rounded-2xl px-4 py-2.5">
@@ -231,12 +270,10 @@ export default function AppShell() {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute top-0 right-0 h-full w-72 bg-primary-700 flex flex-col animate-slide-up" dir="rtl">
-            {/* In RTL, justify-between puts the first child on the visual RIGHT and the second on the LEFT.
-                The sidebar slides in from the right, so the close button should be on the visual right (first child). */}
             <div className="flex items-center justify-between px-3 py-3 border-b border-primary-600">
               <button
                 onClick={() => setSidebarOpen(false)}
-                aria-label="סגור תפריט"
+                aria-label={t('common', 'closeMenu')}
                 className="p-1.5 rounded-lg text-primary-200 hover:text-white hover:bg-primary-600/50"
               >
                 <X size={20} />
@@ -263,11 +300,11 @@ export default function AppShell() {
         {viewAs && (
           <div className="flex items-center justify-between bg-amber-500 text-white px-4 py-2 text-sm font-medium flex-shrink-0" dir="rtl">
             <button onClick={deactivateViewAs} className="flex items-center gap-1 hover:underline text-white/90">
-              ← חזרה למנהל ראשי
+              {t('common', 'backToSuperAdmin')}
             </button>
             <span className="flex items-center gap-1.5">
               <Eye size={14} />
-              מציג כ: {ROLE_LABEL[viewAs]}
+              {t('common', 'viewingAs')} {t('roles', viewAs)}
             </span>
           </div>
         )}
@@ -275,7 +312,7 @@ export default function AppShell() {
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm" dir="rtl">
           <button
             onClick={() => setSidebarOpen(true)}
-            aria-label="פתח תפריט"
+            aria-label={t('common', 'openMenu')}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
           >
             <Menu size={20} />
@@ -293,6 +330,7 @@ export default function AppShell() {
         </main>
 
         <InstallBanner />
+        <FeedbackButton />
 
         {/* Mobile bottom nav */}
         {bottomLinks.length > 0 && (

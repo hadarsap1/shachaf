@@ -144,7 +144,7 @@ function WeekEventCard({ event, onClick, classColorMap, isConflict }) {
 
 // ── Month view ────────────────────────────────────────────────────────────────
 
-function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMap, conflictDates, conflictEventIds }) {
+function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMap, conflictDates, conflictEventIds, birthdaysByMonthDay = {} }) {
   const cells = buildMonthGrid(year, month)
 
   return (
@@ -203,6 +203,9 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                     +{dayEvents.length - 3} נוספים
                   </button>
                 )}
+                {(birthdaysByMonthDay[cell.key.slice(5)] || []).map(name => (
+                  <div key={name} className="text-[10px] px-1 leading-snug text-pink-600 truncate">🎂 {name}</div>
+                ))}
               </div>
 
               {/* Mobile: dots only */}
@@ -211,6 +214,9 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                   <EventDot key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                     isConflict={conflictEventIds.has(ev.id)} />
                 ))}
+                {(birthdaysByMonthDay[cell.key.slice(5)] || []).length > 0 && (
+                  <span className="text-[10px]" title={(birthdaysByMonthDay[cell.key.slice(5)] || []).join(', ')}>🎂</span>
+                )}
               </div>
             </div>
           )
@@ -222,7 +228,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
 
 // ── Week view ─────────────────────────────────────────────────────────────────
 
-function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, conflictEventIds }) {
+function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, conflictEventIds, birthdaysByMonthDay = {} }) {
   return (
     <div dir="rtl">
       {/* Desktop: 7-column grid */}
@@ -252,6 +258,9 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                 {dayEvents.map(ev => (
                   <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                     isConflict={conflictEventIds.has(ev.id)} />
+                ))}
+                {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
+                  <div key={name} className="text-xs px-2 py-1 text-pink-600">🎂 {name}</div>
                 ))}
               </div>
             </div>
@@ -299,7 +308,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
 
 // ── CalendarGrid (main export) ────────────────────────────────────────────────
 
-export default function CalendarGrid({ events = [], filterRole, classColorMap = {}, onEventClick }) {
+export default function CalendarGrid({ events = [], filterRole, classColorMap = {}, onEventClick, birthdays = [] }) {
   const [view, setView]               = useState('month')
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
@@ -314,6 +323,15 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
     if (!ev.date) return
     if (!eventsByDay[ev.date]) eventsByDay[ev.date] = []
     eventsByDay[ev.date].push(ev)
+  })
+
+  // Index birthdays by MM-DD (year-agnostic)
+  const birthdaysByMonthDay = {}
+  birthdays.forEach(child => {
+    if (!child.birthDate) return
+    const key = child.birthDate.slice(5) // 'MM-DD'
+    if (!birthdaysByMonthDay[key]) birthdaysByMonthDay[key] = []
+    birthdaysByMonthDay[key].push(child.name)
   })
 
   // Detect same-day same-time conflicts
@@ -429,6 +447,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           classColorMap={classColorMap}
           conflictDates={conflictDates}
           conflictEventIds={conflictEventIds}
+          birthdaysByMonthDay={birthdaysByMonthDay}
         />
       )}
       {view === 'week' && (
@@ -439,6 +458,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           today={today}
           classColorMap={classColorMap}
           conflictEventIds={conflictEventIds}
+          birthdaysByMonthDay={birthdaysByMonthDay}
         />
       )}
     </div>

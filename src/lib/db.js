@@ -1,7 +1,7 @@
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, serverTimestamp, getDoc, setDoc, writeBatch,
-  getFirestore, arrayUnion, arrayRemove,
+  getFirestore, arrayUnion, arrayRemove, onSnapshot, limit,
 } from 'firebase/firestore'
 import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfile, sendPasswordResetEmail } from 'firebase/auth'
 import { initializeApp, deleteApp } from 'firebase/app'
@@ -379,9 +379,12 @@ export async function unlinkChildFromParent(childId, parentUid) {
 
 // ── Children (parent-scoped query) ───────────────────────────────────────────
 export async function getChildrenByParent(uid) {
-  const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid), orderBy('name', 'asc'))
+  // ponytail: no orderBy — array-contains + orderBy requires a composite index; sort client-side
+  const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid))
   const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
 }
 
 // ── Child notes (private per-parent) ─────────────────────────────────────────
@@ -513,7 +516,7 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
     // roster immediately; it self-heals on their first login regardless.
     await setDoc(doc(secondaryDb, 'users', newUid), {
       name, email, phone: phone || '',
-      role: currentUser.role,
+      role: 'new_family',
       childIds: currentUser.childIds || [],
       classIds: currentUser.classIds || [],
       createdAt: serverTimestamp(),
@@ -571,11 +574,17 @@ export async function deleteHobbyGroup(id) {
 }
 
 export async function joinHobbyGroup(groupId, uid) {
-  await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayUnion(uid) })
+  await Promise.all([
+    updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayUnion(uid) }),
+    updateDoc(doc(db, 'users', uid), { hobbyGroupIds: arrayUnion(groupId) }),
+  ])
 }
 
 export async function leaveHobbyGroup(groupId, uid) {
-  await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayRemove(uid) })
+  await Promise.all([
+    updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayRemove(uid) }),
+    updateDoc(doc(db, 'users', uid), { hobbyGroupIds: arrayRemove(groupId) }),
+  ])
 }
 
 // ── Committee-scoped events ───────────────────────────────────────────────────
@@ -635,4 +644,140 @@ export async function getUnlinkedChildren() {
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
+}
+
+// ── Child link requests (pending class-admin approval) ────────────────────────
+export async function requestChildLink(childId, uid, userName, classId, childName) {
+  await addDoc(collection(db, 'childLinkRequests'), {
+    childId, childName, classId,
+    requestedByUid: uid,
+    requestedByName: userName,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function getPendingChildLinkRequests(classIds = null) {
+  // ponytail: classIds=null → global admin, gets all pending; array → class admin filter
+  const q = classIds?.length
+    ? query(collection(db, 'childLinkRequests'), where('classId', 'in', classIds), where('status', '==', 'pending'))
+    : query(collection(db, 'childLinkRequests'), where('status', '==', 'pending'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function approveChildLinkRequest(requestId) {
+  const reqSnap = await getDoc(doc(db, 'childLinkRequests', requestId))
+  if (!reqSnap.exists()) throw new Error('בקשה לא נמצאה')
+  const { childId, requestedByUid, status } = reqSnap.data()
+  if (status !== 'pending') throw new Error('הבקשה כבר טופלה')
+  await linkChildToParent(childId, requestedByUid)
+  await updateDoc(doc(db, 'childLinkRequests', requestId), { status: 'approved' })
+}
+
+export async function rejectChildLinkRequest(requestId) {
+  await updateDoc(doc(db, 'childLinkRequests', requestId), { status: 'rejected' })
+}
+
+// ── Group Member Profiles ──────────────────────────────────────────────────
+
+export async function fetchGroupMembers(memberUids) {
+  if (!memberUids?.length) return []
+  const results = await Promise.allSettled(
+    memberUids.map(uid => getDoc(doc(db, 'users', uid)))
+  )
+  return results
+    .filter(r => r.status === 'fulfilled' && r.value.exists())
+    .map(r => ({ id: r.value.id, ...r.value.data() }))
+}
+
+// ── Group Chat ─────────────────────────────────────────────────────────────
+
+export function subscribeGroupMessages(groupId, callback) {
+  const q = query(
+    collection(db, 'hobbyGroups', groupId, 'messages'),
+    orderBy('createdAt', 'asc'),
+    limit(200)
+  )
+  return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+}
+
+export async function sendGroupMessage(groupId, { senderId, senderName, senderAvatar, content, type = 'text', fileUrl, fileName, fileSize, fileType }) {
+  return addDoc(collection(db, 'hobbyGroups', groupId, 'messages'), {
+    senderId, senderName,
+    ...(senderAvatar ? { senderAvatar } : {}),
+    content: content || '',
+    type,
+    ...(fileUrl   ? { fileUrl }   : {}),
+    ...(fileName  ? { fileName }  : {}),
+    ...(fileSize  ? { fileSize }  : {}),
+    ...(fileType  ? { fileType }  : {}),
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function deleteGroupMessage(groupId, messageId) {
+  await deleteDoc(doc(db, 'hobbyGroups', groupId, 'messages', messageId))
+}
+
+// ── Group Events ───────────────────────────────────────────────────────────
+
+export async function getGroupEvents(groupId) {
+  const q = query(
+    collection(db, 'hobbyGroups', groupId, 'events'),
+    orderBy('date', 'asc')
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function addGroupEvent(groupId, { title, description, date, location, createdBy }) {
+  return addDoc(collection(db, 'hobbyGroups', groupId, 'events'), {
+    title, date,
+    ...(description ? { description } : {}),
+    ...(location    ? { location }    : {}),
+    createdBy,
+    createdAt: serverTimestamp(),
+  })
+}
+
+export async function deleteGroupEvent(groupId, eventId) {
+  await deleteDoc(doc(db, 'hobbyGroups', groupId, 'events', eventId))
+}
+
+// ── Group File Upload ──────────────────────────────────────────────────────
+
+export async function uploadGroupFile(groupId, file) {
+  const path = `groups/${groupId}/${Date.now()}_${file.name}`
+  const storageRef = ref(storage, path)
+  const snapshot = await uploadBytes(storageRef, file)
+  const url = await getDownloadURL(snapshot.ref)
+  return { url, path, fileName: file.name, fileSize: file.size, fileType: file.type }
+}
+
+// ── Feedback / Bug reports ────────────────────────────────────────────────────
+
+export async function saveFeedback({ text, screenshotUrl, submittedBy }) {
+  const docRef = await addDoc(collection(db, 'feedback'), {
+    text, screenshotUrl: screenshotUrl || null, submittedBy,
+    createdAt: serverTimestamp(),
+    status: 'new',
+  })
+  return docRef.id
+}
+
+export async function uploadFeedbackScreenshot(feedbackId, file) {
+  const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `feedback/${feedbackId}.${ext}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  return getDownloadURL(snap.ref)
+}
+
+export async function getFeedback() {
+  const snap = await getDocs(query(collection(db, 'feedback'), orderBy('createdAt', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function updateFeedbackStatus(id, status) {
+  await updateDoc(doc(db, 'feedback', id), { status })
 }

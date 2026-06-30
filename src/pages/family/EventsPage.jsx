@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react'
-import { getEvents, getClasses, getChildrenByParent } from '../../lib/db'
+import { getEvents, getClasses, getChildrenByParent, getChildren } from '../../lib/db'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
 import { useAuth } from '../../context/AuthContext'
+import { useLang } from '../../context/LangContext'
 import { Calendar, List, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
-
-const BASE_FILTERS = [
-  { value: 'all',        label: 'הכל' },
-  { value: 'new_family', label: 'משפחות חדשות' },
-  { value: 'host_family',label: 'משפחות מארחות' },
-]
 
 function matchesFilter(ev, filterValue) {
   if (filterValue === 'all') return true
@@ -30,13 +25,15 @@ function matchesFilter(ev, filterValue) {
 
 export default function EventsPage() {
   const { user, isAdmin } = useAuth()
+  const { t } = useLang()
   const [events, setEvents]           = useState([])
   const [classColorMap, setClassColorMap] = useState({})
-  const [filterOptions, setFilterOptions] = useState(BASE_FILTERS)
+  const [filterOptions, setFilterOptions] = useState([])
   const [loading, setLoading]         = useState(true)
   const [displayMode, setDisplayMode] = useState('calendar')
   const [filterValue, setFilterValue] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState(null)
+  const [birthdays, setBirthdays] = useState([])
 
   useEffect(() => {
     if (!user) return
@@ -46,6 +43,12 @@ export default function EventsPage() {
         getClasses(),
         isAdmin ? Promise.resolve([]) : getChildrenByParent(user.uid),
       ])
+
+      const BASE_FILTERS = [
+        { value: 'all',        label: t('events', 'filterAll') },
+        { value: 'new_family', label: t('events', 'filterNew') },
+        { value: 'host_family',label: t('events', 'filterHost') },
+      ]
 
       const colorMap = {}
       classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
@@ -61,6 +64,11 @@ export default function EventsPage() {
 
       setFilterOptions([...BASE_FILTERS, ...classFilters])
       setEvents(allEvents)
+      // load class children for birthday display
+      if (myClassIds.length > 0) {
+        const classKids = (await Promise.all(myClassIds.map(id => getChildren(id)))).flat()
+        setBirthdays(classKids.filter(c => c.birthDate))
+      }
       setLoading(false)
     }
     load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
@@ -83,7 +91,7 @@ export default function EventsPage() {
             )}
           >
             <Calendar size={14} />
-            לוח שנה
+            {t('events', 'calendarView')}
           </button>
           <button
             onClick={() => setDisplayMode('list')}
@@ -95,16 +103,16 @@ export default function EventsPage() {
             )}
           >
             <List size={14} />
-            רשימה
+            {t('events', 'listView')}
           </button>
         </div>
 
         <div className="text-right">
           <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end">
             <Calendar size={22} />
-            אירועים קרובים
+            {t('events', 'title')}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
+          <p className="text-sm text-gray-500 mt-0.5">{t('events', 'planned').replace('{count}', filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length)}</p>
         </div>
       </div>
 
@@ -142,6 +150,7 @@ export default function EventsPage() {
           filterRole="all"
           classColorMap={classColorMap}
           onEventClick={setSelectedEvent}
+          birthdays={birthdays}
         />
       )}
 
@@ -157,8 +166,8 @@ export default function EventsPage() {
           {filteredEvents.length === 0 && (
             <div className="text-center py-16 text-gray-400">
               <Calendar size={44} className="mx-auto mb-4 opacity-25" />
-              <p className="font-semibold text-gray-500">אין אירועים קרובים</p>
-              <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+              <p className="font-semibold text-gray-500">{t('events', 'noEvents')}</p>
+              <p className="text-sm mt-1">{t('events', 'noEventsSub')}</p>
             </div>
           )}
         </>
@@ -168,8 +177,8 @@ export default function EventsPage() {
       {!loading && displayMode === 'calendar' && filteredEvents.length === 0 && (
         <div className="text-center py-16 text-gray-400 mt-4">
           <Calendar size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500">אין אירועים קרובים</p>
-          <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+          <p className="font-semibold text-gray-500">{t('events', 'noEvents')}</p>
+          <p className="text-sm mt-1">{t('events', 'noEventsSub')}</p>
         </div>
       )}
 

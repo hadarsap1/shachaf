@@ -1,9 +1,13 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { LangProvider } from './context/LangContext'
 import AppShell from './components/layout/AppShell'
 
 import LoginPage from './pages/auth/LoginPage'
+import TermsPage from './pages/legal/TermsPage'
+import PrivacyPage from './pages/legal/PrivacyPage'
+import AccessibilityPage from './pages/legal/AccessibilityPage'
 import DashboardPage from './pages/family/DashboardPage'
 import TasksPage from './pages/family/TasksPage'
 import EventsPage from './pages/family/EventsPage'
@@ -17,6 +21,7 @@ import HelpPage from './pages/HelpPage'
 import ClassPage from './pages/family/ClassPage'
 import CommitteesPage from './pages/family/CommitteesPage'
 import CommunityGroupsPage from './pages/family/CommunityGroupsPage'
+import GroupPage from './pages/family/GroupPage'
 import ClassRosterPage from './pages/family/ClassRosterPage'
 import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
 
@@ -28,6 +33,7 @@ const AdminEventsPage       = lazy(() => import('./pages/admin/AdminEventsPage')
 const AdminActivityPage     = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminFormsPage        = lazy(() => import('./pages/admin/AdminFormsPage'))
 const SuperAdminPage        = lazy(() => import('./pages/superadmin/SuperAdminPage'))
+const SuperAdminFeedbackPage = lazy(() => import('./pages/superadmin/SuperAdminFeedbackPage'))
 const AdminMessagesPage     = lazy(() => import('./pages/admin/AdminMessagesPage'))
 const AdminImportPage       = lazy(() => import('./pages/admin/AdminImportPage'))
 const AdminClassesPage      = lazy(() => import('./pages/admin/AdminClassesPage'))
@@ -85,6 +91,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <LangProvider>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -99,12 +106,12 @@ export default function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/forms" element={<FormFillPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/help" element={<HelpPage />} />
+              <Route path="/help" element={<HelpPage />} />
             <Route path="/class" element={<ClassPage />} />
             <Route path="/class-roster" element={<ClassRosterPage />} />
             <Route path="/committees" element={<CommitteesPage />} />
             <Route path="/community" element={<CommunityGroupsPage />} />
+            <Route path="/community/:groupId" element={<GroupPage />} />
             <Route path="/emergency" element={<EmergencySchedulePage />} />
           </Route>
 
@@ -121,12 +128,15 @@ export default function App() {
             <Route path="/admin/forms" element={<AdminFormsPage />} />
             <Route path="/admin/messages" element={<AdminMessagesPage />} />
             <Route path="/admin/classes" element={<AdminClassesPage />} />
-            <Route path="/admin/children" element={<AdminChildrenPage />} />
             <Route path="/admin/committees" element={<AdminCommitteesPage />} />
             <Route path="/admin/announcements" element={<AdminAnnouncementsPage />} />
             <Route path="/admin/resources" element={<AdminResourcesPage />} />
             <Route path="/admin/emergency" element={<AdminEmergencyPage />} />
             <Route path="/admin/community" element={<AdminCommunityGroupsPage />} />
+          </Route>
+          {/* Class admins can access children page to approve link requests */}
+          <Route element={<ProtectedShell adminOnly classAdminOk />}>
+            <Route path="/admin/children" element={<AdminChildrenPage />} />
           </Route>
           {/* Class admins (non-global-admin users with classAdminFor) can import families */}
           <Route element={<ProtectedShell adminOnly classAdminOk />}>
@@ -135,11 +145,18 @@ export default function App() {
 
           <Route element={<ProtectedShell superOnly />}>
             <Route path="/super/admins" element={<SuperAdminPage />} />
+            <Route path="/super/feedback" element={<SuperAdminFeedbackPage />} />
           </Route>
+
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/accessibility" element={<AccessibilityPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
+        </LangProvider>
       </AuthProvider>
     </BrowserRouter>
   )
