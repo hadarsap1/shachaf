@@ -826,3 +826,32 @@ export async function sendGroupChatMessage(groupId, uid, name, text) {
     createdAt: serverTimestamp(),
   })
 }
+
+// ── Feedback / bug reports ──────────────────────────────────────────────────────
+export async function saveFeedback({ text, screenshotUrl, submittedBy }) {
+  const docRef = await addDoc(collection(db, 'feedback'), {
+    text, screenshotUrl: screenshotUrl || null, submittedBy,
+    createdAt: serverTimestamp(),
+    status: 'new',
+  })
+  return docRef.id
+}
+
+export async function uploadFeedbackScreenshot(feedbackId, file) {
+  const path = `feedback/${feedbackId}.${safeExt(file)}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  return getDownloadURL(snap.ref)
+}
+
+export async function getFeedback() {
+  const snap = await getDocs(query(collection(db, 'feedback'), orderBy('createdAt', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function updateFeedbackStatus(id, status) {
+  await updateDoc(doc(db, 'feedback', id), { status })
+}
+
+export async function updateFeedbackScreenshot(id, screenshotUrl) {
+  await updateDoc(doc(db, 'feedback', id), { screenshotUrl })
+}

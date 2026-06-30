@@ -146,7 +146,7 @@ function WeekEventCard({ event, onClick, classColorMap, isConflict }) {
 
 // ── Month view ────────────────────────────────────────────────────────────────
 
-function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMap, conflictDates, conflictEventIds }) {
+function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMap, conflictDates, conflictEventIds, birthdaysByMonthDay = {} }) {
   const cells = buildMonthGrid(year, month)
 
   return (
@@ -207,14 +207,20 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                     +{dayEvents.length - 3} נוספים
                   </button>
                 )}
+                {(birthdaysByMonthDay[cell.key.slice(5)] || []).map(name => (
+                  <div key={name} className="text-[10px] px-1 leading-snug text-pink-600 dark:text-pink-400 truncate">🎂 {name}</div>
+                ))}
               </div>
 
               {/* Mobile: dots only */}
-              <div className="flex sm:hidden flex-wrap gap-1 justify-center">
+              <div className="flex sm:hidden flex-wrap gap-1 justify-center items-center">
                 {dayEvents.map(ev => (
                   <EventDot key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                     isConflict={conflictEventIds.has(ev.id)} />
                 ))}
+                {(birthdaysByMonthDay[cell.key.slice(5)] || []).length > 0 && (
+                  <span className="text-[10px]" title={(birthdaysByMonthDay[cell.key.slice(5)] || []).join(', ')}>🎂</span>
+                )}
               </div>
             </div>
           )
@@ -226,7 +232,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
 
 // ── Week view ─────────────────────────────────────────────────────────────────
 
-function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, conflictEventIds }) {
+function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, conflictEventIds, birthdaysByMonthDay = {} }) {
   return (
     <div dir="rtl">
       {/* Desktop: 7-column grid */}
@@ -256,6 +262,9 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                 {dayEvents.map(ev => (
                   <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                     isConflict={conflictEventIds.has(ev.id)} />
+                ))}
+                {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
+                  <div key={name} className="text-xs px-2 py-1 text-pink-600 dark:text-pink-400">🎂 {name}</div>
                 ))}
               </div>
             </div>
@@ -289,6 +298,15 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                     <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                       isConflict={conflictEventIds.has(ev.id)} />
                   ))}
+                  {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
+                    <div key={name} className="text-xs px-2 py-1 text-pink-600 dark:text-pink-400">🎂 {name}</div>
+                  ))}
+                </div>
+              ) : (birthdaysByMonthDay[day.key.slice(5)] || []).length > 0 ? (
+                <div className="space-y-1">
+                  {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
+                    <div key={name} className="text-xs px-2 py-1 text-pink-600 dark:text-pink-400">🎂 {name}</div>
+                  ))}
                 </div>
               ) : (
                 <p className="text-xs text-gray-400">אין אירועים</p>
@@ -303,11 +321,20 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
 
 // ── CalendarGrid (main export) ────────────────────────────────────────────────
 
-export default function CalendarGrid({ events = [], filterRole, classColorMap = {}, onEventClick }) {
+export default function CalendarGrid({ events = [], filterRole, classColorMap = {}, onEventClick, birthdays = [] }) {
   const [view, setView]               = useState('month')
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
   const today = todayKey()
+
+  // Index birthdays by MM-DD (year-agnostic)
+  const birthdaysByMonthDay = {}
+  birthdays.forEach(child => {
+    if (!child.birthDate) return
+    const key = child.birthDate.slice(5)
+    if (!birthdaysByMonthDay[key]) birthdaysByMonthDay[key] = []
+    birthdaysByMonthDay[key].push(child.name)
+  })
 
   // Filter events by role
   const filtered = events.filter(ev => isVisible(ev, filterRole))
@@ -433,6 +460,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           classColorMap={classColorMap}
           conflictDates={conflictDates}
           conflictEventIds={conflictEventIds}
+          birthdaysByMonthDay={birthdaysByMonthDay}
         />
       )}
       {view === 'week' && (
@@ -443,6 +471,7 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
           today={today}
           classColorMap={classColorMap}
           conflictEventIds={conflictEventIds}
+          birthdaysByMonthDay={birthdaysByMonthDay}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getEvents, getClasses, getChildrenByParent } from '../../lib/db'
+import { getEvents, getClasses, getChildrenByParent, getChildren } from '../../lib/db'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -37,6 +37,7 @@ export default function EventsPage() {
   const [displayMode, setDisplayMode] = useState('calendar')
   const [filterValue, setFilterValue] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState(null)
+  const [birthdays, setBirthdays] = useState([])
 
   useEffect(() => {
     if (!user) return
@@ -61,6 +62,10 @@ export default function EventsPage() {
 
       setFilterOptions([...BASE_FILTERS, ...classFilters])
       setEvents(allEvents)
+      if (myClassIds.length > 0) {
+        const classKids = (await Promise.all(myClassIds.map(id => getChildren(id)))).flat()
+        setBirthdays(classKids.filter(c => c.birthDate))
+      }
       setLoading(false)
     }
     load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
@@ -142,6 +147,7 @@ export default function EventsPage() {
           filterRole="all"
           classColorMap={classColorMap}
           onEventClick={setSelectedEvent}
+          birthdays={birthdays}
         />
       )}
 

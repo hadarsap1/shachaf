@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages } from '../../lib/db'
+import { getMessages, getClasses } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
+import FeedbackButton from '../ui/FeedbackButton'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
 import clsx from 'clsx'
+
+const SIDEBAR_WIDTH_KEY = 'shachaf_sidebar_width'
+const SIDEBAR_MIN = 200
+const SIDEBAR_MAX = 420
 
 // ── Emoji icon map (used across nav + bottom bar) ──────────────────────────────
 export const NAV_EMOJI = {
@@ -37,6 +42,7 @@ export const NAV_EMOJI = {
   '/admin/emergency': '🚨',
   '/admin/import':    '📥',
   '/super/admins':    '🛡️',
+  '/super/feedback':  '💡',
 }
 
 const ADMIN_NAV_LINKS = {
@@ -71,17 +77,18 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
     { to: '/super/admins',     label: 'מנהלים' },
+    { to: '/super/feedback',   label: 'משוב ובאגים' },
     { to: '/help',             label: 'עזרה' },
   ],
 }
 
-function buildMemberNav(allRoles, classIds) {
+function buildMemberNav(allRoles, classIds, className) {
   const links = []
   const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
 
   links.push({ to: '/dashboard', label: 'בית' })
   if (hasClass) {
-    links.push({ to: '/class',        label: 'הכיתה שלי' })
+    links.push({ to: '/class',        label: className ? `הכיתה שלי — ${className}` : 'הכיתה שלי' })
     links.push({ to: '/class-roster', label: 'ספריית כיתה' })
   }
   if (allRoles.has('host_family'))
@@ -253,6 +260,47 @@ export default function AppShell() {
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [className, setClassName] = useState('')
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
+    return stored >= SIDEBAR_MIN && stored <= SIDEBAR_MAX ? stored : 256
+  })
+  const resizing = useRef(false)
+
+  const startResize = useCallback((e) => {
+    e.preventDefault()
+    resizing.current = true
+    document.body.style.cursor = 'col-resize'
+  }, [])
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!resizing.current) return
+      // RTL sidebar sits on the right, so width = distance from cursor to right edge
+      const w = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, window.innerWidth - e.clientX))
+      setSidebarWidth(w)
+    }
+    const onUp = () => {
+      if (!resizing.current) return
+      resizing.current = false
+      document.body.style.cursor = ''
+      setSidebarWidth(w => { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(w)); return w })
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!user?.classIds?.length) return
+    getClasses().then(classes => {
+      const cls = classes.find(c => user.classIds.includes(c.id))
+      if (cls) setClassName(cls.name)
+    })
+  }, [user?.classIds])
 
   const showAdminNav = isAdmin && !viewAs
   let baseLinks, bottomNavPaths
@@ -260,7 +308,7 @@ export default function AppShell() {
     baseLinks = ADMIN_NAV_LINKS[effectiveRole] || ADMIN_NAV_LINKS.admin
     bottomNavPaths = ADMIN_BOTTOM_NAV
   } else {
-    baseLinks = buildMemberNav(allRoles, user?.classIds)
+    baseLinks = buildMemberNav(allRoles, user?.classIds, className)
     bottomNavPaths = getMemberBottomNav(allRoles, user?.classIds)
   }
 
@@ -285,7 +333,7 @@ export default function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Desktop sidebar */}
-      <aside className={clsx('hidden md:flex flex-col w-64 flex-shrink-0', sidebarBg)} dir="rtl">
+      <aside className={clsx('hidden md:flex flex-col flex-shrink-0 relative', sidebarBg)} style={{ width: sidebarWidth }} dir="rtl">
         <SidebarContent
           links={links}
           unreadMessages={unreadMessages}
@@ -294,6 +342,11 @@ export default function AppShell() {
           activateViewAs={activateViewAs}
           user={user}
           logout={logout}
+        />
+        <div
+          onMouseDown={startResize}
+          className="hidden md:block absolute top-0 left-0 h-full w-1.5 cursor-col-resize hover:bg-white/20 active:bg-white/30 transition-colors"
+          title="גרור לשינוי רוחב"
         />
       </aside>
 
@@ -378,6 +431,7 @@ export default function AppShell() {
         </main>
 
         <InstallBanner />
+        <FeedbackButton />
 
         {/* Mobile bottom nav */}
         {bottomLinks.length > 0 && (

@@ -24,13 +24,14 @@ function buildGoogleCalendarUrl(event) {
   const start = `${event.date}T${time}`
   const [h, m] = time.split(':').map(Number)
   const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00Z'
+  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00'
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: event.title,
     dates: `${fmt(start)}/${fmt(end)}`,
     location: event.location || '',
     details: event.description || '',
+    ctz: 'Asia/Jerusalem',
   })
   return `https://calendar.google.com/calendar/render?${params}`
 }
@@ -40,10 +41,10 @@ function buildICSContent(event) {
   const start = `${event.date}T${time}`
   const [h, m] = time.split(':').map(Number)
   const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 15) + '00Z'
+  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 15)
   return [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
-    `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
+    `DTSTART;TZID=Asia/Jerusalem:${fmt(start)}`, `DTEND;TZID=Asia/Jerusalem:${fmt(end)}`,
     `SUMMARY:${event.title}`,
     `LOCATION:${event.location || ''}`,
     `DESCRIPTION:${event.description || ''}`,

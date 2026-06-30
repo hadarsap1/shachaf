@@ -52,6 +52,18 @@ const ROLE_STYLE = {
   super_admin: 'bg-red-50 text-red-700 border-red-200',
 }
 
+const STATUSES = [
+  { value: 'active',   label: 'פעיל' },
+  { value: 'inactive', label: 'לא פעיל' },
+  { value: 'frozen',   label: 'בהקפאה' },
+]
+
+const STATUS_STYLE = {
+  active:   'bg-green-50 text-green-700 border-green-200',
+  inactive: 'bg-gray-100 text-gray-500 border-gray-200',
+  frozen:   'bg-blue-50 text-blue-700 border-blue-200',
+}
+
 // ── Invite panel ────────────────────────────────────────────────────────────
 
 function InvitePanel({ onClose }) {
@@ -267,7 +279,7 @@ function AddMemberPanel({ onClose, onCreated }) {
 
 // ── User detail panel ────────────────────────────────────────────────────────
 
-function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, onProfileSaved }) {
+function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusChange, saving, onProfileSaved }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ name: user.name || '', phone: user.phone || '', address: user.address || '' })
   const [profileSaving, setProfileSaving] = useState(false)
@@ -408,6 +420,22 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, saving, o
               }}
             />
           </div>
+
+          {/* Status */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">סטטוס חברות</label>
+            <select
+              value={user.status || 'active'}
+              disabled={saving === user.uid}
+              onChange={e => onStatusChange(user, e.target.value)}
+              className={clsx(
+                'w-full text-sm px-3 py-2 rounded-xl border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50',
+                STATUS_STYLE[user.status] || STATUS_STYLE.active
+              )}
+            >
+              {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* WhatsApp — only when there's an actual phone number */}
@@ -475,6 +503,21 @@ export default function AdminUsersPage() {
     } catch (err) {
       console.error('changeRoles error:', err)
       setError(`שגיאה בעדכון תפקידים: ${err.code || err.message}`)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const changeStatus = async (user, newStatus) => {
+    setError('')
+    setSaving(user.uid)
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { status: newStatus })
+      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, status: newStatus } : u))
+      setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, status: newStatus } : prev)
+    } catch (err) {
+      console.error('changeStatus error:', err)
+      setError(`שגיאה בעדכון סטטוס: ${err.code || err.message}`)
     } finally {
       setSaving(null)
     }
@@ -561,7 +604,14 @@ export default function AdminUsersPage() {
                     </div>
                 }
                 <div className="flex-1 min-w-0 text-right">
-                  <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{user.name}</div>
+                  <div className="font-semibold text-gray-800 text-sm flex items-center gap-1.5 justify-end dark:text-gray-100">
+                    {user.status && user.status !== 'active' && (
+                      <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-full border font-medium', STATUS_STYLE[user.status])}>
+                        {STATUSES.find(s => s.value === user.status)?.label}
+                      </span>
+                    )}
+                    {user.name}
+                  </div>
                   <div className="text-xs text-gray-400 truncate">{user.email}</div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -613,6 +663,7 @@ export default function AdminUsersPage() {
           saving={saving}
           onRoleChange={(user, role) => changeRole(user, role)}
           onRolesChange={(user, roles) => changeRoles(user, roles)}
+          onStatusChange={(user, status) => changeStatus(user, status)}
           onClose={() => setSelectedUser(null)}
           onProfileSaved={(updated) => {
             setUsers(prev => prev.map(u => u.uid === updated.uid ? { ...u, ...updated } : u))
