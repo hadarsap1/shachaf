@@ -34,6 +34,7 @@ ${INVITE_URL}`,
 }
 
 const ROLES = [
+  { value: 'community',   label: 'חבר קהילה' },
   { value: 'new_family',  label: 'משפחה חדשה' },
   { value: 'host_family', label: 'משפחה מארחת' },
   { value: 'admin',       label: 'מנהל' },
@@ -47,6 +48,7 @@ const EXTRA_ROLES = [
 ]
 
 const ROLE_STYLE = {
+  community:   'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600',
   new_family:  'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-800',
   host_family: 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300 border-secondary-200 dark:border-secondary-800',
   admin:       'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600',
@@ -603,7 +605,7 @@ export default function AdminUsersPage() {
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="חיפוש..." className="input w-full ps-9 text-right py-2 text-sm" />
         </div>
-        {['all', 'new_family', 'host_family', 'admin'].map(r => (
+        {['all', 'community', 'new_family', 'host_family', 'admin'].map(r => (
           <button key={r} onClick={() => setRoleFilter(r)}
             className={clsx('px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
               roleFilter === r ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary-300')}>
@@ -664,19 +666,19 @@ export default function AdminUsersPage() {
                     </>
                   ) : isAdmin ? (
                     <select
-                      value={user.role || 'new_family'}
+                      value={user.role || 'community'}
                       disabled={saving === user.uid}
                       onChange={e => changeRole(user, e.target.value)}
                       className={clsx(
                         'text-xs px-2.5 py-1.5 rounded-lg border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50',
-                        ROLE_STYLE[user.role] || ROLE_STYLE.new_family
+                        ROLE_STYLE[user.role] || ROLE_STYLE.community
                       )}
                     >
                       {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
                   ) : (
-                    <span className={clsx('text-xs px-2.5 py-1.5 rounded-lg border font-medium', ROLE_STYLE[user.role] || ROLE_STYLE.new_family)}>
-                      {ROLES.find(r => r.value === user.role)?.label || 'משפחה חדשה'}
+                    <span className={clsx('text-xs px-2.5 py-1.5 rounded-lg border font-medium', ROLE_STYLE[user.role] || ROLE_STYLE.community)}>
+                      {ROLES.find(r => r.value === user.role)?.label || 'חבר קהילה'}
                     </span>
                   )}
                 </div>
