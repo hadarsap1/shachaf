@@ -310,6 +310,10 @@ export async function saveChild(child) {
   const { id, ...data } = child
   if (id && !id.startsWith('child-')) {
     await updateDoc(doc(db, 'children', id), { ...data, updatedAt: serverTimestamp() })
+    // Editing the child's class here doesn't retroactively update classIds on
+    // already-linked parents (that only happens in linkChildToParent) — resync
+    // so the class stays visible in their nav/dashboard/events.
+    await Promise.allSettled((data.parentUids || []).map(uid => syncUserClassIds(uid)))
     return child
   }
   const ref = await addDoc(collection(db, 'children'), { ...data, createdAt: serverTimestamp() })

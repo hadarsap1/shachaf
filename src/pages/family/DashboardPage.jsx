@@ -259,7 +259,9 @@ export default function DashboardPage() {
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
         const tg = ev.targetGroups || []
-        return !tg.length || tg.includes('all') || tg.includes(user.role)
+        if (!tg.length || tg.includes('all') || tg.includes(user.role)) return true
+        if (tg.includes('class')) return (ev.classIds || []).some(id => (user.classIds || []).includes(id))
+        return false
       }))
       if (isFamily) {
         const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]

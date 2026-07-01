@@ -134,7 +134,7 @@ function NavLink({ to, label, onClick, unread = 0, sub = false }) {
       onClick={onClick}
       className={clsx(
         'flex items-center gap-3 rounded-2xl font-medium transition-all duration-150 select-none',
-        sub ? 'px-3 py-2 text-sm me-3' : 'px-4 py-3 text-base',
+        sub ? 'px-3 py-2 text-sm ms-3' : 'px-4 py-3 text-base',
         active
           ? 'bg-white/15 text-white'
           : 'text-white/70 hover:bg-white/8 hover:text-white'
