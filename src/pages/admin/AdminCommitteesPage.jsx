@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { getCommittees, saveCommittee, deleteCommittee, getUsers } from '../../lib/db'
+import { getCommittees, saveCommittee, deleteCommittee, getUsers, approveCommittee } from '../../lib/db'
 import { COMMITTEE_ICONS, CLASS_COLORS } from '../../lib/classColors'
 import {
   Users, Plus, Edit2, Trash2, X, Check, Loader2,
   Heart, Star, Music, Book, Globe, Zap, Gift, Coffee,
-  Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Search,
+  Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Search, Clock3,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -273,6 +273,21 @@ export default function AdminCommitteesPage() {
     }
   }
 
+  const handleApprove = async (id) => {
+    setDeleting(id)
+    try {
+      await approveCommittee(id)
+      setCommittees(prev => prev.map(c => c.id === id ? { ...c, status: 'active' } : c))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const pending = committees.filter(c => c.status === 'pending')
+  const active  = committees.filter(c => c.status !== 'pending')
+
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-6">
@@ -289,18 +304,45 @@ export default function AdminCommitteesPage() {
 
       {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
+      {pending.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-3">
+            <Clock3 size={14} />בקשות ממתינות לאישור ({pending.length})
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pending.map(c => (
+              <div key={c.id} className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+                <div className="font-semibold text-gray-800 dark:text-gray-100">{c.name}</div>
+                {c.description && <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{c.description}</p>}
+                <p className="text-xs text-gray-400 mt-1">בקשה מאת: {c.requestedByName || 'לא ידוע'}</p>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => handleApprove(c.id)} disabled={deleting === c.id}
+                    className="flex-1 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                    {deleting === c.id ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'אשר'}
+                  </button>
+                  <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id}
+                    className="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50">
+                    דחה
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : committees.length === 0 ? (
+      ) : active.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Users size={40} className="mx-auto mb-3 opacity-40" />
           <p className="font-medium">אין ועדות עדיין</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {committees.map(c => (
+          {active.map(c => (
             <div key={c.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4 dark:bg-gray-800 dark:border-gray-700">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: c.color + '20' }}>

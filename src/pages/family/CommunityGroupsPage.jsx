@@ -5,6 +5,7 @@ import {
   getGroupLinks, addGroupLink, deleteGroupLink,
   getGroupFiles, uploadGroupFile, deleteGroupFile,
   getGroupEvents, createGroupEvent, deleteGroupEvent,
+  requestHobbyGroup,
 } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -12,6 +13,7 @@ import {
   Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
   Loader2, ExternalLink, ChevronLeft, ChevronDown, MessageCircle,
   Send, Info, Link2, Paperclip, Calendar, Plus, Trash2, FileText, X,
+  CheckCircle2, Clock3,
 } from 'lucide-react'
 import clsx from 'clsx'
 import ContactModal from '../../components/ui/ContactModal'
@@ -564,29 +566,112 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
   )
 }
 
+// ── Request new group ─────────────────────────────────────────────────────────
+function RequestGroupPanel({ onClose, onRequested }) {
+  const { user } = useAuth()
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!name.trim()) return
+    setSaving(true)
+    try {
+      await requestHobbyGroup({ name: name.trim(), description: description.trim(), requestedBy: user.uid, requestedByName: user.name || '' })
+      setDone(true)
+      onRequested?.()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white dark:bg-gray-800 z-50 flex flex-col animate-slide-from-right" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">בקשה להקמת קבוצה חדשה</h2>
+        </div>
+        {done ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <CheckCircle2 size={26} className="text-green-600 dark:text-green-400" />
+            </div>
+            <p className="font-bold text-gray-800 dark:text-gray-100">הבקשה נשלחה!</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">מנהל הקהילה יבדוק את הבקשה ויאשר אותה בהקדם</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1 text-right">שם הקבוצה</label>
+              <input value={name} onChange={e => setName(e.target.value)} required
+                className="input w-full text-right" placeholder="לדוגמה: חובבי טיולים" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1 text-right">מה הקבוצה תעשה?</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)}
+                rows={4} className="input w-full text-right text-sm resize-none leading-relaxed" placeholder="תארו את מטרת הקבוצה..." />
+            </div>
+            <button type="submit" disabled={saving || !name.trim()}
+              className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+              {saving ? 'שולח...' : 'שליחת בקשה'}
+            </button>
+          </form>
+        )}
+      </div>
+    </>
+  )
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 export default function CommunityGroupsPage() {
   const { user, isAdmin } = useAuth()
   const [groups, setGroups]   = useState([])
   const [loading, setLoading] = useState(true)
+  const [showRequest, setShowRequest] = useState(false)
 
   useEffect(() => {
     getHobbyGroups().then(setGroups).finally(() => setLoading(false))
   }, [])
 
+  const activeGroups = groups.filter(g => g.status !== 'pending')
+  const myPending = groups.filter(g => g.status === 'pending' && g.requestedBy === user?.uid)
+
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-white">
-          <span className="text-2xl leading-none">🤝</span>
-          קבוצות קהילה
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">הצטרפו לקבוצות לפי תחומי עניין</p>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <button onClick={() => setShowRequest(true)}
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors flex-shrink-0">
+          <Plus size={15} />
+          בקש קבוצה חדשה
+        </button>
+        <div className="text-right">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 justify-end dark:text-white">
+            קבוצות קהילה
+            <span className="text-2xl leading-none">🤝</span>
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">הצטרפו לקבוצות לפי תחומי עניין</p>
+        </div>
       </div>
+
+      {myPending.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {myPending.map(g => (
+            <div key={g.id} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-sm justify-end">
+              הבקשה שלך ל"{g.name}" ממתינה לאישור מנהל
+              <Clock3 size={15} className="flex-shrink-0" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-primary-400" /></div>
-      ) : groups.length === 0 ? (
+      ) : activeGroups.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Heart size={44} className="mx-auto mb-4 opacity-25" />
           <p className="font-semibold text-gray-500 dark:text-gray-400">אין קבוצות קהילה עדיין</p>
@@ -594,8 +679,15 @@ export default function CommunityGroupsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {groups.map(g => <HobbyGroupCard key={g.id} group={g} uid={user.uid} user={user} isAdmin={isAdmin} />)}
+          {activeGroups.map(g => <HobbyGroupCard key={g.id} group={g} uid={user.uid} user={user} isAdmin={isAdmin} />)}
         </div>
+      )}
+
+      {showRequest && (
+        <RequestGroupPanel
+          onClose={() => setShowRequest(false)}
+          onRequested={() => getHobbyGroups().then(setGroups)}
+        />
       )}
     </div>
   )

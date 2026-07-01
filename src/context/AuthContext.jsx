@@ -82,6 +82,10 @@ export function AuthProvider({ children }) {
         avatar: firebaseUser.photoURL || '',
         phone: pending?.phone || '',
         address: pending?.address || '',
+        // Parents matched from an admin-imported class list need class-admin
+        // approval before they can access the app; self-registered community
+        // members without a match are active immediately.
+        status: pending ? 'pending' : 'active',
         createdAt: serverTimestamp(),
       }
       await setDoc(userRef, newProfile)

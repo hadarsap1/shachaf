@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses } from '../../lib/db'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { useAuth } from '../../context/AuthContext'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
   Link2, Loader2, RefreshCw, Upload, MapPin, Phone,
@@ -56,12 +57,14 @@ const STATUSES = [
   { value: 'active',   label: 'פעיל' },
   { value: 'inactive', label: 'לא פעיל' },
   { value: 'frozen',   label: 'בהקפאה' },
+  { value: 'pending',  label: 'ממתין לאישור' },
 ]
 
 const STATUS_STYLE = {
   active:   'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
   inactive: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600',
   frozen:   'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  pending:  'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
 }
 
 // ── Invite panel ────────────────────────────────────────────────────────────
@@ -279,7 +282,7 @@ function AddMemberPanel({ onClose, onCreated }) {
 
 // ── User detail panel ────────────────────────────────────────────────────────
 
-function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusChange, saving, onProfileSaved }) {
+function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusChange, saving, onProfileSaved, canEditRoles = true }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ name: user.name || '', phone: user.phone || '', address: user.address || '' })
   const [profileSaving, setProfileSaving] = useState(false)
@@ -402,24 +405,26 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
             </div>
           )}
 
-          {/* Roles — unified multi-select chips */}
-          <div>
-            <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">
-              תפקידים <span className="text-gray-400 font-normal">(ניתן לבחור כמה)</span>
-            </label>
-            <RoleChips
-              disabled={saving === user.uid}
-              selected={new Set([
-                ...(user.role && user.role !== 'community' ? [user.role] : []),
-                ...(user.roles || []),
-              ])}
-              onChange={(next) => {
-                const { role, roles } = deriveRoles(next)
-                if (role !== user.role) onRoleChange(user, role)
-                onRolesChange(user, roles)
-              }}
-            />
-          </div>
+          {/* Roles — unified multi-select chips (global admins only) */}
+          {canEditRoles && (
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">
+                תפקידים <span className="text-gray-400 font-normal">(ניתן לבחור כמה)</span>
+              </label>
+              <RoleChips
+                disabled={saving === user.uid}
+                selected={new Set([
+                  ...(user.role && user.role !== 'community' ? [user.role] : []),
+                  ...(user.roles || []),
+                ])}
+                onChange={(next) => {
+                  const { role, roles } = deriveRoles(next)
+                  if (role !== user.role) onRoleChange(user, role)
+                  onRolesChange(user, roles)
+                }}
+              />
+            </div>
+          )}
 
           {/* Status */}
           <div>
@@ -457,20 +462,29 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
 
 export default function AdminUsersPage() {
   const navigate = useNavigate()
+  const { isAdmin, isClassAdmin, user: currentUser } = useAuth()
   const [users, setUsers]       = useState([])
+  const [classes, setClasses]   = useState([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [classFilter, setClassFilter] = useState('all')
   const [showInvite, setShowInvite] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
   const [saving, setSaving]     = useState(null)
   const [error, setError]       = useState('')
   const [selectedUser, setSelectedUser] = useState(null)
 
+  const myClassIds = currentUser?.classAdminFor || []
+
   const loadUsers = async () => {
     setLoading(true)
-    const data = await getUsers()
-    setUsers(data)
+    const [data, classData] = await Promise.all([getUsers(), getClasses()])
+    const scoped = isClassAdmin && !isAdmin
+      ? data.filter(u => (u.classIds || []).some(id => myClassIds.includes(id)))
+      : data
+    setUsers(scoped)
+    setClasses(classData)
     setLoading(false)
   }
 
@@ -523,12 +537,18 @@ export default function AdminUsersPage() {
     }
   }
 
+  const approve = (user) => changeStatus(user, 'active')
+  const deny     = (user) => changeStatus(user, 'inactive')
+
   const filtered = users.filter(u => {
     const matchRole   = roleFilter === 'all' || u.role === roleFilter
+    const matchClass  = classFilter === 'all' || (u.classIds || []).includes(classFilter)
     const q = search.toLowerCase()
     const matchSearch = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
-    return matchRole && matchSearch
+    return matchRole && matchClass && matchSearch
   })
+
+  const pendingCount = users.filter(u => u.status === 'pending').length
 
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
 
@@ -536,15 +556,19 @@ export default function AdminUsersPage() {
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowAddMember(true)} className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
-            <UserPlus size={16} />
-            הוסף חבר
-          </button>
-          <button onClick={() => setShowInvite(true)}
-            className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50">
-            <Link2 size={15} />
-            הזמן בקישור
-          </button>
+          {isAdmin && (
+            <button onClick={() => setShowAddMember(true)} className="btn-primary flex items-center gap-2 text-sm py-2 px-4">
+              <UserPlus size={16} />
+              הוסף חבר
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={() => setShowInvite(true)}
+              className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50">
+              <Link2 size={15} />
+              הזמן בקישור
+            </button>
+          )}
           <button onClick={() => navigate('/admin/import')}
             className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700/50">
             <Upload size={15} />
@@ -557,9 +581,12 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-xl font-black text-primary-800 flex items-center gap-2 justify-end dark:text-primary-300">
             <span className="text-xl leading-none">👥</span>
-            ניהול משתמשים
+            {isClassAdmin && !isAdmin ? 'חברי הכיתה' : 'ניהול חברים'}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">{users.length} משתמשים רשומים</p>
+          <p className="text-sm text-gray-500 mt-0.5 text-right dark:text-gray-400">
+            {users.length} חברים רשומים
+            {pendingCount > 0 && <span className="text-amber-600 dark:text-amber-400"> · {pendingCount} ממתינים לאישור</span>}
+          </p>
         </div>
       </div>
 
@@ -583,6 +610,13 @@ export default function AdminUsersPage() {
             {r === 'all' ? 'הכל' : ROLES.find(x => x.value === r)?.label}
           </button>
         ))}
+        {isAdmin && classes.length > 0 && (
+          <select value={classFilter} onChange={e => setClassFilter(e.target.value)}
+            className="text-sm px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            <option value="all">כל הכיתות</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name || c.id}</option>)}
+          </select>
+        )}
       </div>
 
       {loading ? (
@@ -617,17 +651,34 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   {saving === user.uid && <Loader2 size={14} className="animate-spin text-gray-400" />}
-                  <select
-                    value={user.role || 'new_family'}
-                    disabled={saving === user.uid}
-                    onChange={e => changeRole(user, e.target.value)}
-                    className={clsx(
-                      'text-xs px-2.5 py-1.5 rounded-lg border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50',
-                      ROLE_STYLE[user.role] || ROLE_STYLE.new_family
-                    )}
-                  >
-                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                  </select>
+                  {user.status === 'pending' ? (
+                    <>
+                      <button onClick={() => approve(user)} disabled={saving === user.uid}
+                        className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+                        אשר
+                      </button>
+                      <button onClick={() => deny(user)} disabled={saving === user.uid}
+                        className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50">
+                        דחה
+                      </button>
+                    </>
+                  ) : isAdmin ? (
+                    <select
+                      value={user.role || 'new_family'}
+                      disabled={saving === user.uid}
+                      onChange={e => changeRole(user, e.target.value)}
+                      className={clsx(
+                        'text-xs px-2.5 py-1.5 rounded-lg border font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50',
+                        ROLE_STYLE[user.role] || ROLE_STYLE.new_family
+                      )}
+                    >
+                      {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </select>
+                  ) : (
+                    <span className={clsx('text-xs px-2.5 py-1.5 rounded-lg border font-medium', ROLE_STYLE[user.role] || ROLE_STYLE.new_family)}>
+                      {ROLES.find(r => r.value === user.role)?.label || 'משפחה חדשה'}
+                    </span>
+                  )}
                 </div>
                 {phone && (
                   <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
@@ -665,6 +716,7 @@ export default function AdminUsersPage() {
           onRoleChange={(user, role) => changeRole(user, role)}
           onRolesChange={(user, roles) => changeRoles(user, roles)}
           onStatusChange={(user, status) => changeStatus(user, status)}
+          canEditRoles={isAdmin}
           onClose={() => setSelectedUser(null)}
           onProfileSaved={(updated) => {
             setUsers(prev => prev.map(u => u.uid === updated.uid ? { ...u, ...updated } : u))

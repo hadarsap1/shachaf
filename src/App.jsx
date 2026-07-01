@@ -20,6 +20,7 @@ import CommitteesPage from './pages/family/CommitteesPage'
 import CommunityGroupsPage from './pages/family/CommunityGroupsPage'
 import ClassRosterPage from './pages/family/ClassRosterPage'
 import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
+import PendingApprovalPage from './pages/family/PendingApprovalPage'
 
 // Admin/super pages are lazy-loaded — families never download this code.
 const AdminDashboard        = lazy(() => import('./pages/admin/AdminDashboard'))
@@ -53,6 +54,10 @@ function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
   if (needsOnboarding) return <Navigate to="/onboarding" replace />
+  // Pending accounts (matched from an imported class list) need class-admin
+  // approval before touching the app — admins/class admins still need access
+  // to review and approve them, so they're exempt from this gate.
+  if (user.status === 'pending' && !isAdmin && !isClassAdmin) return <PendingApprovalPage />
   if (adminOnly && !isAdmin && !(classAdminOk && isClassAdmin)) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />
   if (hostOnly && !isHostFamily && !isAdmin) return <Navigate to="/" replace />
@@ -115,9 +120,13 @@ export default function App() {
             <Route path="/families" element={<FamiliesPage />} />
           </Route>
 
+          {/* Class admins can also review/approve members of their own class */}
+          <Route element={<ProtectedShell adminOnly classAdminOk />}>
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+          </Route>
+
           <Route element={<ProtectedShell adminOnly />}>
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/tasks" element={<AdminTasksPage />} />
             <Route path="/admin/events" element={<AdminEventsPage />} />
             <Route path="/admin/activity" element={<AdminActivityPage />} />

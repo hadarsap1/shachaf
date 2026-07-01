@@ -448,6 +448,21 @@ export async function deleteCommittee(id) {
   await deleteDoc(doc(db, 'committees', id))
 }
 
+// A member requests a new committee — created as 'pending', reviewed by an admin
+export async function requestCommittee({ name, description, requestedBy, requestedByName }) {
+  const ref = await addDoc(collection(db, 'committees'), {
+    name, description: description || '', icon: 'Users', color: '#1B3B70',
+    members: [], memberUids: [requestedBy],
+    order: 999, status: 'pending', requestedBy, requestedByName,
+    createdAt: serverTimestamp(),
+  })
+  return ref.id
+}
+
+export async function approveCommittee(id) {
+  await updateDoc(doc(db, 'committees', id), { status: 'active' })
+}
+
 // ── Committee messages ────────────────────────────────────────────────────────
 export async function sendCommitteeMessage(committeeId, userId, userName, body) {
   await addDoc(collection(db, 'committeeMessages'), {
@@ -596,6 +611,21 @@ export async function saveHobbyGroup(group) {
 
 export async function deleteHobbyGroup(id) {
   await deleteDoc(doc(db, 'hobbyGroups', id))
+}
+
+// A member requests a new community group — created as 'pending', reviewed by an admin
+export async function requestHobbyGroup({ name, description, requestedBy, requestedByName }) {
+  const ref = await addDoc(collection(db, 'hobbyGroups'), {
+    name, description: description || '',
+    memberUids: [requestedBy],
+    order: 999, status: 'pending', requestedBy, requestedByName,
+    createdAt: serverTimestamp(),
+  })
+  return ref.id
+}
+
+export async function approveHobbyGroup(id) {
+  await updateDoc(doc(db, 'hobbyGroups', id), { status: 'active' })
 }
 
 export async function joinHobbyGroup(groupId, uid) {

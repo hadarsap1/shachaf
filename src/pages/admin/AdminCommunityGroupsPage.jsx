@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { getHobbyGroups, saveHobbyGroup, deleteHobbyGroup, getUsers } from '../../lib/db'
+import { getHobbyGroups, saveHobbyGroup, deleteHobbyGroup, getUsers, approveHobbyGroup } from '../../lib/db'
 import { COMMITTEE_ICONS, CLASS_COLORS } from '../../lib/classColors'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
   Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
-  Plus, Edit2, Trash2, X, Loader2, Search, Type, Link, Table2, ChevronDown, ChevronUp,
+  Plus, Edit2, Trash2, X, Loader2, Search, Type, Link, Table2, ChevronDown, ChevronUp, Clock3,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -360,6 +360,19 @@ export default function AdminCommunityGroupsPage() {
     }
   }
 
+  const handleApprove = async (id) => {
+    setDeleting(id)
+    try {
+      await approveHobbyGroup(id)
+      setGroups(prev => prev.map(g => g.id === id ? { ...g, status: 'active' } : g))
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const pending = groups.filter(g => g.status === 'pending')
+  const active  = groups.filter(g => g.status !== 'pending')
+
   const blank = () => ({
     id: 'hobby-' + Date.now(),
     name: '', description: '', icon: 'Heart',
@@ -380,18 +393,45 @@ export default function AdminCommunityGroupsPage() {
         </button>
       </div>
 
+      {pending.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-3">
+            <Clock3 size={14} />בקשות ממתינות לאישור ({pending.length})
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pending.map(g => (
+              <div key={g.id} className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+                <div className="font-semibold text-gray-800 dark:text-gray-100">{g.name}</div>
+                {g.description && <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{g.description}</p>}
+                <p className="text-xs text-gray-400 mt-1">בקשה מאת: {g.requestedByName || 'לא ידוע'}</p>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => handleApprove(g.id)} disabled={deleting === g.id}
+                    className="flex-1 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                    {deleting === g.id ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'אשר'}
+                  </button>
+                  <button onClick={() => handleDelete(g.id)} disabled={deleting === g.id}
+                    className="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50">
+                    דחה
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : groups.length === 0 ? (
+      ) : active.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Heart size={40} className="mx-auto mb-3 opacity-40" />
           <p className="font-medium">אין קבוצות קהילה עדיין</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {groups.map(g => {
+          {active.map(g => {
             const Icon = ICON_MAP[g.icon] || Users
             return (
               <div key={g.id} className="bg-white rounded-2xl shadow-card border border-gray-100 p-5 flex items-start gap-4 dark:bg-gray-800 dark:border-gray-700">

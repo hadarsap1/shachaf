@@ -49,7 +49,7 @@ export const NAV_EMOJI = {
 const ADMIN_NAV_LINKS = {
   admin: [
     { to: '/admin',            label: 'מסך הבית' },
-    { to: '/admin/users',      label: 'משפחות' },
+    { to: '/admin/users',      label: 'חברים' },
     { to: '/admin/classes',    label: 'כיתות' },
     { to: '/admin/children',   label: 'ילדים', sub: true },
     { to: '/admin/committees', label: 'ועדות' },
@@ -66,7 +66,7 @@ const ADMIN_NAV_LINKS = {
   ],
   super_admin: [
     { to: '/admin',            label: 'מסך הבית' },
-    { to: '/admin/users',      label: 'משפחות' },
+    { to: '/admin/users',      label: 'חברים' },
     { to: '/admin/classes',    label: 'כיתות' },
     { to: '/admin/children',   label: 'ילדים', sub: true },
     { to: '/admin/committees', label: 'ועדות' },
@@ -96,15 +96,14 @@ function buildMemberNav(allRoles, classIds, className) {
   }
   if (allRoles.has('host_family'))
     links.push({ to: '/families', label: 'המשפחות שלי' })
-  if (allRoles.has('new_family') || allRoles.has('host_family'))
+  if (allRoles.has('new_family') || allRoles.has('host_family')) {
     links.push({ to: '/tasks', label: 'משימות' })
+    links.push({ to: '/forms', label: 'הטפסים שלי', sub: true })
+  }
 
   links.push({ to: '/events',     label: 'אירועים' })
   links.push({ to: '/committees', label: 'ועדות' })
   links.push({ to: '/community',  label: 'קבוצות קהילה' })
-
-  if (allRoles.has('new_family') || allRoles.has('host_family'))
-    links.push({ to: '/forms', label: 'הטפסים שלי' })
 
   links.push({ to: '/resources', label: 'מידע שימושי' })
   links.push({ to: '/contact',   label: 'צור קשר' })
@@ -316,7 +315,7 @@ export default function AppShell() {
   }
 
   const links = isClassAdmin && !isAdmin
-    ? [...baseLinks, { to: '/admin/import', label: 'ייבוא משפחות' }]
+    ? [...baseLinks, { to: '/admin/users', label: 'חברי הכיתה' }, { to: '/admin/import', label: 'ייבוא משפחות' }]
     : baseLinks
 
   const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
