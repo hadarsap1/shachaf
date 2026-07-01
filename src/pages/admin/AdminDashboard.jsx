@@ -148,8 +148,8 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 {messages.slice(0, 3).map(msg => (
                   <Link key={msg.id} to="/admin/messages"
-                    className={clsx('block p-3 rounded-xl text-right transition-colors hover:bg-gray-50',
-                      !msg.read ? 'bg-blue-50' : 'bg-gray-50')}>
+                    className={clsx('block p-3 rounded-xl text-right transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+                      !msg.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700/50')}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-gray-400">
                         {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleDateString('he-IL') : ''}

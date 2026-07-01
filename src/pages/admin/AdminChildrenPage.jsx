@@ -478,8 +478,8 @@ export default function AdminChildrenPage() {
             const cls = classMap[child.classId]
             return (
               <div key={child.id} className={clsx(
-                'flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors',
-                i > 0 && 'border-t border-gray-50'
+                'flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
+                i > 0 && 'border-t border-gray-50 dark:border-gray-700'
               )}>
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"

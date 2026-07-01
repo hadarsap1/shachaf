@@ -38,6 +38,7 @@ export const NAV_EMOJI = {
   '/admin/forms':     '📋',
   '/admin/resources': '📖',
   '/admin/messages':  '💬',
+  '/admin/announcements': '📢',
   '/admin/activity':  '📊',
   '/admin/emergency': '🚨',
   '/admin/import':    '📥',
@@ -58,6 +59,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/forms',      label: 'טפסים' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
+    { to: '/admin/announcements', label: 'הכרזות' },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
     { to: '/help',             label: 'עזרה' },
@@ -74,6 +76,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/forms',      label: 'טפסים' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
+    { to: '/admin/announcements', label: 'הכרזות' },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
     { to: '/super/admins',     label: 'מנהלים' },
@@ -181,7 +184,7 @@ function UserMenu({ user, logout }) {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-modal border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+        <div className="absolute bottom-full inset-x-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-modal border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
             <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{user?.name}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</div>
@@ -284,7 +287,7 @@ export default function AppShell() {
       if (!resizing.current) return
       resizing.current = false
       document.body.style.cursor = ''
-      setSidebarWidth(w => { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(w)); return w })
+      setSidebarWidth(w => { try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(w)) } catch {} return w })
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
@@ -354,7 +357,7 @@ export default function AppShell() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className={clsx('absolute top-0 right-0 h-full w-72 flex flex-col animate-slide-up', sidebarBg)} dir="rtl">
+          <aside className={clsx('absolute top-0 right-0 h-full w-72 flex flex-col animate-slide-from-right', sidebarBg)} dir="rtl">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -450,7 +453,7 @@ export default function AppShell() {
                   </span>
                   <span className="text-[11px] font-medium mt-0.5">{link.label}</span>
                   {link.badge && unreadMessages > 0 && (
-                    <span className="absolute top-0.5 right-2 w-2 h-2 bg-red-500 rounded-full" />
+                    <span className="absolute top-0.5 end-2 w-2 h-2 bg-red-500 rounded-full" />
                   )}
                 </Link>
               )

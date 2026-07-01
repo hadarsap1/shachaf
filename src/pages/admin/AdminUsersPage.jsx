@@ -46,10 +46,10 @@ const EXTRA_ROLES = [
 ]
 
 const ROLE_STYLE = {
-  new_family:  'bg-primary-50 text-primary-700 border-primary-200',
-  host_family: 'bg-secondary-50 text-secondary-700 border-secondary-200',
-  admin:       'bg-gray-100 text-gray-600 border-gray-200',
-  super_admin: 'bg-red-50 text-red-700 border-red-200',
+  new_family:  'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-800',
+  host_family: 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300 border-secondary-200 dark:border-secondary-800',
+  admin:       'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600',
+  super_admin: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
 }
 
 const STATUSES = [
@@ -59,9 +59,9 @@ const STATUSES = [
 ]
 
 const STATUS_STYLE = {
-  active:   'bg-green-50 text-green-700 border-green-200',
-  inactive: 'bg-gray-100 text-gray-500 border-gray-200',
-  frozen:   'bg-blue-50 text-blue-700 border-blue-200',
+  active:   'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
+  inactive: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600',
+  frozen:   'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
 }
 
 // ── Invite panel ────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ function RoleChips({ selected, onChange, disabled }) {
               'px-3 py-1.5 rounded-full text-xs font-medium border transition-all select-none',
               on
                 ? 'bg-primary-600 text-white border-primary-600'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-primary-400 hover:text-primary-600',
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400 hover:text-primary-600',
               disabled && 'opacity-50 cursor-not-allowed'
             )}>
             {r.label}
@@ -572,14 +572,14 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap items-center">
         <div className="relative flex-1 min-w-48">
-          <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="חיפוש..." className="input w-full pr-9 text-right py-2 text-sm" />
+            placeholder="חיפוש..." className="input w-full ps-9 text-right py-2 text-sm" />
         </div>
         {['all', 'new_family', 'host_family', 'admin'].map(r => (
           <button key={r} onClick={() => setRoleFilter(r)}
             className={clsx('px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
-              roleFilter === r ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300')}>
+              roleFilter === r ? 'bg-primary-600 text-white' : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary-300')}>
             {r === 'all' ? 'הכל' : ROLES.find(x => x.value === r)?.label}
           </button>
         ))}
@@ -592,7 +592,8 @@ export default function AdminUsersPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map(user => {
-            const phone = (() => { const d = (user.phone || '').replace(/\D/g, ''); return d.startsWith('972') ? d : '972' + d.replace(/^0/, '') })()
+            const rawDigits = (user.phone || '').replace(/\D/g, '')
+            const phone = rawDigits.length > 3 ? (rawDigits.startsWith('972') ? rawDigits : '972' + rawDigits.replace(/^0/, '')) : null
             return (
               <div key={user.uid}
                 className="card p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"

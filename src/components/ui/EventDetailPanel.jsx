@@ -217,7 +217,7 @@ export default function EventDetailPanel({ event, onClose }) {
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
           <button
             onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
-            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-primary-900/30"
+            className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 dark:text-primary-300 bg-primary-50 hover:bg-primary-100 border border-primary-200 dark:border-primary-800 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-primary-900/30 dark:hover:bg-primary-900/50"
           >
             <Plus size={14} />
             Google Calendar

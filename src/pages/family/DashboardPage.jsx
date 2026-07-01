@@ -106,8 +106,8 @@ function CustomizePanel({ config, onChange, onClose }) {
                     <ChevronDown size={15} />
                   </button>
                   <button onClick={() => toggle(w.id)}
-                    className={clsx('p-1.5 rounded-lg transition-colors ml-1',
-                      w.visible ? 'text-primary-600 hover:bg-primary-50' : 'text-gray-300 hover:bg-gray-100')}>
+                    className={clsx('p-1.5 rounded-lg transition-colors ms-1',
+                      w.visible ? 'text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700')}>
                     {w.visible ? <Eye size={15} /> : <EyeOff size={15} />}
                   </button>
                 </div>

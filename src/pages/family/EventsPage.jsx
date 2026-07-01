@@ -84,7 +84,7 @@ export default function EventsPage() {
               'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-all',
               displayMode === 'calendar'
                 ? 'bg-primary-600 text-white'
-                : 'text-gray-600 hover:bg-gray-50'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
             )}
           >
             <Calendar size={14} />
@@ -96,7 +96,7 @@ export default function EventsPage() {
               'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-all',
               displayMode === 'list'
                 ? 'bg-primary-600 text-white'
-                : 'text-gray-600 hover:bg-gray-50'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
             )}
           >
             <List size={14} />
@@ -124,7 +124,7 @@ export default function EventsPage() {
                 'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
                 filterValue === opt.value
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                  : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary-300'
               )}
             >
               {opt.label}

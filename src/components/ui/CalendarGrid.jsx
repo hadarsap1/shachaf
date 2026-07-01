@@ -126,12 +126,12 @@ function WeekEventCard({ event, onClick, classColorMap, isConflict }) {
     <button
       onClick={() => onClick(event)}
       className={clsx(
-        'w-full text-start border-r-2 rounded-lg px-2 py-1.5 mb-1 transition-colors',
+        'w-full text-start border-s-2 rounded-lg px-2 py-1.5 mb-1 transition-colors',
         isConflict
           ? 'bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 dark:hover:bg-orange-900/50'
           : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700'
       )}
-      style={{ borderRightColor: color }}
+      style={{ borderInlineStartColor: color }}
     >
       <p className="text-xs font-semibold text-gray-800 truncate leading-snug flex items-center gap-1 dark:text-gray-100">
         {isConflict && <span className="text-orange-500 flex-shrink-0" title="ניגוד זמנים">⚠</span>}
@@ -207,9 +207,20 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                     +{dayEvents.length - 3} נוספים
                   </button>
                 )}
-                {(birthdaysByMonthDay[cell.key.slice(5)] || []).map(name => (
-                  <div key={name} className="text-[10px] px-1 leading-snug text-pink-600 dark:text-pink-400 truncate">🎂 {name}</div>
-                ))}
+                {(() => {
+                  const dayBirthdays = birthdaysByMonthDay[cell.key.slice(5)] || []
+                  const shown = dayBirthdays.slice(0, 2)
+                  return (
+                    <>
+                      {shown.map(name => (
+                        <div key={name} className="text-[10px] px-1 leading-snug text-pink-600 dark:text-pink-400 truncate">🎂 {name}</div>
+                      ))}
+                      {dayBirthdays.length > 2 && (
+                        <div className="text-[10px] px-1 text-pink-500 dark:text-pink-400">+{dayBirthdays.length - 2} נוספים</div>
+                      )}
+                    </>
+                  )
+                })()}
               </div>
 
               {/* Mobile: dots only */}
@@ -248,7 +259,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                 'py-2 px-1 text-center border-b border-gray-100 dark:border-gray-700',
                 isToday ? 'bg-primary-50 dark:bg-primary-900/30' : ''
               )}>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{DAY_NAMES[idx]}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-300">{DAY_NAMES[idx]}</p>
                 <span className={clsx(
                   'text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto',
                   isToday ? 'bg-primary-600 text-white' : 'text-gray-700 dark:text-gray-200'

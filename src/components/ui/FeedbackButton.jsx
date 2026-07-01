@@ -10,13 +10,15 @@ export default function FeedbackButton() {
   const [file, setFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
 
-  const close = () => { setOpen(false); setText(''); setFile(null); setDone(false) }
+  const close = () => { setOpen(false); setText(''); setFile(null); setDone(false); setError('') }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!text.trim()) return
     setSaving(true)
+    setError('')
     try {
       const submittedBy = { uid: user?.uid, name: user?.name, email: user?.email }
       const id = await saveFeedback({ text: text.trim(), submittedBy })
@@ -28,6 +30,7 @@ export default function FeedbackButton() {
       setTimeout(close, 1800)
     } catch (err) {
       console.error('feedback submit failed', err)
+      setError('שליחת הדיווח נכשלה, נסו שוב')
     } finally {
       setSaving(false)
     }
@@ -37,7 +40,7 @@ export default function FeedbackButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 md:bottom-6 left-4 z-30 flex items-center gap-2 px-4 py-3 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition-colors text-sm font-semibold"
+        className="fixed bottom-24 md:bottom-6 end-4 z-30 flex items-center gap-2 px-4 py-3 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition-colors text-sm font-semibold"
         aria-label="דווח על באג או הצע רעיון"
       >
         <MessageSquarePlus size={18} />
@@ -74,6 +77,8 @@ export default function FeedbackButton() {
                     <input type="file" accept="image/*" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
                   </label>
                 </div>
+                {error && <p className="text-sm text-red-600 dark:text-red-400 text-right bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">{error}</p>}
+
                 <button type="submit" disabled={saving || !text.trim()}
                   className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50">
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <MessageSquarePlus size={16} />}
