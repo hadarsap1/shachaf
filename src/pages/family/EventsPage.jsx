@@ -45,7 +45,7 @@ export default function EventsPage() {
       const [allEvents, classes, myChildren] = await Promise.all([
         getEvents(),
         getClasses(),
-        isAdmin ? Promise.resolve([]) : getChildrenByParent(user.uid),
+        getChildrenByParent(user.uid),
       ])
 
       const colorMap = {}
@@ -53,7 +53,7 @@ export default function EventsPage() {
       setClassColorMap(colorMap)
 
       const myClassIds = isAdmin
-        ? []
+        ? classes.map(c => c.id)
         : [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
 
       const classFilters = classes

@@ -41,14 +41,12 @@ export function AuthProvider({ children }) {
       if (snap.exists()) {
         const data = snap.data()
         setUser({ uid: firebaseUser.uid, ...data })
-        // Backfill classIds for users created before class-scoped read rules.
-        // Runs once (only when the field is absent); keeps the class roster working.
-        if (data.classIds === undefined) {
-          try {
-            const classIds = await syncUserClassIds(firebaseUser.uid)
+        // Keep classIds fresh on every login
+        try {
+          const classIds = await syncUserClassIds(firebaseUser.uid)
+          if (JSON.stringify(classIds) !== JSON.stringify(data.classIds || []))
             setUser(prev => prev ? { ...prev, classIds } : prev)
-          } catch { /* non-critical — rule still grants parent + admin reads */ }
-        }
+        } catch { /* non-critical */ }
         return
       }
       // New user — check for a pending imported record first
