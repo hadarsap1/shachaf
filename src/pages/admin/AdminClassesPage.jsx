@@ -461,7 +461,6 @@ const TABS = [
   { id: 'schedule',  label: 'מערכת שעות' },
   { id: 'children',  label: 'ילדים' },
   { id: 'staff',     label: 'צוות' },
-  { id: 'committee', label: 'ועד כיתה' },
   { id: 'admins',    label: 'מנהלי כיתה' },
 ]
 

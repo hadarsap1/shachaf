@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, getUsers } from '../../lib/db'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
@@ -293,12 +293,11 @@ export default function ClassPage() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const [children, classes, allEvents, allAnns, allUsers] = await Promise.all([
+      const [children, classes, allEvents, allAnns] = await Promise.all([
         getChildrenByParent(user.uid),
         getClasses(),
         getEvents(),
         getAnnouncements(),
-        getUsers(),
       ])
       const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
       const filtered = classes.filter(c => myClassIds.includes(c.id))
@@ -308,7 +307,12 @@ export default function ClassPage() {
       setAnnouncements(allAnns)
       if (myClassIds.length > 0) {
         const cid = myClassIds[0]
-        setClassAdmins(allUsers.filter(u => (u.classAdminFor || []).includes(cid)))
+        const cls = filtered.find(c => c.id === cid)
+        // Use adminUids stored on the class doc — accessible to all authenticated users
+        const adminUids = cls?.adminUids || []
+        if (adminUids.length > 0) {
+          getUsersByUids(adminUids).then(setClassAdmins).catch(() => {})
+        }
         const allKids = await getChildren(cid)
         setClassChildren(allKids)
         const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
