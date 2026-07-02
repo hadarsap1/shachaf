@@ -477,9 +477,16 @@ export default function ClassPage() {
           </Section>
         )}
 
-        {/* Class admins */}
+        {/* Class team — teachers set by school admin */}
+        {cls?.team?.length > 0 && (
+          <Section title="צוות הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
+            {cls.team.map((p, i) => <PersonCard key={i} person={p} />)}
+          </Section>
+        )}
+
+        {/* Class admins — parents who manage the class in the app */}
         {classAdmins.length > 0 && (
-          <Section title="מנהלי הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
+          <Section title="מנהלי כיתה" icon={Users} color={cls?.color || '#1B3B70'}>
             {classAdmins.map(p => <PersonCard key={p.uid} person={p} />)}
           </Section>
         )}
