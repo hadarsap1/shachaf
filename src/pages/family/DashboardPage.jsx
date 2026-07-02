@@ -217,7 +217,7 @@ function ActivityFeed({ events, groups, committees, user }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { user, allRoles } = useAuth()
+  const { user, allRoles, isAdmin } = useAuth()
   const [tasks, setTasks]           = useState([])
   const [events, setEvents]         = useState([])
   const [groups, setGroups]         = useState([])
@@ -244,7 +244,7 @@ export default function DashboardPage() {
       getEvents(),
       isFamily ? getForms() : Promise.resolve([]),
       isFamily ? getSubmissionsForFamily(user.uid) : Promise.resolve([]),
-      isFamily ? getChildrenByParent(user.uid) : Promise.resolve([]),
+      getChildrenByParent(user.uid),
       getHobbyGroups(),
       getCommittees(),
       getClasses(),
@@ -260,6 +260,7 @@ export default function DashboardPage() {
       }
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
+        if (isAdmin) return true
         const tg = ev.targetGroups || []
         if (!tg.length || tg.includes('all') || tg.includes(user.role)) return true
         if (tg.includes('class')) return (ev.classIds || []).some(id => effectiveClassIds.includes(id))

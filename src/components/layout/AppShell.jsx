@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
@@ -84,7 +84,7 @@ const ADMIN_NAV_LINKS = {
 
 function buildMemberNav(allRoles, classIds, className) {
   const links = []
-  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
+  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0) || !!className
 
   links.push({ to: '/dashboard', label: 'בית' })
   if (hasClass) {
@@ -109,7 +109,7 @@ function buildMemberNav(allRoles, classIds, className) {
 }
 
 function getMemberBottomNav(allRoles, classIds) {
-  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
+  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0) || !!className
   const hasForms = allRoles.has('new_family') || allRoles.has('host_family')
   if (hasClass && hasForms) return ['/dashboard', '/class', '/events', '/tasks']
   if (hasClass)             return ['/dashboard', '/class', '/events', '/resources']
@@ -293,12 +293,17 @@ export default function AppShell() {
   }, [])
 
   useEffect(() => {
-    if (!user?.classIds?.length) return
-    getClasses().then(classes => {
-      const cls = classes.find(c => user.classIds.includes(c.id))
-      if (cls) setClassName(cls.name)
-    })
-  }, [user?.classIds])
+    if (!user?.uid) return
+    // Fetch class name from children, not user.classIds (which may be stale)
+    getChildrenByParent(user.uid).then(kids => {
+      const cid = kids.find(k => k.classId)?.classId
+      if (!cid) return
+      getClasses().then(classes => {
+        const cls = classes.find(c => c.id === cid)
+        if (cls) setClassName(cls.name)
+      })
+    }).catch(() => {})
+  }, [user?.uid])
 
   const showAdminNav = isAdmin && !viewAs
   let baseLinks, bottomNavPaths
