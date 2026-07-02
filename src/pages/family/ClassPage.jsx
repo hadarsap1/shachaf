@@ -481,10 +481,13 @@ export default function ClassPage() {
           </Section>
         )}
 
-        {/* Class team — teachers set by school admin */}
-        {cls?.team?.length > 0 && (
+        {/* Class team — main teacher + assistants */}
+        {(cls?.teacherContact?.name || cls?.assistants?.length > 0) && (
           <Section title="צוות הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
-            {cls.team.map((p, i) => <PersonCard key={i} person={p} />)}
+            {cls.teacherContact?.name && (
+              <PersonCard person={{ ...cls.teacherContact, role: 'מחנך/ת כיתה' }} />
+            )}
+            {(cls.assistants || []).map((p, i) => <PersonCard key={i} person={p} />)}
           </Section>
         )}
 
