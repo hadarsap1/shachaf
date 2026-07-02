@@ -231,7 +231,6 @@ export default function DashboardPage() {
   const [showCustomize, setShowCustomize] = useState(false)
 
   const isFamily = allRoles?.has('new_family') || allRoles?.has('host_family')
-  const hasClass = (user?.classIds || []).length > 0
 
   useEffect(() => {
     getEmergencyMode().then(m => { if (m?.active) setEmergency(m) })
@@ -248,19 +247,22 @@ export default function DashboardPage() {
       isFamily ? getChildrenByParent(user.uid) : Promise.resolve([]),
       getHobbyGroups(),
       getCommittees(),
-      hasClass ? getClasses() : Promise.resolve([]),
+      getClasses(),
     ]).then(([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses]) => {
       setTasks(taskData)
       setGroups(groupData)
       setCommittees(committeeData)
-      if (hasClass) {
-        setMyClasses(allClasses.filter(c => (user.classIds || []).includes(c.id)))
+      // Derive classIds from children — don't rely on user.classIds which may be stale
+      const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
+      const effectiveClassIds = myClassIds.length > 0 ? myClassIds : (user.classIds || [])
+      if (effectiveClassIds.length > 0) {
+        setMyClasses(allClasses.filter(c => effectiveClassIds.includes(c.id)))
       }
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
         const tg = ev.targetGroups || []
         if (!tg.length || tg.includes('all') || tg.includes(user.role)) return true
-        if (tg.includes('class')) return (ev.classIds || []).some(id => (user.classIds || []).includes(id))
+        if (tg.includes('class')) return (ev.classIds || []).some(id => effectiveClassIds.includes(id))
         return false
       }))
       if (isFamily) {
@@ -305,7 +307,7 @@ export default function DashboardPage() {
   const renderWidget = (id) => {
     switch (id) {
       case 'class':
-        if (!hasClass || myClasses.length === 0) return null
+        if (myClasses.length === 0) return null
         return (
           <section key="class" className="mb-6">
             <div className="flex items-center justify-between mb-3">
