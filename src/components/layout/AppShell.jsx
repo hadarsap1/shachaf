@@ -224,16 +224,16 @@ function ThemeToggle() {
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
 function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
-    <>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="px-4 py-4 border-b border-white/10">
-        <div className="bg-white/95 rounded-2xl px-4 py-2.5">
-          <img src="/logo.png" alt="שחף" className="h-10 w-auto mx-auto" />
+      <div className="px-4 py-3 border-b border-white/10 flex-shrink-0">
+        <div className="bg-white/95 rounded-2xl px-3 py-2">
+          <img src="/logo.png" alt="קהילת שחף" className="h-14 w-auto mx-auto object-contain" />
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
         {links.map(link => (
           <NavLink
             key={link.to}
@@ -260,7 +260,7 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
         <ThemeToggle />
         <UserMenu user={user} logout={logout} />
       </div>
-    </>
+    </div>
   )
 }
 
