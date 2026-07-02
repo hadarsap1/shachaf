@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTasks, saveTask, deleteTask, getClasses, MILESTONES } from '../../lib/db'
+import { getTasks, saveTask, deleteTask, getClasses, getForms, MILESTONES } from '../../lib/db'
 import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2, Users } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -58,7 +58,7 @@ const blankTask = () => ({
 
 // ---- Task slide panel (add / edit) ----
 
-function TaskPanel({ task, isNew, onSave, onClose, classes }) {
+function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
   const [draft, setDraft] = useState({ ...task })
   const [errors, setErrors] = useState({})
 
@@ -195,6 +195,20 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
             <input type="tel" value={draft.whatsappPhone || ''} onChange={e => set('whatsappPhone', e.target.value)}
               className="input w-full" dir="ltr" placeholder="0501234567" />
           </div>
+
+          {forms.length > 0 && (
+            <div>
+              <label className="label block mb-1 text-right">טופס מקושר</label>
+              <select value={draft.linkedFormId || ''} onChange={e => set('linkedFormId', e.target.value)}
+                className="input w-full text-right">
+                <option value="">ללא טופס</option>
+                {forms.filter(f => f.status === 'published').map(f => (
+                  <option key={f.id} value={f.id}>{f.title}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1 text-right">הורה יראה כפתור מילוי טופס בתוך המשימה</p>
+            </div>
+          )}
         </div>
 
         <div className="px-4 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
@@ -216,6 +230,7 @@ function TaskPanel({ task, isNew, onSave, onClose, classes }) {
 export default function AdminTasksPage() {
   const [tasks, setTasks] = useState([])
   const [classes, setClasses] = useState([])
+  const [forms, setForms] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [familyFilter, setFamilyFilter] = useState('all')
@@ -224,10 +239,11 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     setLoading(true)
-    Promise.all([getTasks(), getClasses()])
-      .then(([t, c]) => {
+    Promise.all([getTasks(), getClasses(), getForms()])
+      .then(([t, c, f]) => {
         setTasks(t)
         setClasses(c)
+        setForms(f)
         setLoading(false)
       })
       .catch(err => { console.error(err); setLoading(false) })
@@ -445,6 +461,7 @@ export default function AdminTasksPage() {
           onSave={handleSave}
           onClose={() => setEditing(null)}
           classes={classes}
+          forms={forms}
         />
       )}
     </div>

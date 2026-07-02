@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle2, Circle, Clock, ExternalLink, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { CheckCircle2, Circle, Clock, ExternalLink, MessageCircle, ChevronDown, ChevronUp, FileText } from 'lucide-react'
 import clsx from 'clsx'
 
 const STATUS_CONFIG = {
@@ -131,6 +132,15 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
           )}
 
           <div className="flex flex-wrap gap-2">
+            {task.linkedFormId && !isAdmin && (
+              <Link
+                to={`/forms/fill/${task.linkedFormId}`}
+                className="flex items-center gap-1.5 text-xs text-white bg-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-[background-color] duration-150 font-medium"
+              >
+                <FileText size={13} />
+                מלא טופס
+              </Link>
+            )}
             {task.resourceUrl && (
               <a
                 href={task.resourceUrl}

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, saveTask, getChildrenByParent, MILESTONES } from '../../lib/db'
+import { getTasks, saveTask, getChildrenByParent, getForms, getSubmissionsForFamily, MILESTONES } from '../../lib/db'
 import TaskCard from '../../components/ui/TaskCard'
 import ProgressRing from '../../components/ui/ProgressRing'
-import { CheckSquare, Loader2 } from 'lucide-react'
+import { CheckSquare, Loader2, FileText, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const FILTERS = [
@@ -16,13 +17,15 @@ const FILTERS = [
 export default function TasksPage() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState([])
+  const [forms, setForms] = useState([])
+  const [submittedFormIds, setSubmittedFormIds] = useState(new Set())
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user?.uid) return
-    Promise.all([getTasks(), getChildrenByParent(user.uid)])
-      .then(([allTasks, children]) => {
+    Promise.all([getTasks(), getChildrenByParent(user.uid), getForms(), getSubmissionsForFamily(user.uid)])
+      .then(([allTasks, children, allForms, submissions]) => {
         const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
         const role = user.role
         setTasks(allTasks.filter(t => {
@@ -31,6 +34,11 @@ export default function TasksPage() {
           if (tg.includes('class')) return (t.classIds || []).some(id => myClassIds.includes(id))
           return false
         }))
+        setForms(allForms.filter(f => f.status === 'published' && (
+          f.targetRole === 'all' || f.targetRole === role ||
+          (f.targetRole === 'class' && (f.classIds || []).some(id => myClassIds.includes(id)))
+        )))
+        setSubmittedFormIds(new Set(submissions.map(s => s.formId)))
         setLoading(false)
       })
       .catch(err => { console.error('tasks load failed:', err); setLoading(false) })
@@ -140,7 +148,7 @@ export default function TasksPage() {
       })}
 
       {filtered.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-10 text-gray-400">
           <CheckSquare size={44} className="mx-auto mb-4 opacity-25" />
           <p className="font-semibold text-gray-500 dark:text-gray-400">
             {filter === 'all' ? 'אין משימות פעילות כרגע' : 'אין משימות בסטטוס זה'}
@@ -149,6 +157,48 @@ export default function TasksPage() {
             {filter === 'all' ? 'המשימות שלך יופיעו כאן כשהמנהל יוסיף אותן' : 'נסה לשנות את הסינון'}
           </p>
         </div>
+      )}
+
+      {/* Forms section */}
+      {forms.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+            <FileText size={16} className="text-primary-500" />
+            הטפסים שלי
+          </h2>
+          <div className="space-y-2">
+            {forms.map(form => {
+              const submitted = submittedFormIds.has(form.id)
+              return (
+                <div key={form.id} className={clsx(
+                  'flex items-center justify-between gap-3 p-4 rounded-2xl border',
+                  submitted
+                    ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                    : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
+                )}>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {submitted
+                      ? <CheckCircle2 size={18} className="text-green-500" />
+                      : <FileText size={18} className="text-primary-400" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{form.title}</p>
+                    {form.description && <p className="text-xs text-gray-400 truncate mt-0.5">{form.description}</p>}
+                  </div>
+                  {submitted ? (
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium flex-shrink-0">הוגש ✓</span>
+                  ) : (
+                    <Link to={`/forms/fill/${form.id}`}
+                      className="flex-shrink-0 text-xs bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium">
+                      מלא טופס
+                    </Link>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
       )}
     </div>
   )
