@@ -239,7 +239,7 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function BusinessDirectoryPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isSuperAdmin } = useAuth()
   const [businesses, setBusinesses] = useState([])
   const [owners, setOwners] = useState({}) // uid → user profile
   const [loading, setLoading] = useState(true)
@@ -352,7 +352,7 @@ export default function BusinessDirectoryPage() {
               biz={biz}
               owner={owners[biz.uid]}
               isOwner={biz.uid === user?.uid}
-              isAdmin={isAdmin}
+              isAdmin={isSuperAdmin}
               onEdit={() => setEditing({ ...biz })}
               onDelete={() => handleDelete(biz)}
             />
