@@ -224,7 +224,7 @@ function ThemeToggle() {
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
 function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Logo */}
       <div className="px-4 py-3 border-b border-white/10 flex-shrink-0">
         <div className="bg-white/95 rounded-2xl px-3 py-2">
