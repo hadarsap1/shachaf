@@ -299,11 +299,13 @@ export async function removeClassAdmin(classId, uid) {
 
 // ── Children ──────────────────────────────────────────────────────────────────
 export async function getChildren(classId = null) {
+  // where + orderBy on different fields needs a composite index (none exist) — sort in JS
   const q = classId
-    ? query(collection(db, 'children'), where('classId', '==', classId), orderBy('name', 'asc'))
+    ? query(collection(db, 'children'), where('classId', '==', classId))
     : query(collection(db, 'children'), orderBy('name', 'asc'))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
 }
 
 export async function saveChild(child) {
@@ -383,9 +385,12 @@ export async function unlinkChildFromParent(childId, parentUid) {
 
 // ── Children (parent-scoped query) ───────────────────────────────────────────
 export async function getChildrenByParent(uid) {
-  const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid), orderBy('name', 'asc'))
+  // No orderBy here: array-contains + orderBy requires a composite index that
+  // doesn't exist, so the query rejected and killed every Promise.all using it.
+  const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
 }
 
 // ── Child notes (private per-parent) ─────────────────────────────────────────
@@ -479,10 +484,11 @@ export async function sendCommitteeMessage(committeeId, userId, userName, body) 
 
 export async function getCommitteeMessages(committeeId = null) {
   const q = committeeId
-    ? query(collection(db, 'committeeMessages'), where('committeeId', '==', committeeId), orderBy('createdAt', 'desc'))
+    ? query(collection(db, 'committeeMessages'), where('committeeId', '==', committeeId))
     : query(collection(db, 'committeeMessages'), orderBy('createdAt', 'desc'))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
 }
 
 export async function markCommitteeMessageRead(id) {
@@ -650,16 +656,18 @@ export async function unrsvpEvent(eventId, uid) {
 
 // ── Committee-scoped events ───────────────────────────────────────────────────
 export async function getEventsByCommittee(committeeId) {
-  const q = query(collection(db, 'events'), where('committeeId', '==', committeeId), orderBy('date', 'asc'))
+  const q = query(collection(db, 'events'), where('committeeId', '==', committeeId))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 }
 
 // ── Group member-contributed links ────────────────────────────────────────────
 export async function getGroupLinks(groupId) {
-  const q = query(collection(db, 'groupLinks'), where('groupId', '==', groupId), orderBy('createdAt', 'desc'))
+  const q = query(collection(db, 'groupLinks'), where('groupId', '==', groupId))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
 }
 
 export async function addGroupLink(groupId, uid, postedBy, label, url) {
@@ -695,9 +703,10 @@ export async function uploadGroupFile(groupId, uid, file, label) {
 }
 
 export async function getGroupFiles(groupId) {
-  const q = query(collection(db, 'groupFiles'), where('groupId', '==', groupId), orderBy('createdAt', 'desc'))
+  const q = query(collection(db, 'groupFiles'), where('groupId', '==', groupId))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
 }
 
 export async function deleteGroupFile(id, filePath) {
@@ -709,9 +718,10 @@ export async function deleteGroupFile(id, filePath) {
 
 // ── Group-scoped events ────────────────────────────────────────────────────────
 export async function getGroupEvents(groupId) {
-  const q = query(collection(db, 'events'), where('groupId', '==', groupId), orderBy('date', 'asc'))
+  const q = query(collection(db, 'events'), where('groupId', '==', groupId))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 }
 
 export async function createGroupEvent(groupId, uid, { title, date, time, location, description }) {
@@ -799,11 +809,11 @@ export function subscribeCommitteeChat(committeeId, callback) {
   const q = query(
     collection(db, 'committeeChat'),
     where('committeeId', '==', committeeId),
-    orderBy('createdAt', 'asc'),
     limit(200),
   )
   return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)))
   })
 }
 
@@ -820,10 +830,10 @@ export async function getCommitteeSummaries(committeeId) {
   const q = query(
     collection(db, 'committeeSummaries'),
     where('committeeId', '==', committeeId),
-    orderBy('date', 'desc'),
   )
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 
 export async function saveCommitteeSummary(summary) {
@@ -845,11 +855,11 @@ export function subscribeGroupChat(groupId, callback) {
   const q = query(
     collection(db, 'groupChat'),
     where('groupId', '==', groupId),
-    orderBy('createdAt', 'asc'),
     limit(200),
   )
   return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)))
   })
 }
 
