@@ -76,7 +76,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/announcements', label: 'הכרזות' },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
-    { to: '/super/admins',     label: 'מנהלים' },
+    { to: '/super/admins',     label: 'הרשאות מנהלים' },
     { to: '/super/feedback',   label: 'משוב ובאגים' },
     { to: '/help',             label: 'עזרה' },
   ],
