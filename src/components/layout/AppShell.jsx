@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses, getChildrenByParent } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent, getTasks } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
@@ -88,13 +88,12 @@ function buildMemberNav(allRoles, classIds, className) {
 
   links.push({ to: '/dashboard', label: 'בית' })
   if (hasClass) {
-    links.push({ to: '/class',        label: className ? `הכיתה שלי — ${className}` : 'הכיתה שלי' })
-    links.push({ to: '/class-roster', label: 'ספריית כיתה' })
+    links.push({ to: '/class', label: className ? `הכיתה שלי — ${className}` : 'הכיתה שלי' })
   }
   if (allRoles.has('host_family'))
     links.push({ to: '/families', label: 'המשפחות שלי' })
   if (allRoles.has('new_family') || allRoles.has('host_family')) {
-    links.push({ to: '/tasks', label: 'משימות' })
+    links.push({ to: '/tasks', label: 'משימות', taskBadge: true })
   }
 
   links.push({ to: '/events',     label: 'אירועים' })
@@ -119,7 +118,7 @@ function getMemberBottomNav(allRoles, classIds) {
 const ADMIN_BOTTOM_NAV = ['/admin', '/admin/users', '/admin/tasks', '/admin/messages']
 
 // ── NavLink ────────────────────────────────────────────────────────────────────
-function NavLink({ to, label, onClick, unread = 0, sub = false }) {
+function NavLink({ to, label, onClick, unread = 0, count = 0, sub = false }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/dashboard' && to !== '/admin' && pathname.startsWith(to))
   const emoji = NAV_EMOJI[to] || '•'
@@ -136,8 +135,13 @@ function NavLink({ to, label, onClick, unread = 0, sub = false }) {
           : 'text-white/70 hover:bg-white/8 hover:text-white'
       )}
     >
-      <span className={clsx('flex-shrink-0 leading-none', sub ? 'text-base' : 'text-xl')} aria-hidden>
+      <span className={clsx('flex-shrink-0 leading-none relative', sub ? 'text-base' : 'text-xl')} aria-hidden>
         {emoji}
+        {count > 0 && (
+          <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-bold min-w-[16px] h-4 px-0.5 rounded-full leading-4 text-center">
+            {count}
+          </span>
+        )}
       </span>
       <span className="flex-1">{label}</span>
       {unread > 0 && (
@@ -216,7 +220,7 @@ function ThemeToggle() {
 }
 
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
-function SidebarContent({ links, unreadMessages, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
+function SidebarContent({ links, unreadMessages, openTaskCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
     <>
       {/* Logo */}
@@ -229,7 +233,14 @@ function SidebarContent({ links, unreadMessages, isAdmin, viewAs, activateViewAs
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {links.map(link => (
-          <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={onClose} />
+          <NavLink
+            key={link.to}
+            {...link}
+            unread={link.badge ? unreadMessages : 0}
+            count={link.taskBadge ? openTaskCount : 0}
+            sub={!!link.sub}
+            onClick={onClose}
+          />
         ))}
       </nav>
 
@@ -258,6 +269,7 @@ export default function AppShell() {
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [openTaskCount, setOpenTaskCount] = useState(0)
   const [className, setClassName] = useState('')
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
@@ -331,6 +343,13 @@ export default function AppShell() {
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
   }, [isAdmin])
 
+  useEffect(() => {
+    if (!user?.uid || isAdmin) return
+    getTasks(user.uid).then(tasks =>
+      setOpenTaskCount(tasks.filter(t => t.status !== 'done' && t.status !== 'completed').length)
+    ).catch(() => {})
+  }, [user?.uid, isAdmin])
+
   const sidebarBg = 'bg-[#0d1b35]'
 
   return (
@@ -340,6 +359,7 @@ export default function AppShell() {
         <SidebarContent
           links={links}
           unreadMessages={unreadMessages}
+          openTaskCount={openTaskCount}
           isAdmin={isAdmin}
           viewAs={viewAs}
           activateViewAs={activateViewAs}
@@ -372,7 +392,7 @@ export default function AppShell() {
             </div>
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
               {links.map(link => (
-                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
             <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote } from '../../lib/db'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
@@ -207,6 +207,7 @@ export default function ClassPage() {
   const [events, setEvents]               = useState([])
   const [announcements, setAnnouncements] = useState([])
   const [classChildren, setClassChildren] = useState([])
+  const [classParents, setClassParents]   = useState([])
   const [loading, setLoading]             = useState(true)
 
   useEffect(() => {
@@ -227,6 +228,11 @@ export default function ClassPage() {
       if (myClassIds.length > 0) {
         const allKids = await getChildren(myClassIds[0])
         setClassChildren(allKids)
+        const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
+        if (parentUids.length > 0) {
+          const parents = await getUsersByUids(parentUids)
+          setClassParents(parents)
+        }
       }
       setLoading(false)
     }
@@ -410,6 +416,37 @@ export default function ClassPage() {
               {myChildren.filter(c => c.classId === cls?.id).map(child => (
                 <ChildNoteCard key={child.id} child={child} parentId={user.uid} color={cls?.color} />
               ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Class roster — kids and their parents */}
+        {classChildren.length > 0 && (
+          <Section title="ילדי הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
+            <div className="space-y-3">
+              {classChildren.map(child => {
+                const parents = classParents.filter(p => (child.parentUids || []).includes(p.uid))
+                return (
+                  <div key={child.id} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-base leading-none">👦</span>
+                      <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{child.name}</span>
+                    </div>
+                    {parents.length > 0 && (
+                      <div className="space-y-1 me-6">
+                        {parents.map(p => (
+                          <div key={p.uid} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>{p.phone ? (
+                              <a href={`tel:${p.phone}`} className="text-primary-600 hover:underline">{p.phone}</a>
+                            ) : '—'}</span>
+                            <span>{p.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </Section>
         )}
