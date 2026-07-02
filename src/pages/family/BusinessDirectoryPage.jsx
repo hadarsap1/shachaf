@@ -279,6 +279,9 @@ export default function BusinessDirectoryPage() {
         return exists ? prev.map(b => b.id === saved.id ? saved : b) : [saved, ...prev]
       })
       setEditing(null)
+    } catch (err) {
+      console.error('saveBusiness error', err)
+      alert('שגיאה בשמירה: ' + (err?.message || err))
     } finally { setSaving(false) }
   }
 
@@ -318,7 +321,7 @@ export default function BusinessDirectoryPage() {
 
       {/* Category chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-none">
-        {CATEGORIES.map(c => (
+        {CATEGORIES.filter(c => c.value !== 'other').map(c => (
           <button key={c.value} onClick={() => setCategory(c.value)}
             className={clsx(
               'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
