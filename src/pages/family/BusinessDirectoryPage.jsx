@@ -19,7 +19,7 @@ const CATEGORIES = [
   { value: 'legal',         label: '⚖️ משפטים וחשבונאות' },
   { value: 'pets',          label: '🐾 חיות מחמד' },
   { value: 'fashion',       label: '👗 אופנה וביגוד' },
-  { value: 'other',         label: '✨ אחר / כתוב בעצמך' },
+  { value: 'other',         label: '✨ אחר' },
 ]
 
 const CAT_LABEL = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]))
@@ -99,10 +99,6 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
-            {draft.category === 'other' && (
-              <input value={draft.customCategory || ''} onChange={e => set('customCategory', e.target.value)}
-                className="input w-full text-right mt-2" placeholder="כתוב את הקטגוריה שלך..." />
-            )}
           </div>
 
           <div>
@@ -326,7 +322,7 @@ export default function BusinessDirectoryPage() {
 
       {/* Category chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-none">
-        {CATEGORIES.filter(c => c.value !== 'other').map(c => (
+        {CATEGORIES.map(c => (
           <button key={c.value} onClick={() => setCategory(c.value)}
             className={clsx(
               'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
