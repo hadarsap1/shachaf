@@ -43,17 +43,13 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        // Firestore/Auth use a real-time WebChannel — a service worker intercepting
+        // those requests (even with NetworkFirst) can silently break the channel.
+        // Never cache or intercept them; only cache static Google Fonts.
         runtimeCaching: [
-          {
-            // Firebase Auth/Firestore — network-first so data stays fresh
-            urlPattern: /^https:\/\/(firestore|identitytoolkit|securetoken)\.googleapis\.com/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'firebase-api',
-              networkTimeoutSeconds: 10,
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/,
             handler: 'CacheFirst',
