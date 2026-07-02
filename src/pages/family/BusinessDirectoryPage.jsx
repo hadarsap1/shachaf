@@ -157,7 +157,9 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-card overflow-hidden">
       {biz.imageUrl && (
-        <img src={biz.imageUrl} alt={biz.businessName} className="w-full h-40 object-cover" />
+        <div className="w-full h-40 bg-gray-50 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+          <img src={biz.imageUrl} alt={biz.businessName} className="max-h-full max-w-full object-contain p-2" />
+        </div>
       )}
       <div className="p-4">
         {/* Title row */}
