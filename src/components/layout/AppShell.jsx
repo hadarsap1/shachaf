@@ -382,8 +382,8 @@ export default function AppShell() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className={clsx('absolute top-0 right-0 h-full w-72 flex flex-col animate-slide-from-right', sidebarBg)} dir="rtl">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <aside className={clsx('absolute top-0 right-0 h-full w-72 flex flex-col overflow-hidden animate-slide-from-right', sidebarBg)} dir="rtl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
               <button
                 onClick={() => setSidebarOpen(false)}
                 aria-label="סגור תפריט"
@@ -391,16 +391,16 @@ export default function AppShell() {
               >
                 <X size={20} />
               </button>
-              <div className="bg-white/95 rounded-xl px-3 py-1.5">
-                <img src="/logo.png" alt="שחף" className="h-8 w-auto" />
+              <div className="bg-white/95 rounded-xl px-3 py-2">
+                <img src="/logo.png" alt="קהילת שחף" className="h-12 w-auto object-contain" />
               </div>
             </div>
-            <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+            <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
               {links.map(link => (
                 <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : 0)} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
-            <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3">
+            <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3 flex-shrink-0">
               {isAdmin && !viewAs && (
                 <button
                   onClick={() => { activateViewAs('new_family'); setSidebarOpen(false) }}
