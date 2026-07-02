@@ -61,6 +61,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/messages',   label: 'הודעות', badge: true },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
+    { to: '/businesses',       label: 'עסקים בקהילה' },
     { to: '/help',             label: 'עזרה' },
   ],
   super_admin: [
@@ -75,6 +76,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/messages',   label: 'הודעות', badge: true },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
+    { to: '/businesses',       label: 'עסקים בקהילה' },
     { to: '/super/admins',     label: 'הרשאות מנהלים' },
     { to: '/super/feedback',   label: 'משוב ובאגים', feedbackBadge: true },
     { to: '/help',             label: 'עזרה' },

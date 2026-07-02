@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getBusinesses, saveBusiness, deleteBusiness, uploadBusinessImage } from '../../lib/db'
+import { getBusinesses, saveBusiness, deleteBusiness, uploadBusinessImage, getUsersByUids } from '../../lib/db'
 import { Plus, Search, Phone, Globe, Mail, Pencil, Trash2, X, Check, Loader2, ImagePlus, Store } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -135,9 +135,12 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
 }
 
 // ── Business card ──────────────────────────────────────────────────────────────
-function BusinessCard({ biz, isOwner, isAdmin, onEdit, onDelete }) {
+function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
   const phone = (biz.phone || '').replace(/\D/g, '')
   const wa = phone ? `https://wa.me/${phone.startsWith('972') ? phone : '972' + phone.replace(/^0/, '')}` : null
+  const ownerPhone = (owner?.phone || '').replace(/\D/g, '')
+  const ownerWa = ownerPhone ? `https://wa.me/${ownerPhone.startsWith('972') ? ownerPhone : '972' + ownerPhone.replace(/^0/, '')}` : null
+  const isUrl = s => typeof s === 'string' && s.startsWith('http')
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-card overflow-hidden">
@@ -145,6 +148,7 @@ function BusinessCard({ biz, isOwner, isAdmin, onEdit, onDelete }) {
         <img src={biz.imageUrl} alt={biz.businessName} className="w-full h-40 object-cover" />
       )}
       <div className="p-4">
+        {/* Title row */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex gap-1">
             {(isOwner || isAdmin) && (
@@ -170,6 +174,7 @@ function BusinessCard({ biz, isOwner, isAdmin, onEdit, onDelete }) {
           </p>
         )}
 
+        {/* Business contact buttons */}
         <div className="flex flex-wrap gap-2 mt-3 justify-end">
           {biz.phone && (
             <a href={wa || `tel:${biz.phone}`} target={wa ? '_blank' : undefined} rel="noreferrer"
@@ -195,7 +200,29 @@ function BusinessCard({ biz, isOwner, isAdmin, onEdit, onDelete }) {
           )}
         </div>
 
-        <p className="text-xs text-gray-400 mt-3 text-right">{biz.ownerName}</p>
+        {/* Owner section */}
+        <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {owner?.phone && (
+              <a href={ownerWa || `tel:${owner.phone}`} target={ownerWa ? '_blank' : undefined} rel="noreferrer"
+                className="text-xs text-primary-600 hover:underline" dir="ltr">
+                {owner.phone}
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{owner?.name || biz.ownerName}</p>
+              {owner?.address && <p className="text-xs text-gray-400">{owner.address}</p>}
+            </div>
+            {isUrl(owner?.avatar)
+              ? <img src={owner.avatar} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-100 flex-shrink-0" />
+              : <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0">
+                  {(owner?.name || biz.ownerName || '?')[0]}
+                </div>
+            }
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -205,6 +232,7 @@ function BusinessCard({ biz, isOwner, isAdmin, onEdit, onDelete }) {
 export default function BusinessDirectoryPage() {
   const { user, isAdmin } = useAuth()
   const [businesses, setBusinesses] = useState([])
+  const [owners, setOwners] = useState({}) // uid → user profile
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
@@ -212,8 +240,15 @@ export default function BusinessDirectoryPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    getBusinesses().then(data => { setBusinesses(data); setLoading(false) })
-      .catch(() => setLoading(false))
+    getBusinesses().then(async data => {
+      setBusinesses(data)
+      const uids = [...new Set(data.map(b => b.uid).filter(Boolean))]
+      if (uids.length) {
+        const profiles = await getUsersByUids(uids).catch(() => [])
+        setOwners(Object.fromEntries(profiles.map(p => [p.uid, p])))
+      }
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   const filtered = businesses.filter(b => {
@@ -306,6 +341,7 @@ export default function BusinessDirectoryPage() {
             <BusinessCard
               key={biz.id}
               biz={biz}
+              owner={owners[biz.uid]}
               isOwner={biz.uid === user?.uid}
               isAdmin={isAdmin}
               onEdit={() => setEditing({ ...biz })}
