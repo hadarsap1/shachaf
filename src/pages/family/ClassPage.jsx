@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids } from '../../lib/db'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, getUsers } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
-  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check,
+  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
@@ -21,51 +21,130 @@ const SCHEDULE_PERIODS = [
   { id: '6',       label: '6' },
 ]
 
-// ── Weekly schedule (read-only) ───────────────────────────────────────────────
+// ── Weekly schedule (with personal overrides) ─────────────────────────────────
 
-function ScheduleView({ schedule }) {
-  const hasData = Object.values(schedule || {}).some(v => v?.trim())
-  if (!hasData) return <p className="text-sm text-gray-400 py-2">מערכת שעות לא הוגדרה עדיין</p>
+const OVERRIDE_KEY = (classId, uid) => `shachaf_schedule_override_${classId}_${uid}`
+
+function loadOverrides(classId, uid) {
+  try { return JSON.parse(localStorage.getItem(OVERRIDE_KEY(classId, uid)) || '{}') } catch { return {} }
+}
+function saveOverrides(classId, uid, overrides) {
+  try { localStorage.setItem(OVERRIDE_KEY(classId, uid), JSON.stringify(overrides)) } catch {}
+}
+
+function ScheduleView({ schedule, classId, uid }) {
+  const [overrides, setOverrides] = useState(() => loadOverrides(classId, uid))
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState({})
+
+  const hasDefault = Object.values(schedule || {}).some(v => v?.trim())
+  const hasOverrides = Object.keys(overrides).length > 0
+
+  const merged = { ...schedule, ...overrides }
+  const hasData = Object.values(merged).some(v => v?.trim())
+
+  const startEdit = () => { setDraft({ ...overrides }); setEditing(true) }
+  const saveEdit = () => {
+    // strip empty strings to keep storage lean
+    const cleaned = Object.fromEntries(Object.entries(draft).filter(([, v]) => v?.trim()))
+    setOverrides(cleaned)
+    saveOverrides(classId, uid, cleaned)
+    setEditing(false)
+  }
+  const cancelEdit = () => setEditing(false)
+  const resetToDefault = () => {
+    setOverrides({})
+    saveOverrides(classId, uid, {})
+    setDraft({})
+  }
+
+  const cellVal = (di, periodId) => editing
+    ? (draft[`${di}-${periodId}`] ?? overrides[`${di}-${periodId}`] ?? (schedule || {})[`${di}-${periodId}`] ?? '')
+    : (merged[`${di}-${periodId}`] || '')
+
+  if (!hasData && !editing) return (
+    <p className="text-sm text-gray-400 py-2">מערכת שעות לא הוגדרה עדיין</p>
+  )
 
   return (
-    <div className="overflow-x-auto -mx-1">
-      <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
-        <thead>
-          <tr className="border-b border-gray-100 dark:border-gray-700">
-            <th className="sticky right-0 z-10 bg-white w-14 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700" />
-            {SCHEDULE_DAYS.map(d => (
-              <th key={d} className="px-1 py-1.5 text-center text-gray-500 font-semibold min-w-[60px] dark:text-gray-400">{d}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {SCHEDULE_PERIODS.map(period => {
-            if (period.isBreak) return (
-              <tr key={period.id}>
-                <td colSpan={SCHEDULE_DAYS.length + 1}
-                  className="py-0.5 px-2 text-[10px] text-gray-300 text-center italic">
-                  — {period.label} —
-                </td>
-              </tr>
-            )
-            return (
-              <tr key={period.id} className="border-t border-gray-50">
-                <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-400 font-semibold text-center border-l border-gray-100 text-[11px] dark:bg-gray-800 dark:border-gray-700">
-                  {period.label}
-                </td>
-                {SCHEDULE_DAYS.map((_, di) => {
-                  const val = (schedule || {})[`${di}-${period.id}`]
-                  return (
-                    <td key={di} className="px-1 py-1 text-center text-gray-700 dark:text-gray-200">
-                      {val || <span className="text-gray-200">—</span>}
-                    </td>
-                  )
-                })}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+    <div>
+      {/* Controls */}
+      <div className="flex items-center justify-between mb-2 gap-2">
+        {hasOverrides && !editing && (
+          <button onClick={resetToDefault}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors">
+            <RotateCcw size={11} /> חזור לברירת מחדל
+          </button>
+        )}
+        {!editing && (
+          <button onClick={startEdit}
+            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 ms-auto">
+            <Pencil size={11} /> ערוך לפי הבחירות שלי
+          </button>
+        )}
+        {editing && (
+          <div className="flex gap-2 ms-auto">
+            <button onClick={cancelEdit} className="text-xs text-gray-400 hover:text-gray-600">ביטול</button>
+            <button onClick={saveEdit} className="text-xs text-primary-600 font-semibold hover:text-primary-700">שמור</button>
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-x-auto -mx-1">
+        <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
+          <thead>
+            <tr className="border-b border-gray-100 dark:border-gray-700">
+              <th className="sticky right-0 z-10 bg-white w-14 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700" />
+              {SCHEDULE_DAYS.map(d => (
+                <th key={d} className="px-1 py-1.5 text-center text-gray-500 font-semibold min-w-[60px] dark:text-gray-400">{d}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {SCHEDULE_PERIODS.map(period => {
+              if (period.isBreak) return (
+                <tr key={period.id}>
+                  <td colSpan={SCHEDULE_DAYS.length + 1}
+                    className="py-0.5 px-2 text-[10px] text-gray-300 text-center italic">
+                    — {period.label} —
+                  </td>
+                </tr>
+              )
+              return (
+                <tr key={period.id} className="border-t border-gray-50">
+                  <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-400 font-semibold text-center border-l border-gray-100 text-[11px] dark:bg-gray-800 dark:border-gray-700">
+                    {period.label}
+                  </td>
+                  {SCHEDULE_DAYS.map((_, di) => {
+                    const key = `${di}-${period.id}`
+                    const val = cellVal(di, period.id)
+                    const isOverridden = !editing && !!overrides[key]
+                    return (
+                      <td key={di} className="px-1 py-1 text-center">
+                        {editing ? (
+                          <input
+                            value={draft[key] ?? val}
+                            onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
+                            className="w-full text-center text-xs border border-gray-200 rounded px-1 py-0.5 focus:outline-none focus:border-primary-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            placeholder={hasDefault ? ((schedule || {})[key] || '') : ''}
+                          />
+                        ) : (
+                          <span className={isOverridden ? 'text-primary-600 font-medium dark:text-primary-400' : 'text-gray-700 dark:text-gray-200'}>
+                            {val || <span className="text-gray-200">—</span>}
+                          </span>
+                        )}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      {hasOverrides && !editing && (
+        <p className="text-[10px] text-primary-500 mt-1.5 text-right">* שדות כחולים הם שינויים אישיים שלך</p>
+      )}
     </div>
   )
 }
@@ -208,16 +287,18 @@ export default function ClassPage() {
   const [announcements, setAnnouncements] = useState([])
   const [classChildren, setClassChildren] = useState([])
   const [classParents, setClassParents]   = useState([])
+  const [classAdmins, setClassAdmins]     = useState([])
   const [loading, setLoading]             = useState(true)
 
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const [children, classes, allEvents, allAnns] = await Promise.all([
+      const [children, classes, allEvents, allAnns, allUsers] = await Promise.all([
         getChildrenByParent(user.uid),
         getClasses(),
         getEvents(),
         getAnnouncements(),
+        getUsers(),
       ])
       const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
       const filtered = classes.filter(c => myClassIds.includes(c.id))
@@ -226,7 +307,9 @@ export default function ClassPage() {
       setEvents(allEvents)
       setAnnouncements(allAnns)
       if (myClassIds.length > 0) {
-        const allKids = await getChildren(myClassIds[0])
+        const cid = myClassIds[0]
+        setClassAdmins(allUsers.filter(u => (u.classAdminFor || []).includes(cid)))
+        const allKids = await getChildren(cid)
         setClassChildren(allKids)
         const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
         if (parentUids.length > 0) {
@@ -319,7 +402,7 @@ export default function ClassPage() {
         {/* Schedule */}
         {cls && (
           <Section title="מערכת שעות" icon={Clock} color={cls.color || '#1B3B70'}>
-            <ScheduleView schedule={cls.schedule} />
+            <ScheduleView schedule={cls.schedule} classId={cls.id} uid={user.uid} />
           </Section>
         )}
 
@@ -394,17 +477,10 @@ export default function ClassPage() {
           </Section>
         )}
 
-        {/* Class team */}
-        {cls?.team?.length > 0 && (
-          <Section title="צוות הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
-            {cls.team.map((p, i) => <PersonCard key={i} person={p} />)}
-          </Section>
-        )}
-
-        {/* Class committee */}
-        {cls?.committee?.length > 0 && (
-          <Section title="ועד הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
-            {cls.committee.map((p, i) => <PersonCard key={i} person={p} />)}
+        {/* Class admins */}
+        {classAdmins.length > 0 && (
+          <Section title="מנהלי הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
+            {classAdmins.map(p => <PersonCard key={p.uid} person={p} />)}
           </Section>
         )}
 
