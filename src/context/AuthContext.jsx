@@ -41,12 +41,12 @@ export function AuthProvider({ children }) {
       if (snap.exists()) {
         const data = snap.data()
         setUser({ uid: firebaseUser.uid, ...data })
-        // Keep classIds fresh on every login
-        try {
-          const classIds = await syncUserClassIds(firebaseUser.uid)
-          if (JSON.stringify(classIds) !== JSON.stringify(data.classIds || []))
-            setUser(prev => prev ? { ...prev, classIds } : prev)
-        } catch { /* non-critical */ }
+        // Backfill classIds if missing; don't block login
+        if (data.classIds === undefined) {
+          syncUserClassIds(firebaseUser.uid)
+            .then(classIds => setUser(prev => prev ? { ...prev, classIds } : prev))
+            .catch(() => {})
+        }
         return
       }
       // New user — check for a pending imported record first
