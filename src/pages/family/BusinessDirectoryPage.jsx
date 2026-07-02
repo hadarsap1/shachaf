@@ -5,16 +5,21 @@ import { Plus, Search, Phone, Globe, Mail, Pencil, Trash2, X, Check, Loader2, Im
 import clsx from 'clsx'
 
 const CATEGORIES = [
-  { value: 'all',        label: 'הכל' },
-  { value: 'food',       label: '🍕 מזון' },
-  { value: 'health',     label: '💪 בריאות וספורט' },
-  { value: 'education',  label: '📚 חינוך' },
-  { value: 'home',       label: '🏠 בית וגינה' },
-  { value: 'tech',       label: '💻 טכנולוגיה' },
-  { value: 'beauty',     label: '💅 יופי וטיפוח' },
-  { value: 'transport',  label: '🚗 תחבורה' },
-  { value: 'art',        label: '🎨 אמנות ויצירה' },
-  { value: 'other',      label: '✨ אחר' },
+  { value: 'all',           label: 'הכל' },
+  { value: 'food',          label: '🍕 מזון ומשקאות' },
+  { value: 'health',        label: '💪 בריאות וספורט' },
+  { value: 'education',     label: '📚 חינוך והדרכה' },
+  { value: 'home',          label: '🏠 בית וגינה' },
+  { value: 'tech',          label: '💻 טכנולוגיה' },
+  { value: 'beauty',        label: '💅 יופי וטיפוח' },
+  { value: 'transport',     label: '🚗 תחבורה' },
+  { value: 'art',           label: '🎨 אמנות ויצירה' },
+  { value: 'entertainment', label: '🎉 בידור ואירועים' },
+  { value: 'consulting',    label: '🤝 ייעוץ ושירותים מקצועיים' },
+  { value: 'legal',         label: '⚖️ משפטים וחשבונאות' },
+  { value: 'pets',          label: '🐾 חיות מחמד' },
+  { value: 'fashion',       label: '👗 אופנה וביגוד' },
+  { value: 'other',         label: '✨ אחר / כתוב בעצמך' },
 ]
 
 const CAT_LABEL = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]))
@@ -91,6 +96,10 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
+            {draft.category === 'other' && (
+              <input value={draft.customCategory || ''} onChange={e => set('customCategory', e.target.value)}
+                className="input w-full text-right mt-2" placeholder="כתוב את הקטגוריה שלך..." />
+            )}
           </div>
 
           <div>
@@ -164,7 +173,7 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
           </div>
           <div className="text-right flex-1">
             <h3 className="font-bold text-gray-800 dark:text-gray-100 leading-tight">{biz.businessName}</h3>
-            <span className="text-xs text-gray-400">{CAT_LABEL[biz.category] || biz.category}</span>
+            <span className="text-xs text-gray-400">{biz.category === 'other' && biz.customCategory ? biz.customCategory : (CAT_LABEL[biz.category] || biz.category)}</span>
           </div>
         </div>
 
