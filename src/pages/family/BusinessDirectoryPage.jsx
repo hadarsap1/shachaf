@@ -42,6 +42,9 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
     try {
       const { url, path } = await uploadBusinessImage(draft.id, file)
       setDraft(d => ({ ...d, imageUrl: url, imagePath: path }))
+    } catch (err) {
+      console.error('image upload error', err)
+      alert('שגיאה בהעלאת תמונה: ' + (err?.message || err))
     } finally { setUploading(false) }
   }
 
@@ -131,7 +134,7 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
         <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={() => onSave(draft)}
-            disabled={saving || !draft.businessName.trim()}
+            disabled={saving || uploading || !draft.businessName.trim()}
             className="w-full btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
