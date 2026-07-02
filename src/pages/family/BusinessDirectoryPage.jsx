@@ -65,7 +65,7 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
               className="relative w-full h-36 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-600 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors overflow-hidden bg-gray-50 dark:bg-gray-700"
             >
               {draft.imageUrl
-                ? <img src={draft.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
+                ? <img src={draft.imageUrl} alt="" className="absolute inset-0 w-full h-full object-contain p-2" />
                 : uploading
                   ? <Loader2 size={24} className="animate-spin text-primary-400" />
                   : <div className="flex flex-col items-center gap-1 text-gray-400">
