@@ -411,8 +411,10 @@ service cloud.firestore {
                     && request.resource.data.get('businessName', '').size() <= 200
                     && request.resource.data.get('description', '').size() <= 2000;
       allow update: if request.auth != null
-                    && resource.data.uid == request.auth.uid
-                    && request.resource.data.uid == request.auth.uid;
+                    && (resource.data.uid == request.auth.uid
+                        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                           in ['admin', 'super_admin'])
+                    && request.resource.data.uid == resource.data.uid;
       allow delete: if request.auth != null
                     && (resource.data.uid == request.auth.uid
                         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
