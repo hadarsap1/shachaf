@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses, getChildrenByParent, getTasks } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback } from '../../lib/db'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
@@ -22,6 +22,7 @@ export const NAV_EMOJI = {
   '/events':          '📅',
   '/committees':      '🔗',
   '/community':       '🤝',
+  '/businesses':      '🏪',
   '/forms':           '📋',
   '/resources':       '📖',
   '/contact':         '💬',
@@ -58,7 +59,6 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/events',     label: 'אירועים' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
-    { to: '/admin/announcements', label: 'הכרזות' },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
     { to: '/help',             label: 'עזרה' },
@@ -73,11 +73,10 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/tasks',      label: 'משימות' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
-    { to: '/admin/announcements', label: 'הכרזות' },
     { to: '/admin/activity',   label: 'פעילות' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
     { to: '/super/admins',     label: 'הרשאות מנהלים' },
-    { to: '/super/feedback',   label: 'משוב ובאגים' },
+    { to: '/super/feedback',   label: 'משוב ובאגים', feedbackBadge: true },
     { to: '/help',             label: 'עזרה' },
   ],
 }
@@ -99,6 +98,7 @@ function buildMemberNav(allRoles, classIds, className) {
   links.push({ to: '/events',     label: 'אירועים' })
   links.push({ to: '/committees', label: 'ועדות' })
   links.push({ to: '/community',  label: 'קבוצות קהילה' })
+  links.push({ to: '/businesses', label: 'עסקים בקהילה' })
 
   links.push({ to: '/resources', label: 'מידע שימושי' })
   links.push({ to: '/contact',   label: 'צור קשר' })
@@ -220,7 +220,7 @@ function ThemeToggle() {
 }
 
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
-function SidebarContent({ links, unreadMessages, openTaskCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
+function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
     <>
       {/* Logo */}
@@ -237,7 +237,7 @@ function SidebarContent({ links, unreadMessages, openTaskCount, isAdmin, viewAs,
             key={link.to}
             {...link}
             unread={link.badge ? unreadMessages : 0}
-            count={link.taskBadge ? openTaskCount : 0}
+            count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : 0)}
             sub={!!link.sub}
             onClick={onClose}
           />
@@ -269,6 +269,7 @@ export default function AppShell() {
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [unreadFeedback, setUnreadFeedback] = useState(0)
   const [openTaskCount, setOpenTaskCount] = useState(0)
   const [className, setClassName] = useState('')
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -341,6 +342,7 @@ export default function AppShell() {
   useEffect(() => {
     if (!isAdmin) return
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
+    getFeedback().then(items => setUnreadFeedback(items.filter(i => !i.status || i.status === 'new').length))
   }, [isAdmin])
 
   useEffect(() => {
@@ -359,6 +361,7 @@ export default function AppShell() {
         <SidebarContent
           links={links}
           unreadMessages={unreadMessages}
+          unreadFeedback={unreadFeedback}
           openTaskCount={openTaskCount}
           isAdmin={isAdmin}
           viewAs={viewAs}
@@ -392,7 +395,7 @@ export default function AppShell() {
             </div>
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
               {links.map(link => (
-                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : 0} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : 0)} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
             <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3">

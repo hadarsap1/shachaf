@@ -403,6 +403,22 @@ service cloud.firestore {
                              in ['admin', 'super_admin'];
     }
 
+    // Community businesses — all auth can read; owner creates/updates own; admin/owner delete
+    match /communityBusinesses/{bizId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.get('businessName', '').size() <= 200
+                    && request.resource.data.get('description', '').size() <= 2000;
+      allow update: if request.auth != null
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+                    && (resource.data.uid == request.auth.uid
+                        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                           in ['admin', 'super_admin']);
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

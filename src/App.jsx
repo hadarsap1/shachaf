@@ -18,6 +18,7 @@ import HelpPage from './pages/HelpPage'
 import ClassPage from './pages/family/ClassPage'
 import CommitteesPage from './pages/family/CommitteesPage'
 import CommunityGroupsPage from './pages/family/CommunityGroupsPage'
+import BusinessDirectoryPage from './pages/family/BusinessDirectoryPage'
 import ClassRosterPage from './pages/family/ClassRosterPage'
 import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
 import PendingApprovalPage from './pages/family/PendingApprovalPage'
@@ -113,6 +114,7 @@ export default function App() {
             <Route path="/class-roster" element={<ClassRosterPage />} />
             <Route path="/committees" element={<CommitteesPage />} />
             <Route path="/community" element={<CommunityGroupsPage />} />
+            <Route path="/businesses" element={<BusinessDirectoryPage />} />
             <Route path="/emergency" element={<EmergencySchedulePage />} />
           </Route>
 

@@ -899,3 +899,35 @@ export async function updateFeedbackStatus(id, status) {
 export async function updateFeedbackScreenshot(id, screenshotUrl) {
   await updateDoc(doc(db, 'feedback', id), { screenshotUrl })
 }
+
+export async function replyToFeedback(id, reply) {
+  await updateDoc(doc(db, 'feedback', id), { adminReply: reply, repliedAt: serverTimestamp(), status: 'resolved' })
+}
+
+// ── Community businesses ──────────────────────────────────────────────────────
+
+export async function getBusinesses() {
+  const snap = await getDocs(collection(db, 'communityBusinesses'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+}
+
+export async function saveBusiness(biz) {
+  const { id, ...data } = biz
+  if (id && !id.startsWith('biz-')) {
+    await updateDoc(doc(db, 'communityBusinesses', id), { ...data, updatedAt: serverTimestamp() })
+    return biz
+  }
+  const ref2 = await addDoc(collection(db, 'communityBusinesses'), { ...data, createdAt: serverTimestamp() })
+  return { ...biz, id: ref2.id }
+}
+
+export async function deleteBusiness(id) {
+  await deleteDoc(doc(db, 'communityBusinesses', id))
+}
+
+export async function uploadBusinessImage(bizId, file) {
+  const path = `businesses/${bizId}_${Date.now()}.${safeExt(file)}`
+  const snap = await uploadBytes(ref(storage, path), file)
+  return { url: await getDownloadURL(snap.ref), path }
+}
