@@ -55,7 +55,6 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/committees', label: 'ועדות' },
     { to: '/admin/community',  label: 'קבוצות קהילה' },
     { to: '/admin/tasks',      label: 'משימות' },
-    { to: '/admin/forms',      label: 'טפסים', sub: true },
     { to: '/admin/events',     label: 'אירועים' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
@@ -72,7 +71,6 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/committees', label: 'ועדות' },
     { to: '/admin/community',  label: 'קבוצות קהילה' },
     { to: '/admin/tasks',      label: 'משימות' },
-    { to: '/admin/forms',      label: 'טפסים', sub: true },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
     { to: '/admin/announcements', label: 'הכרזות' },
@@ -97,7 +95,6 @@ function buildMemberNav(allRoles, classIds, className) {
     links.push({ to: '/families', label: 'המשפחות שלי' })
   if (allRoles.has('new_family') || allRoles.has('host_family')) {
     links.push({ to: '/tasks', label: 'משימות' })
-    links.push({ to: '/forms', label: 'הטפסים שלי', sub: true })
   }
 
   links.push({ to: '/events',     label: 'אירועים' })
@@ -114,7 +111,7 @@ function buildMemberNav(allRoles, classIds, className) {
 function getMemberBottomNav(allRoles, classIds) {
   const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
   const hasForms = allRoles.has('new_family') || allRoles.has('host_family')
-  if (hasClass && hasForms) return ['/dashboard', '/class', '/events', '/forms']
+  if (hasClass && hasForms) return ['/dashboard', '/class', '/events', '/tasks']
   if (hasClass)             return ['/dashboard', '/class', '/events', '/resources']
   return ['/dashboard', '/events', '/resources', '/contact']
 }

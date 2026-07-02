@@ -110,9 +110,7 @@ export function AuthProvider({ children }) {
     }
 
     // Handle iOS redirect result on page load
-    getRedirectResult(auth).catch(err => {
-      if (err?.code !== 'auth/null-user') console.error('redirect result error:', err)
-    })
+    getRedirectResult(auth).catch(() => { /* redirect errors handled by onAuthStateChanged */ })
 
     // Firebase auth state — set loading=true on every change so ProtectedShell
     // shows a spinner instead of flashing back to /login during profile fetch
