@@ -24,6 +24,25 @@ const CATEGORIES = [
 
 const CAT_LABEL = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]))
 
+// Strip emoji + punctuation, split to meaningful words (>1 char)
+const catWords = (label) =>
+  label.replace(/[\p{Emoji}\p{P}]/gu, ' ').split(/\s+/).filter(w => w.length > 1)
+
+// Returns true if a business matches the selected category chip,
+// including partial-text overlap for custom-typed categories
+function categoryMatches(biz, selected) {
+  if (selected === 'all') return true
+  if (biz.category === selected) return true
+  // Custom-typed business vs predefined chip: check word overlap
+  if (biz.category === 'other' && biz.customCategory) {
+    const chipLabel = CAT_LABEL[selected] || ''
+    const chipWords = catWords(chipLabel)
+    const custom = biz.customCategory
+    return chipWords.some(w => custom.includes(w)) || catWords(custom).some(w => chipLabel.includes(w))
+  }
+  return false
+}
+
 function blank(uid, name) {
   return { id: 'biz-' + Date.now(), uid, ownerName: name || '', businessName: '', category: 'other', description: '', phone: '', email: '', website: '', imageUrl: '', imagePath: '' }
 }
@@ -99,6 +118,10 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
+            {draft.category === 'other' && (
+              <input value={draft.customCategory || ''} onChange={e => set('customCategory', e.target.value)}
+                className="input w-full text-right mt-2" placeholder="תאר את הקטגוריה (למשל: בידור, פיננסים...)" />
+            )}
           </div>
 
           <div>
@@ -262,11 +285,11 @@ export default function BusinessDirectoryPage() {
   }, [])
 
   const filtered = businesses.filter(b => {
-    const matchCat = category === 'all' || b.category === category
     const q = search.toLowerCase()
     const matchSearch = !q || b.businessName?.toLowerCase().includes(q) ||
-      b.description?.toLowerCase().includes(q) || b.ownerName?.toLowerCase().includes(q)
-    return matchCat && matchSearch
+      b.description?.toLowerCase().includes(q) || b.ownerName?.toLowerCase().includes(q) ||
+      b.customCategory?.toLowerCase().includes(q)
+    return categoryMatches(b, category) && matchSearch
   })
 
   const myBiz = businesses.find(b => b.uid === user?.uid)
