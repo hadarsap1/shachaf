@@ -130,6 +130,14 @@ const ALLOWED_PROFILE_FIELDS = [
   'workplace', 'profession', 'hobbies', 'temporaryStatus',
 ]
 
+// Backfill for pre-2026-07 imported families — lets them browse the
+// unlinked-children roster during onboarding (admin-only by rules)
+export async function markUsersImported(uids) {
+  const batch = writeBatch(db)
+  uids.forEach(uid => batch.update(doc(db, 'users', uid), { imported: true }))
+  await batch.commit()
+}
+
 export async function updateUserProfile(uid, data) {
   const safe = Object.fromEntries(
     Object.entries(data).filter(([k]) => ALLOWED_PROFILE_FIELDS.includes(k))

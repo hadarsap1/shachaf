@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { getUsers, getChildren, getClasses, getPendingFamilies } from '../../lib/db'
+import { getUsers, getChildren, getClasses, getPendingFamilies, markUsersImported } from '../../lib/db'
 import { computeHealthAnomalies } from '../../lib/health'
 import { RefreshCw, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
@@ -11,10 +11,16 @@ const SEVERITY = {
   amber: { chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-800' },
 }
 
-function AnomalySection({ emoji, title, hint, severity, items, renderItem, linkTo, linkLabel }) {
+function AnomalySection({ emoji, title, hint, severity, items, renderItem, linkTo, linkLabel, action }) {
   const [open, setOpen] = useState(false)
+  const [acting, setActing] = useState(false)
   if (items.length === 0) return null
   const sev = SEVERITY[severity]
+
+  const runAction = async () => {
+    setActing(true)
+    try { await action.run(items) } finally { setActing(false) }
+  }
 
   return (
     <div className={clsx('card border overflow-hidden mb-3', sev.border)}>
@@ -41,6 +47,15 @@ function AnomalySection({ emoji, title, hint, severity, items, renderItem, linkT
               </li>
             ))}
           </ul>
+          {action && (
+            <button
+              onClick={runAction}
+              disabled={acting}
+              className="w-full px-4 py-2.5 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-60 transition-colors text-center border-t border-gray-100 dark:border-gray-700"
+            >
+              {acting ? 'מתקן…' : action.label}
+            </button>
+          )}
           {linkTo && (
             <Link to={linkTo} className="block px-4 py-2.5 text-xs text-primary-600 dark:text-primary-300 hover:underline text-right border-t border-gray-100 dark:border-gray-700">
               ← {linkLabel}
@@ -239,6 +254,10 @@ export default function SuperAdminHealthPage() {
         items={missingImportedFlag}
         renderItem={(u) => userLine(u)}
         linkTo="/admin/users" linkLabel="לניהול חברים"
+        action={{
+          label: 'סמן את כולם כמיובאים (יאפשר להם לקשר ילדים)',
+          run: async (items) => { await markUsersImported(items.map(u => u.uid)); load() },
+        }}
       />
     </div>
   )
