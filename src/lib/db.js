@@ -7,6 +7,29 @@ import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfi
 import { initializeApp, deleteApp } from 'firebase/app'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { compressImage } from './image'
+
+// ── Read cache ────────────────────────────────────────────────────────────────
+// Pages remount (and refetch) on every navigation; with hundreds of users that
+// multiplies into millions of redundant Firestore reads. Reads of hot
+// collections are cached for a short TTL and share in-flight promises (two
+// components requesting the same collection at once trigger ONE fetch).
+// Every mutator invalidates the keys it touches, so staleness is bounded by
+// the TTL only for changes made by OTHER users on OTHER devices.
+const _cache = new Map()
+const MIN = 60 * 1000
+function cached(key, ttl, fn) {
+  const hit = _cache.get(key)
+  if (hit && Date.now() - hit.t < ttl) return hit.p
+  const promise = fn().catch(err => { _cache.delete(key); throw err })
+  _cache.set(key, { t: Date.now(), p: promise })
+  return promise
+}
+function invalidate(...prefixes) {
+  for (const k of [..._cache.keys()]) {
+    if (prefixes.some(pre => k === pre || k.startsWith(pre + ':'))) _cache.delete(k)
+  }
+}
+
 import { db, storage, firebaseConfig } from './firebase'
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -85,12 +108,12 @@ export async function deleteTask(id) {
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────
-export async function getEvents() {
+async function _getEvents() {
   const snap = await getDocs(query(collection(db, 'events'), orderBy('date', 'asc')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveEvent(event) {
+async function _saveEvent(event) {
   const { id, ...data } = event
   if (id && !id.startsWith('event-')) {
     await updateDoc(doc(db, 'events', id), { ...data, updatedAt: serverTimestamp() })
@@ -100,12 +123,12 @@ export async function saveEvent(event) {
   return { ...event, id: ref.id }
 }
 
-export async function deleteEvent(id) {
+async function _deleteEvent(id) {
   await deleteDoc(doc(db, 'events', id))
 }
 
 // ── Users ────────────────────────────────────────────────────────────────────
-export async function getUsers() {
+async function _getUsers() {
   const snap = await getDocs(collection(db, 'users'))
   return snap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }))
 }
@@ -136,7 +159,7 @@ const ALLOWED_PROFILE_FIELDS = [
 
 // Backfill for pre-2026-07 imported families — lets them browse the
 // unlinked-children roster during onboarding (admin-only by rules)
-export async function markUsersImported(uids) {
+async function _markUsersImported(uids) {
   const batch = writeBatch(db)
   uids.forEach(uid => batch.update(doc(db, 'users', uid), { imported: true }))
   await batch.commit()
@@ -147,12 +170,12 @@ export async function markUsersImported(uids) {
 // AUTH account is NOT removable from the client — delete it in Firebase
 // Console → Authentication, otherwise a re-login recreates a fresh community
 // profile.
-export async function deleteUserCompletely(user) {
+async function _deleteUserCompletely(user) {
   // Revoke class-admin assignments first (removes uid from classes.adminUids)
   for (const classId of user.classAdminFor || []) {
     try { await removeClassAdmin(classId, user.uid) } catch { /* class gone */ }
   }
-  const kids = await getChildrenByParent(user.uid)
+  const kids = await _getChildrenByParent(user.uid)
   const batch = writeBatch(db)
   kids.forEach(k => batch.update(doc(db, 'children', k.id), {
     parentUids: (k.parentUids || []).filter(u => u !== user.uid),
@@ -164,7 +187,7 @@ export async function deleteUserCompletely(user) {
   }
 }
 
-export async function updateUserProfile(uid, data) {
+async function _updateUserProfile(uid, data) {
   const safe = Object.fromEntries(
     Object.entries(data).filter(([k]) => ALLOWED_PROFILE_FIELDS.includes(k))
   )
@@ -172,7 +195,7 @@ export async function updateUserProfile(uid, data) {
   await updateDoc(doc(db, 'users', uid), safe)
 }
 
-export async function updateChildProfile(childId, data) {
+async function _updateChildProfile(childId, data) {
   const safe = Object.fromEntries(
     Object.entries(data).filter(([k]) => ['hobbies', 'pet', 'photoUrl', 'photoPath'].includes(k))
   )
@@ -181,12 +204,12 @@ export async function updateChildProfile(childId, data) {
 }
 
 // ── Forms ────────────────────────────────────────────────────────────────────
-export async function getForms() {
+async function _getForms() {
   const snap = await getDocs(collection(db, 'forms'))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveForm(form) {
+async function _saveForm(form) {
   const { id, ...data } = form
   if (id && !id.startsWith('form-')) {
     await updateDoc(doc(db, 'forms', id), { ...data, updatedAt: serverTimestamp() })
@@ -196,7 +219,7 @@ export async function saveForm(form) {
   return { ...form, id: ref.id }
 }
 
-export async function deleteForm(id) {
+async function _deleteForm(id) {
   await deleteDoc(doc(db, 'forms', id))
 }
 
@@ -280,12 +303,12 @@ export async function markMessageRead(id) {
 }
 
 // ── Classes ───────────────────────────────────────────────────────────────────
-export async function getClasses() {
+async function _getClasses() {
   const snap = await getDocs(query(collection(db, 'classes'), orderBy('name', 'asc')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveClass(cls) {
+async function _saveClass(cls) {
   const { id, ...data } = cls
   if (id && !id.startsWith('class-')) {
     await updateDoc(doc(db, 'classes', id), { ...data, updatedAt: serverTimestamp() })
@@ -295,7 +318,7 @@ export async function saveClass(cls) {
   return { ...cls, id: ref.id }
 }
 
-export async function deleteClass(id) {
+async function _deleteClass(id) {
   await deleteDoc(doc(db, 'classes', id))
 }
 
@@ -314,7 +337,7 @@ export async function assignClassAdmin(classId, uid) {
   await batch.commit()
 }
 
-export async function removeClassAdmin(classId, uid) {
+async function _removeClassAdmin(classId, uid) {
   const batch = writeBatch(db)
   const cls = await getDoc(doc(db, 'classes', classId))
   if (cls.exists()) {
@@ -332,7 +355,7 @@ export async function removeClassAdmin(classId, uid) {
 }
 
 // ── Children ──────────────────────────────────────────────────────────────────
-export async function getChildren(classId = null) {
+async function _getChildren(classId = null) {
   // where + orderBy on different fields needs a composite index (none exist) — sort in JS
   const q = classId
     ? query(collection(db, 'children'), where('classId', '==', classId))
@@ -342,7 +365,7 @@ export async function getChildren(classId = null) {
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
 }
 
-export async function saveChild(child) {
+async function _saveChild(child) {
   const { id, ...data } = child
   if (id && !id.startsWith('child-')) {
     await updateDoc(doc(db, 'children', id), { ...data, updatedAt: serverTimestamp() })
@@ -356,11 +379,11 @@ export async function saveChild(child) {
   return { ...child, id: ref.id }
 }
 
-export async function deleteChild(id) {
+async function _deleteChild(id) {
   await deleteDoc(doc(db, 'children', id))
 }
 
-export async function bulkImportChildren(children) {
+async function _bulkImportChildren(children) {
   const batch = writeBatch(db)
   children.forEach(child => {
     const ref = doc(collection(db, 'children'))
@@ -369,7 +392,7 @@ export async function bulkImportChildren(children) {
   await batch.commit()
 }
 
-export async function linkChildToParent(childId, parentUid) {
+async function _linkChildToParent(childId, parentUid) {
   const childSnap = await getDoc(doc(db, 'children', childId))
   if (!childSnap.exists()) return
   const child = childSnap.data()
@@ -397,7 +420,7 @@ export async function linkChildToParent(childId, parentUid) {
 // Rules only allow classIds to shrink freely; each ADDED class must be proven
 // by a linked child in that class (classProofChildId) — so removals go in one
 // write and additions go one class per write.
-export async function syncUserClassIds(uid) {
+async function _syncUserClassIds(uid) {
   const userSnap = await getDoc(doc(db, 'users', uid))
   // Alumni keep no class membership even if children docs are still linked
   if (userSnap.data()?.status === 'alumni') {
@@ -406,7 +429,7 @@ export async function syncUserClassIds(uid) {
     }
     return []
   }
-  const kids = await getChildrenByParent(uid)
+  const kids = await _getChildrenByParent(uid)
   const target = [...new Set(kids.map(c => c.classId).filter(Boolean))]
   const current = userSnap.data()?.classIds || []
   let acc = current.filter(id => target.includes(id))
@@ -421,7 +444,7 @@ export async function syncUserClassIds(uid) {
   return acc
 }
 
-export async function unlinkChildFromParent(childId, parentUid) {
+async function _unlinkChildFromParent(childId, parentUid) {
   const childSnap = await getDoc(doc(db, 'children', childId))
   if (!childSnap.exists()) return
   const batch = writeBatch(db)
@@ -440,7 +463,7 @@ export async function unlinkChildFromParent(childId, parentUid) {
 }
 
 // ── Children (parent-scoped query) ───────────────────────────────────────────
-export async function getChildrenByParent(uid) {
+async function _getChildrenByParent(uid) {
   // No orderBy here: array-contains + orderBy requires a composite index that
   // doesn't exist, so the query rejected and killed every Promise.all using it.
   const q = query(collection(db, 'children'), where('parentUids', 'array-contains', uid))
@@ -474,12 +497,12 @@ export async function saveAdminNote(childId, notes) {
 }
 
 // ── Announcements ─────────────────────────────────────────────────────────────
-export async function getAnnouncements() {
+async function _getAnnouncements() {
   const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt', 'desc')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveAnnouncement(ann) {
+async function _saveAnnouncement(ann) {
   const { id, ...data } = ann
   if (id && !id.startsWith('ann-')) {
     await updateDoc(doc(db, 'announcements', id), { ...data, updatedAt: serverTimestamp() })
@@ -489,17 +512,17 @@ export async function saveAnnouncement(ann) {
   return { ...ann, id: ref.id }
 }
 
-export async function deleteAnnouncement(id) {
+async function _deleteAnnouncement(id) {
   await deleteDoc(doc(db, 'announcements', id))
 }
 
 // ── Committees ────────────────────────────────────────────────────────────────
-export async function getCommittees() {
+async function _getCommittees() {
   const snap = await getDocs(query(collection(db, 'committees'), orderBy('order', 'asc')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveCommittee(committee) {
+async function _saveCommittee(committee) {
   const { id, ...data } = committee
   if (id && !id.startsWith('committee-')) {
     await updateDoc(doc(db, 'committees', id), { ...data, updatedAt: serverTimestamp() })
@@ -509,7 +532,7 @@ export async function saveCommittee(committee) {
   return { ...committee, id: ref.id }
 }
 
-export async function deleteCommittee(id) {
+async function _deleteCommittee(id) {
   await deleteDoc(doc(db, 'committees', id))
 }
 
@@ -552,12 +575,12 @@ export async function markCommitteeMessageRead(id) {
 }
 
 // ── Resources ─────────────────────────────────────────────────────────────────
-export async function getResources() {
+async function _getResources() {
   const snap = await getDocs(query(collection(db, 'resources'), orderBy('category')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 }
 
-export async function saveResource(resource) {
+async function _saveResource(resource) {
   const { id, ...data } = resource
   if (id && !id.startsWith('resource-')) {
     await updateDoc(doc(db, 'resources', id), { ...data, updatedAt: serverTimestamp() })
@@ -567,7 +590,7 @@ export async function saveResource(resource) {
   return { ...resource, id: ref.id }
 }
 
-export async function deleteResource(id) {
+async function _deleteResource(id) {
   await deleteDoc(doc(db, 'resources', id))
 }
 
@@ -633,7 +656,7 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
 
 // Create a new member account directly (admin action).
 // Uses a secondary app so the current admin session is not affected.
-export async function createMember({ name, email, phone, role, roles }) {
+async function _createMember({ name, email, phone, role, roles }) {
   const appName = `new-member-${Date.now()}`
   const secondaryApp = initializeApp(firebaseConfig, appName)
   const secondaryAuth = getAuth(secondaryApp)
@@ -660,12 +683,12 @@ export async function createMember({ name, email, phone, role, roles }) {
 }
 
 // ── Hobby groups ───────────────────────────────────────────────────────────────
-export async function getHobbyGroups() {
+async function _getHobbyGroups() {
   const snap = await getDocs(query(collection(db, 'hobbyGroups'), orderBy('order', 'asc')))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function saveHobbyGroup(group) {
+async function _saveHobbyGroup(group) {
   const { id, ...data } = group
   if (id && !id.startsWith('hobby-')) {
     await updateDoc(doc(db, 'hobbyGroups', id), { ...data, updatedAt: serverTimestamp() })
@@ -675,7 +698,7 @@ export async function saveHobbyGroup(group) {
   return { ...group, id: r.id }
 }
 
-export async function deleteHobbyGroup(id) {
+async function _deleteHobbyGroup(id) {
   await deleteDoc(doc(db, 'hobbyGroups', id))
 }
 
@@ -694,15 +717,15 @@ export async function approveHobbyGroup(id) {
   await updateDoc(doc(db, 'hobbyGroups', id), { status: 'active' })
 }
 
-export async function joinHobbyGroup(groupId, uid) {
+async function _joinHobbyGroup(groupId, uid) {
   await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayUnion(uid) })
 }
 
-export async function leaveHobbyGroup(groupId, uid) {
+async function _leaveHobbyGroup(groupId, uid) {
   await updateDoc(doc(db, 'hobbyGroups', groupId), { memberUids: arrayRemove(uid) })
 }
 
-export async function rsvpEvent(eventId, uid) {
+async function _rsvpEvent(eventId, uid) {
   await updateDoc(doc(db, 'events', eventId), { attendeeUids: arrayUnion(uid) })
 }
 
@@ -780,7 +803,7 @@ export async function getGroupEvents(groupId) {
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 }
 
-export async function createGroupEvent(groupId, uid, { title, date, time, location, description }) {
+async function _createGroupEvent(groupId, uid, { title, date, time, location, description }) {
   await addDoc(collection(db, 'events'), {
     groupId,
     createdBy: uid,
@@ -795,7 +818,7 @@ export async function createGroupEvent(groupId, uid, { title, date, time, locati
   })
 }
 
-export async function deleteGroupEvent(id) {
+async function _deleteGroupEvent(id) {
   await deleteDoc(doc(db, 'events', id))
 }
 
@@ -852,11 +875,11 @@ export async function getUnlinkedChildren() {
 }
 
 // ── Committee membership (UID-based join/leave) ───────────────────────────────
-export async function joinCommittee(committeeId, uid) {
+async function _joinCommittee(committeeId, uid) {
   await updateDoc(doc(db, 'committees', committeeId), { memberUids: arrayUnion(uid) })
 }
 
-export async function leaveCommittee(committeeId, uid) {
+async function _leaveCommittee(committeeId, uid) {
   await updateDoc(doc(db, 'committees', committeeId), { memberUids: arrayRemove(uid) })
 }
 
@@ -963,13 +986,13 @@ export async function replyToFeedback(id, reply) {
 
 // ── Community businesses ──────────────────────────────────────────────────────
 
-export async function getBusinesses() {
+async function _getBusinesses() {
   const snap = await getDocs(collection(db, 'communityBusinesses'))
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
 }
 
-export async function saveBusiness(biz) {
+async function _saveBusiness(biz) {
   const { id, ...data } = biz
   if (id && !id.startsWith('biz-')) {
     await updateDoc(doc(db, 'communityBusinesses', id), { ...data, updatedAt: serverTimestamp() })
@@ -979,7 +1002,7 @@ export async function saveBusiness(biz) {
   return { ...biz, id: ref2.id }
 }
 
-export async function deleteBusiness(id) {
+async function _deleteBusiness(id) {
   const biz = (await getDoc(doc(db, 'communityBusinesses', id))).data()
   if (biz?.imagePath) try { await deleteObject(ref(storage, biz.imagePath)) } catch { /* already gone */ }
   await deleteDoc(doc(db, 'communityBusinesses', id))
@@ -991,3 +1014,51 @@ export async function uploadBusinessImage(uid, bizId, file) {
   const snap = await uploadBytes(ref(storage, path), file)
   return { url: await getDownloadURL(snap.ref), path }
 }
+
+// ── Cached-read + invalidating-mutator wrappers ───────────────────────────────
+export function getClasses() { return cached('classes', 5 * MIN, () => _getClasses()) }
+export function getEvents() { return cached('events', 2 * MIN, () => _getEvents()) }
+export function getCommittees() { return cached('committees', 5 * MIN, () => _getCommittees()) }
+export function getHobbyGroups() { return cached('groups', 5 * MIN, () => _getHobbyGroups()) }
+export function getResources() { return cached('resources', 5 * MIN, () => _getResources()) }
+export function getAnnouncements() { return cached('announcements', 5 * MIN, () => _getAnnouncements()) }
+export function getForms() { return cached('forms', 5 * MIN, () => _getForms()) }
+export function getUsers() { return cached('users', 1 * MIN, () => _getUsers()) }
+export function getBusinesses() { return cached('businesses', 2 * MIN, () => _getBusinesses()) }
+export function getChildren(classId = null) { return cached(`children:${classId || 'all'}`, 1 * MIN, () => _getChildren(classId)) }
+export function getChildrenByParent(uid) { return cached(`childrenBy:${uid}`, 1 * MIN, () => _getChildrenByParent(uid)) }
+export async function saveClass(...args) { const r = await _saveClass(...args); invalidate('classes'); return r }
+export async function deleteClass(...args) { const r = await _deleteClass(...args); invalidate('classes'); return r }
+export async function removeClassAdmin(...args) { const r = await _removeClassAdmin(...args); invalidate('classes', 'users'); return r }
+export async function saveEvent(...args) { const r = await _saveEvent(...args); invalidate('events'); return r }
+export async function deleteEvent(...args) { const r = await _deleteEvent(...args); invalidate('events'); return r }
+export async function rsvpEvent(...args) { const r = await _rsvpEvent(...args); invalidate('events'); return r }
+export async function createGroupEvent(...args) { const r = await _createGroupEvent(...args); invalidate('events'); return r }
+export async function deleteGroupEvent(...args) { const r = await _deleteGroupEvent(...args); invalidate('events'); return r }
+export async function saveCommittee(...args) { const r = await _saveCommittee(...args); invalidate('committees'); return r }
+export async function deleteCommittee(...args) { const r = await _deleteCommittee(...args); invalidate('committees'); return r }
+export async function joinCommittee(...args) { const r = await _joinCommittee(...args); invalidate('committees'); return r }
+export async function leaveCommittee(...args) { const r = await _leaveCommittee(...args); invalidate('committees'); return r }
+export async function saveHobbyGroup(...args) { const r = await _saveHobbyGroup(...args); invalidate('groups'); return r }
+export async function deleteHobbyGroup(...args) { const r = await _deleteHobbyGroup(...args); invalidate('groups'); return r }
+export async function joinHobbyGroup(...args) { const r = await _joinHobbyGroup(...args); invalidate('groups'); return r }
+export async function leaveHobbyGroup(...args) { const r = await _leaveHobbyGroup(...args); invalidate('groups'); return r }
+export async function saveResource(...args) { const r = await _saveResource(...args); invalidate('resources'); return r }
+export async function deleteResource(...args) { const r = await _deleteResource(...args); invalidate('resources'); return r }
+export async function saveAnnouncement(...args) { const r = await _saveAnnouncement(...args); invalidate('announcements'); return r }
+export async function deleteAnnouncement(...args) { const r = await _deleteAnnouncement(...args); invalidate('announcements'); return r }
+export async function saveForm(...args) { const r = await _saveForm(...args); invalidate('forms'); return r }
+export async function deleteForm(...args) { const r = await _deleteForm(...args); invalidate('forms'); return r }
+export async function updateUserProfile(...args) { const r = await _updateUserProfile(...args); invalidate('users'); return r }
+export async function createMember(...args) { const r = await _createMember(...args); invalidate('users'); return r }
+export async function markUsersImported(...args) { const r = await _markUsersImported(...args); invalidate('users'); return r }
+export async function syncUserClassIds(...args) { const r = await _syncUserClassIds(...args); invalidate('users'); return r }
+export async function deleteUserCompletely(...args) { const r = await _deleteUserCompletely(...args); invalidate('users', 'children', 'childrenBy'); return r }
+export async function saveChild(...args) { const r = await _saveChild(...args); invalidate('children', 'childrenBy'); return r }
+export async function deleteChild(...args) { const r = await _deleteChild(...args); invalidate('children', 'childrenBy'); return r }
+export async function bulkImportChildren(...args) { const r = await _bulkImportChildren(...args); invalidate('children', 'childrenBy'); return r }
+export async function updateChildProfile(...args) { const r = await _updateChildProfile(...args); invalidate('children', 'childrenBy'); return r }
+export async function linkChildToParent(...args) { const r = await _linkChildToParent(...args); invalidate('children', 'childrenBy', 'users'); return r }
+export async function unlinkChildFromParent(...args) { const r = await _unlinkChildFromParent(...args); invalidate('children', 'childrenBy', 'users'); return r }
+export async function saveBusiness(...args) { const r = await _saveBusiness(...args); invalidate('businesses'); return r }
+export async function deleteBusiness(...args) { const r = await _deleteBusiness(...args); invalidate('businesses'); return r }
