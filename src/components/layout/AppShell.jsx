@@ -88,7 +88,16 @@ const ADMIN_NAV_LINKS = {
   ],
 }
 
-function buildMemberNav(allRoles, classIds, className) {
+// Alumni (graduated families) keep only the business directory + account pages
+const ALUMNI_NAV = [
+  { to: '/businesses', label: 'עסקים בקהילה' },
+  { to: '/contact',    label: 'צור קשר' },
+  { to: '/help',       label: 'עזרה' },
+  { to: '/settings',   label: 'הגדרות' },
+]
+
+function buildMemberNav(allRoles, classIds, className, status) {
+  if (status === 'alumni') return ALUMNI_NAV
   const links = []
   const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0) || !!className
 
@@ -114,7 +123,8 @@ function buildMemberNav(allRoles, classIds, className) {
   return links
 }
 
-function getMemberBottomNav(allRoles, classIds) {
+function getMemberBottomNav(allRoles, classIds, status) {
+  if (status === 'alumni') return ALUMNI_NAV.map(l => l.to)
   const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
   const hasForms = allRoles.has('new_family') || allRoles.has('host_family')
   if (hasClass && hasForms) return ['/dashboard', '/class', '/events', '/tasks']
@@ -333,8 +343,8 @@ export default function AppShell() {
     baseLinks = ADMIN_NAV_LINKS[effectiveRole] || ADMIN_NAV_LINKS.admin
     bottomNavPaths = ADMIN_BOTTOM_NAV
   } else {
-    baseLinks = buildMemberNav(allRoles, user?.classIds, className)
-    bottomNavPaths = getMemberBottomNav(allRoles, user?.classIds)
+    baseLinks = buildMemberNav(allRoles, user?.classIds, className, user?.status)
+    bottomNavPaths = getMemberBottomNav(allRoles, user?.classIds, user?.status)
   }
 
   const links = isClassAdmin && !isAdmin

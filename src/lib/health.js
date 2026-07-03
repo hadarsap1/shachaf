@@ -2,7 +2,8 @@
 // super-admin health page and the sidebar badge.
 
 export function computeHealthAnomalies({ users = [], children = [], classes = [], pending = [] }) {
-  const members = users.filter(u => u.role !== 'admin' && u.role !== 'super_admin')
+  // Alumni are intentionally detached (no children/classes) — not anomalies
+  const members = users.filter(u => u.role !== 'admin' && u.role !== 'super_admin' && u.status !== 'alumni')
   const parentsWithChild = new Set(children.flatMap(c => c.parentUids || []))
 
   const importedNeverRegistered = pending

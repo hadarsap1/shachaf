@@ -61,6 +61,7 @@ const STATUSES = [
   { value: 'inactive', label: 'לא פעיל' },
   { value: 'frozen',   label: 'בהקפאה' },
   { value: 'pending',  label: 'ממתין לאישור' },
+  { value: 'alumni',   label: 'בוגרים' },
 ]
 
 const STATUS_STYLE = {
@@ -68,6 +69,7 @@ const STATUS_STYLE = {
   inactive: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600',
   frozen:   'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
   pending:  'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  alumni:   'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
 }
 
 // ── Invite panel ────────────────────────────────────────────────────────────
@@ -569,9 +571,12 @@ export default function AdminUsersPage() {
     setError('')
     setSaving(user.uid)
     try {
-      await updateDoc(doc(db, 'users', user.uid), { status: newStatus })
-      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, status: newStatus } : u))
-      setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, status: newStatus } : prev)
+      // Alumni lose class membership — cuts access to class rosters and
+      // children data while keeping the account (business directory etc.)
+      const updates = newStatus === 'alumni' ? { status: newStatus, classIds: [] } : { status: newStatus }
+      await updateDoc(doc(db, 'users', user.uid), updates)
+      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, ...updates } : u))
+      setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, ...updates } : prev)
     } catch (err) {
       console.error('changeStatus error:', err)
       setError(`שגיאה בעדכון סטטוס: ${err.code || err.message}`)

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import AppShell from './components/layout/AppShell'
@@ -51,11 +51,19 @@ const Spinner = () => (
   </div>
 )
 
+// Routes alumni (graduated families) may still use — business directory,
+// their own settings, help, and contact. Everything else redirects.
+const ALUMNI_ROUTES = ['/businesses', '/settings', '/help', '/contact']
+
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
   const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin, needsOnboarding } = useAuth()
+  const { pathname } = useLocation()
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
   if (needsOnboarding) return <Navigate to="/onboarding" replace />
+  if (user.status === 'alumni' && !isAdmin && !ALUMNI_ROUTES.some(p => pathname.startsWith(p))) {
+    return <Navigate to="/businesses" replace />
+  }
   // Pending accounts (matched from an imported class list) need class-admin
   // approval before touching the app — admins/class admins still need access
   // to review and approve them, so they're exempt from this gate.

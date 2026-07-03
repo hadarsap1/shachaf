@@ -394,9 +394,16 @@ export async function linkChildToParent(childId, parentUid) {
 // by a linked child in that class (classProofChildId) — so removals go in one
 // write and additions go one class per write.
 export async function syncUserClassIds(uid) {
+  const userSnap = await getDoc(doc(db, 'users', uid))
+  // Alumni keep no class membership even if children docs are still linked
+  if (userSnap.data()?.status === 'alumni') {
+    if ((userSnap.data()?.classIds || []).length > 0) {
+      await updateDoc(doc(db, 'users', uid), { classIds: [] })
+    }
+    return []
+  }
   const kids = await getChildrenByParent(uid)
   const target = [...new Set(kids.map(c => c.classId).filter(Boolean))]
-  const userSnap = await getDoc(doc(db, 'users', uid))
   const current = userSnap.data()?.classIds || []
   let acc = current.filter(id => target.includes(id))
   if (acc.length !== current.length) {
