@@ -380,10 +380,10 @@ export default function AppShell() {
     ).catch(() => {})
   }, [user?.uid, isAdmin])
 
-  // Hide tutorial for admins or users who already saw it
+  // Hide tutorial for admins, alumni, or users who already saw it
   useEffect(() => {
-    if (isAdmin || user?.tutorialSeen) setShowTutorial(false)
-  }, [isAdmin, user?.tutorialSeen])
+    if (isAdmin || user?.tutorialSeen || user?.status === 'alumni') setShowTutorial(false)
+  }, [isAdmin, user?.tutorialSeen, user?.status])
 
   const handleTutorialDone = async () => {
     setShowTutorial(false)

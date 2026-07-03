@@ -148,6 +148,10 @@ export async function markUsersImported(uids) {
 // Console → Authentication, otherwise a re-login recreates a fresh community
 // profile.
 export async function deleteUserCompletely(user) {
+  // Revoke class-admin assignments first (removes uid from classes.adminUids)
+  for (const classId of user.classAdminFor || []) {
+    try { await removeClassAdmin(classId, user.uid) } catch { /* class gone */ }
+  }
   const kids = await getChildrenByParent(user.uid)
   const batch = writeBatch(db)
   kids.forEach(k => batch.update(doc(db, 'children', k.id), {

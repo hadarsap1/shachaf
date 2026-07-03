@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin } from '../../lib/db'
 import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -571,9 +571,16 @@ export default function AdminUsersPage() {
     setError('')
     setSaving(user.uid)
     try {
-      // Alumni lose class membership — cuts access to class rosters and
-      // children data while keeping the account (business directory etc.)
-      const updates = newStatus === 'alumni' ? { status: newStatus, classIds: [] } : { status: newStatus }
+      // Alumni lose class membership AND class-admin powers — cuts access to
+      // class rosters and children data while keeping the account
+      const updates = newStatus === 'alumni'
+        ? { status: newStatus, classIds: [], classAdminFor: [] }
+        : { status: newStatus }
+      if (newStatus === 'alumni') {
+        for (const classId of user.classAdminFor || []) {
+          await removeClassAdmin(classId, user.uid)
+        }
+      }
       await updateDoc(doc(db, 'users', user.uid), updates)
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, ...updates } : u))
       setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, ...updates } : prev)
