@@ -31,6 +31,7 @@ const AdminEventsPage       = lazy(() => import('./pages/admin/AdminEventsPage')
 const AdminActivityPage     = lazy(() => import('./pages/admin/AdminActivityPage'))
 const AdminFormsPage        = lazy(() => import('./pages/admin/AdminFormsPage'))
 const SuperAdminPage        = lazy(() => import('./pages/superadmin/SuperAdminPage'))
+const SuperAdminHealthPage  = lazy(() => import('./pages/superadmin/SuperAdminHealthPage'))
 const SuperAdminFeedbackPage = lazy(() => import('./pages/super/SuperAdminFeedbackPage'))
 const AdminMessagesPage     = lazy(() => import('./pages/admin/AdminMessagesPage'))
 const AdminImportPage       = lazy(() => import('./pages/admin/AdminImportPage'))
@@ -149,6 +150,7 @@ export default function App() {
 
           <Route element={<ProtectedShell superOnly />}>
             <Route path="/super/admins" element={<SuperAdminPage />} />
+            <Route path="/super/health" element={<SuperAdminHealthPage />} />
             <Route path="/super/feedback" element={<SuperAdminFeedbackPage />} />
           </Route>
 
