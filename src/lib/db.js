@@ -347,22 +347,37 @@ export async function linkChildToParent(childId, parentUid) {
   if (userSnap.exists()) {
     const childIds = [...new Set([...(userSnap.data().childIds || []), childId])]
     // Keep classIds in sync so the children read rule grants this parent
-    // access to their child's class roster.
+    // access to their child's class roster. classProofChildId lets the rules
+    // verify (via getAfter) that the added class belongs to a child this user
+    // is a linked parent of — the child link lands in the same batch.
     const classIds = child.classId
       ? [...new Set([...(userSnap.data().classIds || []), child.classId])]
       : (userSnap.data().classIds || [])
-    batch.update(doc(db, 'users', parentUid), { childIds, classIds })
+    batch.update(doc(db, 'users', parentUid), { childIds, classIds, classProofChildId: childId })
   }
   await batch.commit()
 }
 
 // Recompute users/{uid}.classIds from the children currently linked to them.
 // Used to backfill existing users and to repair stale membership after unlink.
+// Rules only allow classIds to shrink freely; each ADDED class must be proven
+// by a linked child in that class (classProofChildId) — so removals go in one
+// write and additions go one class per write.
 export async function syncUserClassIds(uid) {
   const kids = await getChildrenByParent(uid)
-  const classIds = [...new Set(kids.map(c => c.classId).filter(Boolean))]
-  await updateDoc(doc(db, 'users', uid), { classIds })
-  return classIds
+  const target = [...new Set(kids.map(c => c.classId).filter(Boolean))]
+  const userSnap = await getDoc(doc(db, 'users', uid))
+  const current = userSnap.data()?.classIds || []
+  let acc = current.filter(id => target.includes(id))
+  if (acc.length !== current.length) {
+    await updateDoc(doc(db, 'users', uid), { classIds: acc })
+  }
+  for (const classId of target.filter(id => !acc.includes(id))) {
+    const proof = kids.find(k => k.classId === classId)
+    acc = [...acc, classId]
+    await updateDoc(doc(db, 'users', uid), { classIds: acc, classProofChildId: proof.id })
+  }
+  return acc
 }
 
 export async function unlinkChildFromParent(childId, parentUid) {
@@ -497,8 +512,8 @@ export async function markCommitteeMessageRead(id) {
 
 // ── Resources ─────────────────────────────────────────────────────────────────
 export async function getResources() {
-  const snap = await getDocs(query(collection(db, 'resources'), orderBy('category'), orderBy('order', 'asc')))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const snap = await getDocs(query(collection(db, 'resources'), orderBy('category')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 }
 
 export async function saveResource(resource) {
@@ -534,13 +549,13 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
     const newUid = cred.user.uid
 
     // Create Firestore profile under secondary auth (request.auth.uid === newUid) ✓
-    // classIds mirrors the inviting parent so the co-parent can read the class
-    // roster immediately; it self-heals on their first login regardless.
+    // classIds must start empty (create rule forbids seeding it) — it syncs from
+    // the linked children on the co-parent's first login (syncUserClassIds).
     await setDoc(doc(secondaryDb, 'users', newUid), {
       name, email, phone: phone || '',
       role: currentUser.role,
       childIds: currentUser.childIds || [],
-      classIds: currentUser.classIds || [],
+      classIds: [],
       createdAt: serverTimestamp(),
     })
 
@@ -923,11 +938,13 @@ export async function saveBusiness(biz) {
 }
 
 export async function deleteBusiness(id) {
+  const biz = (await getDoc(doc(db, 'communityBusinesses', id))).data()
+  if (biz?.imagePath) try { await deleteObject(ref(storage, biz.imagePath)) } catch { /* already gone */ }
   await deleteDoc(doc(db, 'communityBusinesses', id))
 }
 
-export async function uploadBusinessImage(bizId, file) {
-  const path = `businesses/${bizId}_${Date.now()}.${safeExt(file)}`
+export async function uploadBusinessImage(uid, bizId, file) {
+  const path = `businesses/${uid}/${bizId}_${Date.now()}.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
   return { url: await getDownloadURL(snap.ref), path }
 }

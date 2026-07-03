@@ -50,7 +50,9 @@ export default function OnboardingPage() {
       setStep(1)
       setLoadingChildren(true)
       const [ul, ll, cls] = await Promise.all([
-        getUnlinkedChildren(),
+        // Non-imported accounts aren't allowed to browse the unlinked-children
+        // roster (privacy) — show an empty list instead of failing the step
+        getUnlinkedChildren().catch(() => []),
         getChildrenByParent(user.uid),
         getClasses(),
       ])

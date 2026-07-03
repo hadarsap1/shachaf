@@ -82,6 +82,9 @@ export function AuthProvider({ children }) {
         // approval before they can access the app; self-registered community
         // members without a match are active immediately.
         status: pending ? 'pending' : 'active',
+        // imported gates access to the unlinked-children roster during
+        // onboarding — rules validate it against pendingFamilies at create time
+        imported: !!pending,
         createdAt: serverTimestamp(),
       }
       await setDoc(userRef, newProfile)

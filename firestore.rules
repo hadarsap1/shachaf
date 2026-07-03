@@ -32,15 +32,43 @@ service cloud.firestore {
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
                      );
 
-      // Users can create their own profile (role is set from pending import or defaults to new_family)
+      // Users can create their own profile — but cannot self-assign privileged
+      // roles, class-admin powers, or class membership. `imported` may only be
+      // set when a matching pendingFamilies record exists (i.e. the family was
+      // imported by an admin) — it gates access to the unlinked-children roster.
       allow create: if request.auth != null
-                    && request.auth.uid == userId;
+                    && request.auth.uid == userId
+                    && request.resource.data.get('role', 'community')
+                       in ['community', 'new_family', 'host_family']
+                    && request.resource.data.get('roles', [])
+                       .hasOnly(['community', 'new_family', 'host_family'])
+                    && request.resource.data.get('classAdminFor', []).size() == 0
+                    && request.resource.data.get('classIds', []).size() == 0
+                    && (request.resource.data.get('imported', false) == false
+                        || exists(/databases/$(database)/documents/pendingFamilies/$(request.auth.token.email.lower())));
 
-      // Users can update their own profile but cannot change their own role or extra roles
+      // Users can update their own profile but cannot change role, classAdminFor,
+      // or imported. classIds may only: stay equal, shrink (privacy-reducing is
+      // always safe), or grow by exactly ONE class proven by a child doc the user
+      // is a linked parent of (classProofChildId; getAfter so the child-link and
+      // classIds update can share a batch).
       allow update: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.role == resource.data.role
-                    && request.resource.data.get('roles', []) == resource.data.get('roles', []);
+                    && request.resource.data.get('roles', []) == resource.data.get('roles', [])
+                    && request.resource.data.get('classAdminFor', []) == resource.data.get('classAdminFor', [])
+                    && request.resource.data.get('imported', false) == resource.data.get('imported', false)
+                    && (
+                      request.resource.data.get('classIds', []) == resource.data.get('classIds', [])
+                      || resource.data.get('classIds', []).hasAll(request.resource.data.get('classIds', []))
+                      || (
+                        request.resource.data.get('classIds', []).hasAll(resource.data.get('classIds', []))
+                        && request.resource.data.get('classIds', []).removeAll(resource.data.get('classIds', [])).size() == 1
+                        && request.auth.uid in getAfter(/databases/$(database)/documents/children/$(request.resource.data.get('classProofChildId', '-'))).data.get('parentUids', [])
+                        && getAfter(/databases/$(database)/documents/children/$(request.resource.data.get('classProofChildId', '-'))).data.get('classId', '')
+                             == request.resource.data.get('classIds', []).removeAll(resource.data.get('classIds', []))[0]
+                      )
+                    );
 
       // Admins and super_admins can update any user including changing roles
       // but only super_admins can assign the super_admin role
@@ -196,8 +224,11 @@ service cloud.firestore {
              in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', [])
         || resource.data.get('classId', '')
              in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
-        // Onboarding: any auth user can read unlinked children to self-link during onboarding
-        || resource.data.get('parentUids', []).size() == 0
+        // Onboarding: only admin-imported families (imported flag, validated at
+        // profile-create time against pendingFamilies) can browse unlinked
+        // children to self-link. Random self-registered accounts cannot.
+        || (resource.data.get('parentUids', []).size() == 0
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('imported', false) == true)
       );
       allow write: if request.auth != null
                    && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
@@ -206,9 +237,10 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && request.auth.uid in resource.data.parentUids
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath']);
-      // Onboarding: any auth user can claim an unlinked child by setting parentUids to [themselves]
+      // Onboarding: an imported family can claim an unlinked child by setting parentUids to [themselves]
       allow update: if request.auth != null
                     && resource.data.get('parentUids', []).size() == 0
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('imported', false) == true
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids'])
                     && request.resource.data.parentUids == [request.auth.uid];
     }
@@ -304,6 +336,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.get('url', '').matches('https?://.*')
                     && request.resource.data.get('url', '').size() <= 2000
                     && request.resource.data.get('label', '').size() <= 200
                     && request.resource.data.groupId is string
