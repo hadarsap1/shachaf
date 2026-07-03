@@ -176,7 +176,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             ? <p className="text-xs text-gray-400">{isMember ? 'אין קישורים עדיין — הוסיפו ראשונים!' : 'אין קישורים עדיין'}</p>
             : links.map(l => (
               <div key={l.id} className="flex items-center gap-2 py-1.5 group">
-                <a href={l.url} target="_blank" rel="noopener noreferrer"
+                <a href={/^https?:\/\//.test(l.url) ? l.url : '#'} target="_blank" rel="noopener noreferrer"
                   className="flex-1 flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 min-w-0">
                   <ExternalLink size={13} className="flex-shrink-0" />
                   <span className="truncate">{l.label || l.url}</span>

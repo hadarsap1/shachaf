@@ -105,6 +105,7 @@ function FillView({ form, existing, onSubmit, onBack }) {
   })
   const [errors, setErrors] = useState({})
   const [done, setDone] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const validate = () => {
     const errs = {}
@@ -116,8 +117,10 @@ function FillView({ form, existing, onSubmit, onBack }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (submitting) return
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
+    setSubmitting(true)
     await onSubmit(values, existing?.id)
     setDone(true)
   }

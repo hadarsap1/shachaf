@@ -228,7 +228,7 @@ export default function LoginPage() {
                   <div className="text-4xl mb-3">📬</div>
                   <p className="font-semibold text-gray-800 dark:text-gray-100">נשלח מייל לאיפוס</p>
                   <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">בדוק את תיבת הדואר שלך</p>
-                  <button onClick={() => { setMode('login'); setResetSent(false) }} className="mt-4 text-sm text-primary-600 hover:underline">
+                  <button onClick={() => { setMode('login'); setResetSent(false) }} className="mt-4 text-sm text-primary-600 dark:text-primary-300 hover:underline">
                     חזרה לכניסה
                   </button>
                 </div>
@@ -373,7 +373,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => { setMode('reset'); setError('') }}
-                    className="w-full text-right py-1 text-sm text-primary-600 hover:underline"
+                    className="w-full text-right py-1 text-sm text-primary-600 dark:text-primary-300 hover:underline"
                   >
                     שכחת סיסמה?
                   </button>
@@ -391,7 +391,7 @@ export default function LoginPage() {
 
               <div className="mt-5 text-center space-y-3">
                 <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
-                  className="text-sm text-primary-600 hover:underline">
+                  className="text-sm text-primary-600 dark:text-primary-300 hover:underline">
                   {mode === 'login' ? 'אין לך חשבון? הירשם' : 'יש לך חשבון? כנס'}
                 </button>
 

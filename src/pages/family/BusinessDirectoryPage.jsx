@@ -49,6 +49,7 @@ function blank(uid, name) {
 
 // ── Business form (slide panel) ────────────────────────────────────────────────
 function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
+  const { user } = useAuth()
   const fileRef = useRef()
   const [uploading, setUploading] = useState(false)
 
@@ -59,7 +60,7 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
     if (!file) return
     setUploading(true)
     try {
-      const { url, path } = await uploadBusinessImage(draft.id, file)
+      const { url, path } = await uploadBusinessImage(user.uid, draft.id, file)
       setDraft(d => ({ ...d, imageUrl: url, imagePath: path }))
     } catch (err) {
       console.error('image upload error', err)
