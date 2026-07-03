@@ -1,12 +1,26 @@
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
+import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.jsx'
+
+// Error monitoring — no-op unless a DSN is configured
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    // Errors only — no session replay or tracing (privacy: school families app)
+    sendDefaultPii: false,
+  })
+}
 
 class ErrorBoundary extends Component {
   state = { hasError: false }
   static getDerivedStateFromError() { return { hasError: true } }
-  componentDidCatch(err, info) { console.error('App crashed:', err, info) }
+  componentDidCatch(err, info) {
+    console.error('App crashed:', err, info)
+    Sentry.captureException(err, { extra: { componentStack: info?.componentStack } })
+  }
   render() {
     if (this.state.hasError) {
       return (
