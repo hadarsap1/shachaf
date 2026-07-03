@@ -142,6 +142,24 @@ export async function markUsersImported(uids) {
   await batch.commit()
 }
 
+// Fully remove a user (super_admin only, enforced by rules): unlink from all
+// children, delete avatar from Storage, delete the profile doc. The Firebase
+// AUTH account is NOT removable from the client — delete it in Firebase
+// Console → Authentication, otherwise a re-login recreates a fresh community
+// profile.
+export async function deleteUserCompletely(user) {
+  const kids = await getChildrenByParent(user.uid)
+  const batch = writeBatch(db)
+  kids.forEach(k => batch.update(doc(db, 'children', k.id), {
+    parentUids: (k.parentUids || []).filter(u => u !== user.uid),
+  }))
+  batch.delete(doc(db, 'users', user.uid))
+  await batch.commit()
+  if (user.avatarPath) {
+    try { await deleteObject(ref(storage, user.avatarPath)) } catch { /* already gone */ }
+  }
+}
+
 export async function updateUserProfile(uid, data) {
   const safe = Object.fromEntries(
     Object.entries(data).filter(([k]) => ALLOWED_PROFILE_FIELDS.includes(k))

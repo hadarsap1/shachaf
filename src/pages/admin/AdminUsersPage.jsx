@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely } from '../../lib/db'
+import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
-  Link2, Loader2, RefreshCw, Upload, MapPin, Phone,
+  Link2, Loader2, RefreshCw, Upload, MapPin, Phone, Trash2,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -284,11 +285,13 @@ function AddMemberPanel({ onClose, onCreated }) {
 
 // ── User detail panel ────────────────────────────────────────────────────────
 
-function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusChange, saving, onProfileSaved, canEditRoles = true }) {
+function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusChange, saving, onProfileSaved, onDelete, canEditRoles = true }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ name: user.name || '', phone: user.phone || '', address: user.address || '' })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
   const rawDigits = (user.phone || '').replace(/\D/g, '')
@@ -455,6 +458,44 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
             </a>
           </div>
         )}
+
+        {/* Danger zone — super admin only */}
+        {onDelete && (
+          <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/20"
+              >
+                <Trash2 size={15} />
+                מחק משתמש לצמיתות
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-red-600 dark:text-red-300 text-right leading-relaxed">
+                  המשתמש יימחק לצמיתות ויוסר מכל הילדים המקושרים. פעולה זו אינה הפיכה.
+                  כדי לחסום התחברות מחדש יש למחוק את החשבון גם ב-Firebase Console → Authentication.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => { setDeleting(true); try { await onDelete(user) } finally { setDeleting(false) } }}
+                    disabled={deleting}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+                  >
+                    {deleting ? 'מוחק…' : `כן, מחק את ${user.name || 'המשתמש'}`}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   )
@@ -464,7 +505,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
 
 export default function AdminUsersPage() {
   const navigate = useNavigate()
-  const { isAdmin, isClassAdmin, user: currentUser } = useAuth()
+  const { isAdmin, isSuperAdmin, isClassAdmin, user: currentUser } = useAuth()
   const [users, setUsers]       = useState([])
   const [classes, setClasses]   = useState([])
   const [loading, setLoading]   = useState(true)
@@ -719,6 +760,17 @@ export default function AdminUsersPage() {
           onRolesChange={(user, roles) => changeRoles(user, roles)}
           onStatusChange={(user, status) => changeStatus(user, status)}
           canEditRoles={isAdmin}
+          onDelete={isSuperAdmin && selectedUser.uid !== currentUser?.uid ? async (u) => {
+            try {
+              await deleteUserCompletely(u)
+              setUsers(prev => prev.filter(x => x.uid !== u.uid))
+              setSelectedUser(null)
+              toast(`${u.name || 'המשתמש'} נמחק`)
+            } catch (err) {
+              console.error('deleteUserCompletely failed:', err)
+              toast.error('שגיאה במחיקת המשתמש')
+            }
+          } : undefined}
           onClose={() => setSelectedUser(null)}
           onProfileSaved={(updated) => {
             setUsers(prev => prev.map(u => u.uid === updated.uid ? { ...u, ...updated } : u))

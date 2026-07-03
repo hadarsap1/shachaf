@@ -86,6 +86,11 @@ service cloud.firestore {
                          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
                        )
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+
+      // Only super_admins can delete users (and not themselves)
+      allow delete: if request.auth != null
+                    && request.auth.uid != userId
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
     }
 
     // Tasks — admins read/write all; families read their assigned tasks
