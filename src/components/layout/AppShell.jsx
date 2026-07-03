@@ -7,6 +7,7 @@ import { computeHealthAnomalies } from '../../lib/health'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
 import WelcomeTutorial, { shouldShowTutorial } from '../ui/WelcomeTutorial'
+import Toaster from '../ui/Toaster'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -493,6 +494,7 @@ export default function AppShell() {
 
         <InstallBanner />
         <FeedbackButton />
+        <Toaster />
 
         {/* Mobile bottom nav */}
         {bottomLinks.length > 0 && (

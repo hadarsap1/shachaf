@@ -229,6 +229,7 @@ export default function DashboardPage() {
   const [emergency, setEmergency]   = useState(null)
   const [widgetConfig, setWidgetConfig] = useState(loadWidgetConfig)
   const [showCustomize, setShowCustomize] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const isFamily = allRoles?.has('new_family') || allRoles?.has('host_family')
 
@@ -276,7 +277,7 @@ export default function DashboardPage() {
         )
         setPendingForms(myForms.filter(f => !allSubs.find(s => s.formId === f.id)).length)
       }
-    }).catch(err => console.error('Dashboard load failed:', err))
+    }).catch(err => { console.error('Dashboard load failed:', err); setLoadError(true) })
       .finally(() => setLoading(false))
   }, [user])
 
@@ -301,6 +302,17 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 size={32} className="animate-spin text-primary-400" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="page-container rtl text-center py-16" dir="rtl">
+        <AlertTriangle size={36} className="mx-auto text-amber-500 mb-3" />
+        <h2 className="font-bold text-gray-800 dark:text-gray-100 mb-1">לא הצלחנו לטעון את הנתונים</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">בדקו את החיבור לאינטרנט ונסו שוב</p>
+        <button onClick={() => window.location.reload()} className="btn-primary px-8 py-2.5">נסו שוב</button>
       </div>
     )
   }

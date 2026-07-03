@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { getBusinesses, saveBusiness, deleteBusiness, uploadBusinessImage, getUsersByUids } from '../../lib/db'
 import { Plus, Search, Phone, Globe, Mail, Pencil, Trash2, X, Check, Loader2, ImagePlus, Store } from 'lucide-react'
 import clsx from 'clsx'
+import { toast } from '../../components/ui/Toaster'
 
 const CATEGORIES = [
   { value: 'all',           label: 'הכל' },
@@ -64,7 +65,7 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
       setDraft(d => ({ ...d, imageUrl: url, imagePath: path }))
     } catch (err) {
       console.error('image upload error', err)
-      alert('שגיאה בהעלאת תמונה: ' + (err?.message || err))
+      toast.error('שגיאה בהעלאת התמונה — נסו שוב')
     } finally { setUploading(false) }
   }
 
@@ -168,6 +169,12 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
 
 // ── Business card ──────────────────────────────────────────────────────────────
 function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  useEffect(() => {
+    if (!confirmDelete) return
+    const t = setTimeout(() => setConfirmDelete(false), 3000)
+    return () => clearTimeout(t)
+  }, [confirmDelete])
   const phone = (biz.phone || '').replace(/\D/g, '')
   const wa = phone ? `https://wa.me/${phone.startsWith('972') ? phone : '972' + phone.replace(/^0/, '')}` : null
   const ownerPhone = (owner?.phone || '').replace(/\D/g, '')
@@ -190,8 +197,16 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
                 <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors">
                   <Pencil size={14} />
                 </button>
-                <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => confirmDelete ? onDelete() : setConfirmDelete(true)}
+                  aria-label={confirmDelete ? 'אישור מחיקה' : 'מחק עסק'}
+                  className={clsx(
+                    'p-1.5 transition-colors rounded-lg flex items-center gap-1',
+                    confirmDelete ? 'bg-red-500 text-white text-xs font-bold px-2' : 'text-gray-400 hover:text-red-500'
+                  )}
+                >
                   <Trash2 size={14} />
+                  {confirmDelete && 'בטוח?'}
                 </button>
               </>
             )}
@@ -306,14 +321,19 @@ export default function BusinessDirectoryPage() {
       setEditing(null)
     } catch (err) {
       console.error('saveBusiness error', err)
-      alert('שגיאה בשמירה: ' + (err?.message || err))
+      toast.error('שגיאה בשמירה — נסו שוב')
     } finally { setSaving(false) }
   }
 
   const handleDelete = async (biz) => {
-    if (!confirm(`למחוק את "${biz.businessName}"?`)) return
-    await deleteBusiness(biz.id)
-    setBusinesses(prev => prev.filter(b => b.id !== biz.id))
+    try {
+      await deleteBusiness(biz.id)
+      setBusinesses(prev => prev.filter(b => b.id !== biz.id))
+      toast('העסק נמחק')
+    } catch (err) {
+      console.error('deleteBusiness error', err)
+      toast.error('שגיאה במחיקה — נסו שוב')
+    }
   }
 
   return (

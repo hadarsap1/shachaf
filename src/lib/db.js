@@ -6,6 +6,7 @@ import {
 import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfile, sendPasswordResetEmail } from 'firebase/auth'
 import { initializeApp, deleteApp } from 'firebase/app'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { compressImage } from './image'
 import { db, storage, firebaseConfig } from './firebase'
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ function safeExt(file) {
 }
 
 export async function uploadEventImage(eventId, file) {
+  file = await compressImage(file)
   const path = `events/${eventId}.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
   return { url: await getDownloadURL(snap.ref), path }
@@ -27,6 +29,7 @@ export async function deleteEventImage(path) {
 }
 
 export async function uploadChildPhoto(childId, file) {
+  file = await compressImage(file)
   const path = `children/${childId}/photo.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
   return { url: await getDownloadURL(snap.ref), path }
@@ -38,6 +41,7 @@ export async function deleteChildPhoto(path) {
 }
 
 export async function uploadUserAvatar(uid, file) {
+  file = await compressImage(file)
   const path = `users/${uid}/avatar.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
   return { url: await getDownloadURL(snap.ref), path }
@@ -905,6 +909,7 @@ export async function saveFeedback({ text, screenshotUrl, submittedBy }) {
 }
 
 export async function uploadFeedbackScreenshot(feedbackId, file) {
+  file = await compressImage(file)
   const path = `feedback/${feedbackId}.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
   return getDownloadURL(snap.ref)
@@ -952,6 +957,7 @@ export async function deleteBusiness(id) {
 }
 
 export async function uploadBusinessImage(uid, bizId, file) {
+  file = await compressImage(file)
   const path = `businesses/${uid}/${bizId}_${Date.now()}.${safeExt(file)}`
   const snap = await uploadBytes(ref(storage, path), file)
   return { url: await getDownloadURL(snap.ref), path }
