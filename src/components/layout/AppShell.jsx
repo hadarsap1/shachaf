@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies } from '../../lib/db'
+import { computeHealthAnomalies } from '../../lib/health'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
+import WelcomeTutorial, { shouldShowTutorial } from '../ui/WelcomeTutorial'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -44,6 +46,7 @@ export const NAV_EMOJI = {
   '/admin/emergency': '🚨',
   '/admin/import':    '📥',
   '/super/admins':    '🛡️',
+  '/super/health':    '🩺',
   '/super/feedback':  '💡',
 }
 
@@ -78,6 +81,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/emergency',  label: 'מצב חירום' },
     { to: '/businesses',       label: 'עסקים בקהילה' },
     { to: '/super/admins',     label: 'הרשאות מנהלים' },
+    { to: '/super/health',     label: 'בקרת תקינות', healthBadge: true },
     { to: '/super/feedback',   label: 'משוב ובאגים', feedbackBadge: true },
     { to: '/help',             label: 'עזרה' },
   ],
@@ -110,7 +114,7 @@ function buildMemberNav(allRoles, classIds, className) {
 }
 
 function getMemberBottomNav(allRoles, classIds) {
-  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0) || !!className
+  const hasClass = allRoles.has('new_family') || allRoles.has('host_family') || (classIds && classIds.length > 0)
   const hasForms = allRoles.has('new_family') || allRoles.has('host_family')
   if (hasClass && hasForms) return ['/dashboard', '/class', '/events', '/tasks']
   if (hasClass)             return ['/dashboard', '/class', '/events', '/resources']
@@ -222,7 +226,7 @@ function ThemeToggle() {
 }
 
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
-function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
+function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, healthCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Logo */}
@@ -239,7 +243,7 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
             key={link.to}
             {...link}
             unread={link.badge ? unreadMessages : 0}
-            count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : 0)}
+            count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))}
             sub={!!link.sub}
             onClick={onClose}
           />
@@ -266,18 +270,20 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
 
 // ── AppShell ───────────────────────────────────────────────────────────────────
 export default function AppShell() {
-  const { user, logout, isAdmin, isClassAdmin, viewAs, effectiveRole, allRoles, activateViewAs, deactivateViewAs } = useAuth()
+  const { user, logout, isAdmin, isSuperAdmin, isClassAdmin, viewAs, effectiveRole, allRoles, activateViewAs, deactivateViewAs } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadFeedback, setUnreadFeedback] = useState(0)
+  const [healthCount, setHealthCount] = useState(0)
   const [openTaskCount, setOpenTaskCount] = useState(0)
   const [className, setClassName] = useState('')
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
     return stored >= SIDEBAR_MIN && stored <= SIDEBAR_MAX ? stored : 256
   })
+  const [showTutorial, setShowTutorial] = useState(() => shouldShowTutorial())
   const resizing = useRef(false)
 
   const startResize = useCallback((e) => {
@@ -347,6 +353,15 @@ export default function AppShell() {
     getFeedback().then(items => setUnreadFeedback(items.filter(i => !i.status || i.status === 'new').length))
   }, [isAdmin])
 
+  // Health-anomaly badge — super admin only
+  useEffect(() => {
+    if (!isSuperAdmin) return
+    Promise.all([getUsers(), getChildren(), getClasses(), getPendingFamilies()])
+      .then(([users, children, classes, pending]) =>
+        setHealthCount(computeHealthAnomalies({ users, children, classes, pending }).total))
+      .catch(() => {})
+  }, [isSuperAdmin])
+
   useEffect(() => {
     if (!user?.uid || isAdmin) return
     getTasks(user.uid).then(tasks =>
@@ -354,10 +369,27 @@ export default function AppShell() {
     ).catch(() => {})
   }, [user?.uid, isAdmin])
 
+  // Hide tutorial for admins or users who already saw it
+  useEffect(() => {
+    if (isAdmin || user?.tutorialSeen) setShowTutorial(false)
+  }, [isAdmin, user?.tutorialSeen])
+
+  const handleTutorialDone = async () => {
+    setShowTutorial(false)
+    if (user?.uid) {
+      try {
+        const { doc, updateDoc } = await import('firebase/firestore')
+        const { db } = await import('../../lib/firebase')
+        await updateDoc(doc(db, 'users', user.uid), { tutorialSeen: true })
+      } catch {}
+    }
+  }
+
   const sidebarBg = 'bg-[#0d1b35]'
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+      {showTutorial && <WelcomeTutorial onDone={handleTutorialDone} />}
       {/* Desktop sidebar */}
       <aside className={clsx('hidden md:flex flex-col flex-shrink-0 relative', sidebarBg)} style={{ width: sidebarWidth }} dir="rtl">
         <SidebarContent
@@ -365,6 +397,7 @@ export default function AppShell() {
           unreadMessages={unreadMessages}
           unreadFeedback={unreadFeedback}
           openTaskCount={openTaskCount}
+          healthCount={healthCount}
           isAdmin={isAdmin}
           viewAs={viewAs}
           activateViewAs={activateViewAs}
@@ -397,7 +430,7 @@ export default function AppShell() {
             </div>
             <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
               {links.map(link => (
-                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : 0)} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
               ))}
             </nav>
             <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3 flex-shrink-0">
