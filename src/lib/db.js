@@ -394,6 +394,21 @@ async function _bulkImportChildren(children) {
   return created
 }
 
+// Fill a linked parent's profile from the imported phone-book data:
+// phone/address only if empty; name only if the current one has no Hebrew
+// letters (e.g. email prefix or Google display name) — users can still
+// change it later in settings.
+export async function enrichUserFromImport(uid, { name, phone, address }) {
+  const snap = await getDoc(doc(db, 'users', uid))
+  if (!snap.exists()) return
+  const data = snap.data()
+  const updates = {}
+  if (phone && !data.phone) updates.phone = phone
+  if (address && !data.address) updates.address = address
+  if (name && !/[א-ת]/.test(data.name || '')) updates.name = name
+  if (Object.keys(updates).length) await updateDoc(doc(db, 'users', uid), updates)
+}
+
 async function _bulkDeleteChildren(ids) {
   for (let i = 0; i < ids.length; i += 450) {
     const batch = writeBatch(db)

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
   bulkImportChildren, bulkDeleteChildren, linkChildToParent, unlinkChildFromParent,
+  enrichUserFromImport,
   getAdminNote, saveAdminNote,
 } from '../../lib/db'
 import {
@@ -9,6 +10,18 @@ import {
   Loader2, AlertCircle, StickyNote,
 } from 'lucide-react'
 import clsx from 'clsx'
+
+// Parent full name from the imported first name + the child's family name
+const parentFullName = (p, child) =>
+  p.name ? [p.name, child.familyName || child.name?.split(' ').slice(1).join(' ')].filter(Boolean).join(' ') : ''
+
+// Link + copy phone/address/Hebrew name from the phone book onto the user
+async function linkAndEnrich(childId, uid, p, child) {
+  await linkChildToParent(childId, uid)
+  try {
+    await enrichUserFromImport(uid, { name: parentFullName(p, child), phone: p.phone || '', address: child.address || '' })
+  } catch (e) { console.error('enrich failed', e) }
+}
 
 const blankChild = () => ({
   id: 'child-' + Date.now(),
@@ -90,11 +103,15 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
 
   const linkedParents = allUsers.filter(u => (draft.parentUids || []).includes(u.uid))
 
-  const handleLink = async (uid) => {
+  const handleLink = async (uid, importedParent = null) => {
     setLinking(true)
     try {
       if (!isNew && draft.id && !draft.id.startsWith('child-')) {
-        await linkChildToParent(draft.id, uid)
+        if (importedParent) {
+          await linkAndEnrich(draft.id, uid, importedParent, draft)
+        } else {
+          await linkChildToParent(draft.id, uid)
+        }
       }
       setDraft(d => ({ ...d, parentUids: [...new Set([...(d.parentUids || []), uid])] }))
       setParentSearch('')
@@ -175,11 +192,11 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                 <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטים מהייבוא</div>
                 {(() => {
                   const matchable = (draft.parents || [])
-                    .map(p => p.email && allUsers.find(u => u.email?.toLowerCase() === p.email))
-                    .filter(u => u && !(draft.parentUids || []).includes(u.uid))
+                    .map(p => ({ p, u: p.email && allUsers.find(u => u.email?.toLowerCase() === p.email) }))
+                    .filter(({ u }) => u && !(draft.parentUids || []).includes(u.uid))
                   return matchable.length > 1 ? (
                     <button
-                      onClick={async () => { for (const u of matchable) await handleLink(u.uid) }}
+                      onClick={async () => { for (const { p, u } of matchable) await handleLink(u.uid, p) }}
                       disabled={linking}
                       className="text-xs text-primary-600 hover:underline flex items-center gap-1">
                       <Link2 size={11} /> קשר את כולם ({matchable.length})
@@ -202,7 +219,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                       </div>
                     </div>
                     {match && !alreadyLinked && (
-                      <button onClick={() => handleLink(match.uid)} disabled={linking}
+                      <button onClick={() => handleLink(match.uid, p)} disabled={linking}
                         className="text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded-full px-2.5 py-1 hover:bg-primary-100 flex items-center gap-1 dark:bg-primary-900/30">
                         <Link2 size={11} /> קשר למשתמש
                       </button>
@@ -291,10 +308,10 @@ function ImportPanel({ classes, onImport, onClose }) {
     classes.map(c => [normClass(c.name), c.id])
   )
 
-  const finishRow = (name, className, address, parents) => {
+  const finishRow = (name, className, address, parents, familyName = '') => {
     const classId = classByName[normClass(className)]
     // valid = matches an existing class; willCreate = class will be created on import
-    return { name, className, classId, address, parents, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
+    return { name, familyName, className, classId, address, parents, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
   }
 
   // School phone-book: each class section was pasted with a different column
@@ -336,7 +353,7 @@ function ImportPanel({ classes, onImport, onClose }) {
         }
       }
       push()
-      return finishRow([first, family].filter(Boolean).join(' '), className, address, parents)
+      return finishRow([first, family].filter(Boolean).join(' '), className, address, parents, family)
     }).filter(Boolean).filter(r => r.name)
   }
 
@@ -404,6 +421,7 @@ function ImportPanel({ classes, onImport, onClose }) {
       }
       await onImport(importable.map(r => ({
         name: r.name,
+        familyName: r.familyName || '',
         classId: r.classId || created[normClass(r.className)],
         address: r.address || '',
         parents: r.parents || [],
@@ -548,7 +566,7 @@ export default function AdminChildrenPage() {
       for (const p of child.parents || []) {
         const uid = p.email && userByEmail[p.email]
         if (uid) {
-          try { await linkChildToParent(child.id, uid) } catch (e) { console.error('auto-link failed', child.name, e) }
+          try { await linkAndEnrich(child.id, uid, p, child) } catch (e) { console.error('auto-link failed', child.name, e) }
         }
       }
     }
@@ -610,7 +628,7 @@ export default function AdminChildrenPage() {
         for (const p of child.parents || []) {
           const uid = p.email && userByEmail[p.email]
           if (uid && !(child.parentUids || []).includes(uid)) {
-            try { await linkChildToParent(child.id, uid); linked++ } catch (e) { console.error('bulk link failed', child.name, e) }
+            try { await linkAndEnrich(child.id, uid, p, child); linked++ } catch (e) { console.error('bulk link failed', child.name, e) }
           }
         }
       }
