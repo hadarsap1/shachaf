@@ -403,6 +403,8 @@ export async function enrichUserFromImport(uid, { name, phone, address }) {
   if (!snap.exists()) return
   const data = snap.data()
   const updates = {}
+  // Sheets strips leading zeros from numeric cells — restore for IL mobiles
+  if (phone && /^5\d{8}$/.test(phone.replace(/\D/g, ''))) phone = '0' + phone.replace(/\D/g, '')
   if (phone && !data.phone) updates.phone = phone
   if (address && !data.address) updates.address = address
   if (name && !/[א-ת]/.test(data.name || '')) updates.name = name
