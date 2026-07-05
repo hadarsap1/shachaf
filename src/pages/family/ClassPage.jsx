@@ -305,28 +305,31 @@ export default function ClassPage() {
       setMyChildren(children)
       setEvents(allEvents)
       setAnnouncements(allAnns)
-      if (myClassIds.length > 0) {
-        const cid = myClassIds[0]
-        const cls = filtered.find(c => c.id === cid)
-        // Use adminUids stored on the class doc — accessible to all authenticated users
-        const adminUids = cls?.adminUids || []
-        if (adminUids.length > 0) {
-          getUsersByUids(adminUids).then(setClassAdmins).catch(() => {})
-        }
-        const allKids = await getChildren(cid)
-        setClassChildren(allKids)
-        const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
-        if (parentUids.length > 0) {
-          const parents = await getUsersByUids(parentUids)
-          setClassParents(parents)
-        }
-      }
       setLoading(false)
     }
     load()
   }, [user])
 
   const cls = myClasses[selectedIdx]
+
+  // Roster reloads whenever the selected class changes (multi-class parents)
+  useEffect(() => {
+    if (!cls?.id) return
+    setClassChildren([])
+    setClassParents([])
+    setClassAdmins([])
+    // Use adminUids stored on the class doc — accessible to all authenticated users
+    if ((cls.adminUids || []).length > 0) {
+      getUsersByUids(cls.adminUids).then(setClassAdmins).catch(() => {})
+    }
+    getChildren(cls.id).then(async allKids => {
+      setClassChildren(allKids)
+      const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
+      if (parentUids.length > 0) {
+        setClassParents(await getUsersByUids(parentUids))
+      }
+    }).catch(() => {})
+  }, [cls?.id])
 
   const classEvents = cls
     ? events

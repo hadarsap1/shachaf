@@ -326,13 +326,13 @@ export default function AppShell() {
 
   useEffect(() => {
     if (!user?.uid) return
-    // Fetch class name from children, not user.classIds (which may be stale)
+    // Fetch class names from children, not user.classIds (which may be stale)
     getChildrenByParent(user.uid).then(kids => {
-      const cid = kids.find(k => k.classId)?.classId
-      if (!cid) return
+      const cids = [...new Set(kids.map(k => k.classId).filter(Boolean))]
+      if (!cids.length) return
       getClasses().then(classes => {
-        const cls = classes.find(c => c.id === cid)
-        if (cls) setClassName(cls.name)
+        const names = cids.map(id => classes.find(c => c.id === id)?.name).filter(Boolean)
+        if (names.length) setClassName(names.join(', '))
       })
     }).catch(() => {})
   }, [user?.uid])
