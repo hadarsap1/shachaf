@@ -242,35 +242,50 @@ function ImportPanel({ classes, onImport, onClose }) {
     ])
   )
 
-  const parseCSV = (text) => {
-    const lines = text.trim().split('\n').filter(Boolean)
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''))
-    const nameIdx  = headers.findIndex(h => ['שם', 'name', 'שם ילד'].includes(h.toLowerCase()))
-    const classIdx = headers.findIndex(h => ['כיתה', 'class', 'class_name', 'כיתה'].includes(h.toLowerCase()))
-    if (nameIdx < 0 || classIdx < 0) throw new Error('העמודות חייבות להיות: שם, כיתה')
-    return lines.slice(1).map(line => {
-      const cols = line.split(',').map(c => c.trim().replace(/"/g, ''))
-      const name = cols[nameIdx]
-      const className = cols[classIdx]
+  // Accepts either simple format (שם + כיתה) or the school phone-book
+  // format (שם פרטי + שם משפחה + כיתה, with parent columns we ignore here)
+  const normalizeRows = (data) => {
+    const get = (row, ...keys) => {
+      for (const k of keys) {
+        const found = Object.keys(row).find(h => h.trim().replace(/"/g, '') === k)
+        if (found && row[found] != null && String(row[found]).trim()) return String(row[found]).trim()
+      }
+      return ''
+    }
+    const out = data.map(row => {
+      let name = get(row, 'שם', 'name', 'שם ילד')
+      if (!name) {
+        const first = get(row, 'שם פרטי')
+        const last  = get(row, 'שם משפחה')
+        name = [first, last].filter(Boolean).join(' ')
+      }
+      const className = get(row, 'כיתה', 'class', 'class_name')
       const classId = classByName[className] || classByName[className?.toLowerCase()]
       return { name, className, classId, valid: !!name && !!classId }
     }).filter(r => r.name)
+    if (!out.length) throw new Error('העמודות חייבות להיות: שם (או שם פרטי + שם משפחה), כיתה')
+    return out
   }
 
   const handleFile = async (file) => {
     setError('')
     try {
+      let data
       if (file.name.endsWith('.csv')) {
+        const { default: Papa } = await import('papaparse')
         const text = await file.text()
-        setRows(parseCSV(text))
+        data = Papa.parse(text, { header: true, skipEmptyLines: true }).data
       } else {
         const { default: readXlsxFile } = await import('read-excel-file/browser')
         const xlsxRows = await readXlsxFile(file)
-        const csvText = xlsxRows.map(row =>
-          row.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')
-        ).join('\n')
-        setRows(parseCSV(csvText))
+        const headers = (xlsxRows[0] || []).map(h => String(h ?? ''))
+        data = xlsxRows.slice(1).map(row => {
+          const obj = {}
+          headers.forEach((h, i) => { obj[h] = row[i] })
+          return obj
+        })
       }
+      setRows(normalizeRows(data))
       setPreview(true)
     } catch (e) {
       setError(e.message)
@@ -308,8 +323,9 @@ function ImportPanel({ classes, onImport, onClose }) {
             <>
               <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 space-y-1 dark:bg-blue-900/20 dark:text-blue-300">
                 <p className="font-semibold">פורמט הקובץ (CSV / Excel):</p>
-                <p>עמודות חובה: <strong>שם</strong>, <strong>כיתה</strong></p>
+                <p>עמודות חובה: <strong>שם</strong> (או <strong>שם פרטי</strong> + <strong>שם משפחה</strong>), <strong>כיתה</strong></p>
                 <p>שם הכיתה חייב להתאים לכיתות הקיימות במערכת</p>
+                <p>ספר הטלפונים של בית הספר נתמך כמו שהוא</p>
               </div>
               {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
