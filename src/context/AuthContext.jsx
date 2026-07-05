@@ -13,7 +13,7 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
-import { syncUserClassIds, completeOnboarding } from '../lib/db'
+import { syncUserClassIds, completeOnboarding, autoLinkChildrenByEmail } from '../lib/db'
 import { MOCK_USERS } from '../lib/mockData'
 
 const AuthContext = createContext(null)
@@ -41,8 +41,12 @@ export function AuthProvider({ children }) {
       if (snap.exists()) {
         const data = snap.data()
         setUser({ uid: firebaseUser.uid, ...data })
-        // Always refresh classIds from children — fire-and-forget, never blocks login
-        syncUserClassIds(firebaseUser.uid)
+        // Auto-link to imported children by email, then refresh classIds from
+        // children — both fire-and-forget, never block login. Chained so the
+        // class sync sees any children just linked.
+        autoLinkChildrenByEmail(firebaseUser.uid, firebaseUser.email)
+          .catch(() => 0)
+          .then(() => syncUserClassIds(firebaseUser.uid))
           .then(classIds => setUser(prev => prev ? { ...prev, classIds } : prev))
           .catch(() => {})
         return
@@ -92,6 +96,12 @@ export function AuthProvider({ children }) {
         try { await deleteDoc(doc(db, 'pendingFamilies', emailKey)) } catch {}
       }
       setUser(newProfile)
+      // Link to imported children by email + refresh classIds (fire-and-forget)
+      autoLinkChildrenByEmail(firebaseUser.uid, firebaseUser.email)
+        .catch(() => 0)
+        .then(() => syncUserClassIds(firebaseUser.uid))
+        .then(classIds => setUser(prev => prev ? { ...prev, classIds } : prev))
+        .catch(() => {})
     } catch (err) {
       console.error('fetchUserProfile failed:', err)
       setUser(null)

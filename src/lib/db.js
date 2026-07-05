@@ -365,8 +365,15 @@ async function _getChildren(classId = null) {
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
 }
 
+// Flat, queryable list of parent emails for a child — Firestore can't query the
+// nested parents[].email, so we denormalize (used for auto-link-on-signup).
+function childParentEmails(data) {
+  return [...new Set((data.parents || []).map(p => (p.email || '').toLowerCase().trim()).filter(Boolean))]
+}
+
 async function _saveChild(child) {
   const { id, ...data } = child
+  data.parentEmails = childParentEmails(data)
   if (id && !id.startsWith('child-')) {
     await updateDoc(doc(db, 'children', id), { ...data, updatedAt: serverTimestamp() })
     // Editing the child's class here doesn't retroactively update classIds on
@@ -387,7 +394,7 @@ async function _bulkImportChildren(children) {
   const batch = writeBatch(db)
   const created = children.map(child => {
     const ref = doc(collection(db, 'children'))
-    batch.set(ref, { ...child, parentUids: [], createdAt: serverTimestamp() })
+    batch.set(ref, { ...child, parentEmails: childParentEmails(child), parentUids: [], createdAt: serverTimestamp() })
     return { ...child, id: ref.id }
   })
   await batch.commit()
@@ -409,6 +416,34 @@ export async function enrichUserFromImport(uid, { name, phone, address }) {
   if (address && !data.address) updates.address = address
   if (name && !/[א-ת]/.test(data.name || '')) updates.name = name
   if (Object.keys(updates).length) await updateDoc(doc(db, 'users', uid), updates)
+}
+
+// Auto-link a freshly-registered (or returning) parent to any imported children
+// whose phone-book data lists their email. Runs fire-and-forget at login.
+// Returns the number of children newly linked.
+export async function autoLinkChildrenByEmail(uid, email) {
+  const lower = (email || '').toLowerCase().trim()
+  if (!lower) return 0
+  let snap
+  try {
+    snap = await getDocs(query(collection(db, 'children'), where('parentEmails', 'array-contains', lower)))
+  } catch { return 0 }   // rules may deny before any child is claimable — fine
+  let linked = 0
+  for (const d of snap.docs) {
+    const child = d.data()
+    if ((child.parentUids || []).includes(uid)) continue
+    try {
+      await _linkChildToParent(d.id, uid)
+      const p = (child.parents || []).find(p => (p.email || '').toLowerCase().trim() === lower)
+      if (p) {
+        const name = p.name ? [p.name, child.familyName].filter(Boolean).join(' ') : ''
+        await enrichUserFromImport(uid, { name, phone: p.phone || '', address: child.address || '' })
+      }
+      linked++
+    } catch (e) { console.error('autoLink failed', d.id, e) }
+  }
+  if (linked) invalidate('children', 'childrenBy')
+  return linked
 }
 
 async function _bulkDeleteChildren(ids) {

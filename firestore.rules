@@ -248,6 +248,15 @@ service cloud.firestore {
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('imported', false) == true
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids'])
                     && request.resource.data.parentUids == [request.auth.uid];
+
+      // Auto-link on signup: a registered parent may APPEND their own uid to a
+      // child whose imported phone-book data lists their email (parentEmails).
+      // Works even when the other parent is already linked, unlike the rule above.
+      allow update: if request.auth != null
+                    && request.auth.token.email != null
+                    && request.auth.token.email.lower() in resource.data.get('parentEmails', [])
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids'])
+                    && request.resource.data.parentUids == resource.data.get('parentUids', []).concat([request.auth.uid]);
     }
 
     // Admin notes — admin-only read/write, invisible to families
