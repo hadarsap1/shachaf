@@ -29,7 +29,9 @@ function matchesFilter(ev, filterValue) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function EventsPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, viewAs } = useAuth()
+  // Admin in "watch as parent" mode sees only their own linked classes
+  const effectiveAdmin = isAdmin && !viewAs
   const [events, setEvents]           = useState([])
   const [classColorMap, setClassColorMap] = useState({})
   const [filterOptions, setFilterOptions] = useState(BASE_FILTERS)
@@ -52,12 +54,12 @@ export default function EventsPage() {
       classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
       setClassColorMap(colorMap)
 
-      const myClassIds = isAdmin
+      const myClassIds = effectiveAdmin
         ? classes.map(c => c.id)
         : [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
 
       const classFilters = classes
-        .filter(cls => isAdmin || myClassIds.includes(cls.id))
+        .filter(cls => effectiveAdmin || myClassIds.includes(cls.id))
         .map(cls => ({ value: cls.id, label: cls.name || cls.id }))
 
       setFilterOptions([...BASE_FILTERS, ...classFilters])
@@ -69,7 +71,7 @@ export default function EventsPage() {
       setLoading(false)
     }
     load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
-  }, [user, isAdmin])
+  }, [user, effectiveAdmin])
 
   const filteredEvents = events.filter(ev => matchesFilter(ev, filterValue))
 

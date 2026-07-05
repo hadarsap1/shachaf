@@ -109,7 +109,8 @@ function buildMemberNav(allRoles, classIds, className, status) {
 
   links.push({ to: '/dashboard', label: 'בית' })
   if (hasClass) {
-    links.push({ to: '/class', label: className ? `הכיתה שלי — ${className}` : 'הכיתה שלי' })
+    const classWord = className && className.includes(',') ? 'הכיתות שלי' : 'הכיתה שלי'
+    links.push({ to: '/class', label: className ? `${classWord} — ${className}` : 'הכיתה שלי' })
   }
   if (allRoles.has('host_family'))
     links.push({ to: '/families', label: 'המשפחות שלי' })
@@ -452,8 +453,12 @@ export default function AppShell() {
               </div>
             </div>
             <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
-              {links.map(link => (
-                <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+              {links.map((link, i) => (
+                link.heading ? (
+                  <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold text-white/35 tracking-wide">{link.heading}</div>
+                ) : (
+                  <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+                )
               ))}
             </nav>
             <div className="px-3 pb-4 space-y-2 border-t border-white/10 pt-3 flex-shrink-0">

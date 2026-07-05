@@ -241,7 +241,7 @@ service cloud.firestore {
                       || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []).size() > 0);
       allow update: if request.auth != null
                     && request.auth.uid in resource.data.parentUids
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath']);
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath', 'birthDate']);
       // Onboarding: an imported family can claim an unlinked child by setting parentUids to [themselves]
       allow update: if request.auth != null
                     && resource.data.get('parentUids', []).size() == 0

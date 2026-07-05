@@ -178,7 +178,7 @@ export default function LoginPage() {
           <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3 dark:bg-gray-800">
             <img src="/logo.png" alt="שחף" className="h-20 w-auto mx-auto" />
           </div>
-          <p className="text-primary-100 text-sm">פלטפורמת קליטה של הקהילה</p>
+          <p className="text-primary-100 text-sm">הפלטפורמה הקהילתית שלנו</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-modal p-6 sm:p-8 dark:bg-gray-800" dir="rtl">
@@ -255,7 +255,7 @@ export default function LoginPage() {
                 {mode === 'register' ? 'יצירת חשבון' : 'כניסה לחשבון'}
               </h2>
               <p className="text-sm text-gray-500 text-center mb-6 dark:text-gray-400">
-                {mode === 'register' ? 'הצטרף לפלטפורמת הקליטה של שחף' : 'ברוכים הבאים לשחף'}
+                {mode === 'register' ? 'הצטרפו לקהילת שחף' : 'ברוכים הבאים לשחף'}
               </p>
 
               {/* Google */}
@@ -409,7 +409,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-primary-200 text-xs mt-4">
-          בית הספר שחף © {new Date().getFullYear()}
+          קהילת שחף © {new Date().getFullYear()}
         </p>
       </div>
     </div>

@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
-        name: 'שחף — פלטפורמת קליטה',
+        name: 'קהילת שחף',
         short_name: 'שחף',
-        description: 'פלטפורמת קליטה למשפחות בבית ספר שחף',
+        description: 'הפלטפורמה הקהילתית של קהילת שחף',
         theme_color: '#2563EB',
         background_color: '#ffffff',
         display: 'standalone',

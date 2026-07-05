@@ -197,7 +197,7 @@ async function _updateUserProfile(uid, data) {
 
 async function _updateChildProfile(childId, data) {
   const safe = Object.fromEntries(
-    Object.entries(data).filter(([k]) => ['hobbies', 'pet', 'photoUrl', 'photoPath'].includes(k))
+    Object.entries(data).filter(([k]) => ['hobbies', 'pet', 'photoUrl', 'photoPath', 'birthDate'].includes(k))
   )
   if (Object.keys(safe).length === 0) return
   await updateDoc(doc(db, 'children', childId), safe)

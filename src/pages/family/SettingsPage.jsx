@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent } from '../../lib/db'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
-import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X } from 'lucide-react'
+import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 
 const TEMPORARY_STATUS_OPTIONS = [
@@ -279,7 +279,7 @@ function CoParentSection({ currentUser, onRegistered }) {
 }
 
 function ChildProfileCard({ child }) {
-  const [form, setForm] = useState({ pet: child.pet || '' })
+  const [form, setForm] = useState({ pet: child.pet || '', birthDate: child.birthDate || '' })
   const [hobbiesInput, setHobbiesInput] = useState((child.hobbies || []).join(', '))
   const [photoPreview, setPhotoPreview] = useState(child.photoUrl || null)
   const [photoFile, setPhotoFile] = useState(null)
@@ -297,7 +297,7 @@ function ChildProfileCard({ child }) {
     setSaving(true)
     try {
       const hobbies = hobbiesInput.split(',').map(h => h.trim()).filter(Boolean)
-      const update = { hobbies, pet: form.pet }
+      const update = { hobbies, pet: form.pet, birthDate: form.birthDate }
       if (photoFile) {
         if (child.photoPath) await deleteChildPhoto(child.photoPath)
         const { url, path } = await uploadChildPhoto(child.id, photoFile)
@@ -328,6 +328,19 @@ function ChildProfileCard({ child }) {
           </div>
           <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
         </label>
+      </div>
+      <div>
+        <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">
+          <Calendar size={13} className="text-gray-400" />
+          תאריך לידה
+        </label>
+        <input
+          type="date"
+          value={form.birthDate}
+          onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))}
+          className="input w-full text-right text-sm"
+          dir="ltr"
+        />
       </div>
       <div>
         <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">

@@ -325,11 +325,11 @@ export default function DashboardPage() {
           <section key="class" className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <Link to="/class" className="text-xs text-primary-600 flex items-center gap-1 hover:underline">
-                לכיתה <ArrowLeft size={12} />
+                {myClasses.length > 1 ? 'לכיתות' : 'לכיתה'} <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
                 <span className="text-xl leading-none">🎓</span>
-              הכיתה שלי
+              {myClasses.length > 1 ? 'הכיתות שלי' : 'הכיתה שלי'}
               </div>
             </div>
             <div className="card divide-y divide-gray-50 dark:divide-gray-700">
@@ -344,7 +344,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex gap-2">
                     <Link to="/class" className="text-xs text-primary-600 hover:underline flex items-center gap-0.5">
-                      <Users size={12} /> ספריה
+                      <Users size={12} /> חברים.ות בכיתה
                     </Link>
                   </div>
                 </div>
