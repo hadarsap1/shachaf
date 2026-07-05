@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
-  bulkImportChildren, linkChildToParent, unlinkChildFromParent,
+  bulkImportChildren, bulkDeleteChildren, linkChildToParent, unlinkChildFromParent,
   getAdminNote, saveAdminNote,
 } from '../../lib/db'
 import {
@@ -171,7 +171,22 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
 
           {(draft.address || (draft.parents || []).length > 0) && (
             <div className="bg-gray-50 rounded-xl p-3 space-y-2 dark:bg-gray-900">
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטים מהייבוא</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטים מהייבוא</div>
+                {(() => {
+                  const matchable = (draft.parents || [])
+                    .map(p => p.email && allUsers.find(u => u.email?.toLowerCase() === p.email))
+                    .filter(u => u && !(draft.parentUids || []).includes(u.uid))
+                  return matchable.length > 1 ? (
+                    <button
+                      onClick={async () => { for (const u of matchable) await handleLink(u.uid) }}
+                      disabled={linking}
+                      className="text-xs text-primary-600 hover:underline flex items-center gap-1">
+                      <Link2 size={11} /> קשר את כולם ({matchable.length})
+                    </button>
+                  ) : null
+                })()}
+              </div>
               {draft.address && (
                 <div className="text-sm text-gray-700 dark:text-gray-200">📍 {draft.address}</div>
               )}
@@ -276,35 +291,68 @@ function ImportPanel({ classes, onImport, onClose }) {
     classes.map(c => [normClass(c.name), c.id])
   )
 
-  // Accepts either simple format (שם + כיתה) or the school phone-book
-  // format (שם פרטי + שם משפחה + כיתה, with parent columns we ignore here)
-  const normalizeRows = (data) => {
-    const stripKey = (s) => String(s).trim().replace(/["״]/g, '')
-    const get = (row, ...keys) => {
-      for (const k of keys) {
-        const found = Object.keys(row).find(h => stripKey(h) === stripKey(k))
-        if (found && row[found] != null && String(row[found]).trim()) return String(row[found]).trim()
+  const finishRow = (name, className, address, parents) => {
+    const classId = classByName[normClass(className)]
+    // valid = matches an existing class; willCreate = class will be created on import
+    return { name, className, classId, address, parents, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
+  }
+
+  // School phone-book: each class section was pasted with a different column
+  // layout (extra ת"ז column, merged vs split address), so the header row lies.
+  // Parse positionally per row and classify trailing cells as name/phone/email.
+  const parsePhoneBook = (rawRows) => {
+    const isEmail = (v) => /@/.test(v)
+    const isPhone = (v) => (v.match(/\d/g) || []).length >= 7 && /^[\d\s\-+/.]+$/.test(v)
+    const isId    = (v) => /^\d{6,}$/.test(v)
+    return rawRows.slice(1).map(cols => {
+      const vals = cols.map(c => String(c ?? '').trim())
+      const className = vals[0]
+      if (!className) return null
+      let i = 1
+      if (isId(vals[i])) i++                      // skip ת"ז column (class ה)
+      const family = vals[i++] || ''
+      const first  = vals[i++] || ''
+      let address
+      if (vals[i] && !/\d/.test(vals[i]) && /^\d/.test(vals[i + 1] || '')) {
+        address = [vals[i], vals[i + 1], vals[i + 2]].filter(Boolean).join(' ')   // street | # | city
+        i += 3
+      } else {
+        address = vals[i] || ''                   // merged single-column address
+        i++
       }
-      return ''
-    }
-    const out = data.map(row => {
-      let name = get(row, 'שם', 'name', 'שם ילד')
-      if (!name) {
-        const first = get(row, 'שם פרטי')
-        const last  = get(row, 'שם משפחה')
-        name = [first, last].filter(Boolean).join(' ')
+      // Remaining cells → parents; classify each token
+      const parents = []
+      let cur = {}
+      const push = () => { if (cur.name || cur.phone || cur.email) parents.push(cur); cur = {} }
+      for (; i < vals.length; i++) {
+        const v = vals[i]
+        if (!v) continue
+        if (isEmail(v)) { if (cur.email) push(); cur.email = v.toLowerCase() }
+        else if (isPhone(v)) { if (cur.phone) push(); cur.phone = v }
+        else {
+          if (v === cur.name) continue            // duplicated name cell (class ה)
+          if (cur.name && (cur.email || cur.phone)) push()
+          if (!cur.name) cur.name = v
+        }
       }
-      const className = get(row, 'כיתה', 'class', 'class_name')
-      const classId = classByName[normClass(className)]
-      // Phone-book extras: address + parent contact details (stored on the child)
-      const address = [get(row, 'כתובת'), get(row, 'מספר בית'), get(row, 'ישוב')].filter(Boolean).join(' ')
-      const parents = [1, 2].map(n => ({
-        name:  get(row, `שם פרטי הורה ${n}`),
-        phone: get(row, `נייד הורה ${n}`),
-        email: get(row, `דוא"ל הורה ${n}`).toLowerCase(),
-      })).filter(p => p.name || p.phone || p.email)
-      // valid = matches an existing class; willCreate = class will be created on import
-      return { name, className, classId, address, parents, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
+      push()
+      return finishRow([first, family].filter(Boolean).join(' '), className, address, parents)
+    }).filter(Boolean).filter(r => r.name)
+  }
+
+  // Simple format: שם (or שם פרטי + שם משפחה) + כיתה columns
+  const parseSimple = (rawRows) => {
+    const stripKey = (s) => String(s ?? '').trim().replace(/["״]/g, '')
+    const headers = (rawRows[0] || []).map(stripKey)
+    const idx = (...keys) => headers.findIndex(h => keys.includes(h))
+    const nameIdx = idx('שם', 'name', 'שם ילד'), firstIdx = idx('שם פרטי'), lastIdx = idx('שם משפחה')
+    const classIdx = idx('כיתה', 'class', 'class_name')
+    const out = rawRows.slice(1).map(cols => {
+      const vals = cols.map(c => String(c ?? '').trim())
+      const name = nameIdx >= 0 && vals[nameIdx]
+        ? vals[nameIdx]
+        : [vals[firstIdx] || '', vals[lastIdx] || ''].filter(Boolean).join(' ')
+      return finishRow(name, vals[classIdx] || '', '', [])
     }).filter(r => r.name)
     if (!out.length) throw new Error('העמודות חייבות להיות: שם (או שם פרטי + שם משפחה), כיתה')
     return out
@@ -313,22 +361,19 @@ function ImportPanel({ classes, onImport, onClose }) {
   const handleFile = async (file) => {
     setError('')
     try {
-      let data
+      let rawRows
       if (file.name.endsWith('.csv')) {
         const { default: Papa } = await import('papaparse')
         const text = await file.text()
-        data = Papa.parse(text, { header: true, skipEmptyLines: true }).data
+        rawRows = Papa.parse(text, { header: false, skipEmptyLines: true }).data
       } else {
         const { default: readXlsxFile } = await import('read-excel-file/browser')
-        const xlsxRows = await readXlsxFile(file)
-        const headers = (xlsxRows[0] || []).map(h => String(h ?? ''))
-        data = xlsxRows.slice(1).map(row => {
-          const obj = {}
-          headers.forEach((h, i) => { obj[h] = row[i] })
-          return obj
-        })
+        rawRows = await readXlsxFile(file)
       }
-      setRows(normalizeRows(data))
+      if (!rawRows?.length) throw new Error('הקובץ ריק')
+      const headers = rawRows[0].map(h => String(h ?? '').trim())
+      const isPhoneBook = headers[0] === 'כיתה' && headers.some(h => h.includes('הורה'))
+      setRows(isPhoneBook ? parsePhoneBook(rawRows) : parseSimple(rawRows))
       setPreview(true)
     } catch (e) {
       setError(e.message)
@@ -471,6 +516,8 @@ export default function AdminChildrenPage() {
   const [isNew, setIsNew]         = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [deleting, setDeleting]   = useState(null)
+  const [checkedIds, setCheckedIds] = useState(new Set())
+  const [bulkWorking, setBulkWorking] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -527,6 +574,54 @@ export default function AdminChildrenPage() {
     return matchSearch && matchClass
   })
 
+  const allChecked = filtered.length > 0 && filtered.every(c => checkedIds.has(c.id))
+  const toggleAll = () => {
+    setCheckedIds(allChecked ? new Set() : new Set(filtered.map(c => c.id)))
+  }
+  const toggleOne = (id) => {
+    setCheckedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`למחוק ${checkedIds.size} ילדים?`)) return
+    setBulkWorking(true)
+    try {
+      await bulkDeleteChildren([...checkedIds])
+      setChildren(prev => prev.filter(c => !checkedIds.has(c.id)))
+      setCheckedIds(new Set())
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBulkWorking(false)
+    }
+  }
+
+  // Link every checked child to registered users whose email matches an imported parent
+  const handleBulkLink = async () => {
+    setBulkWorking(true)
+    try {
+      const userByEmail = Object.fromEntries(users.filter(u => u.email).map(u => [u.email.toLowerCase(), u.uid]))
+      let linked = 0
+      for (const child of children.filter(c => checkedIds.has(c.id))) {
+        for (const p of child.parents || []) {
+          const uid = p.email && userByEmail[p.email]
+          if (uid && !(child.parentUids || []).includes(uid)) {
+            try { await linkChildToParent(child.id, uid); linked++ } catch (e) { console.error('bulk link failed', child.name, e) }
+          }
+        }
+      }
+      setCheckedIds(new Set())
+      load()
+      if (linked === 0) setError('לא נמצאו הורים רשומים להצמדה (לפי מייל)')
+    } finally {
+      setBulkWorking(false)
+    }
+  }
+
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
@@ -572,6 +667,28 @@ export default function AdminChildrenPage() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+          {/* Select-all header + bulk actions */}
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-100 dark:bg-gray-900 dark:border-gray-700">
+            <input type="checkbox" checked={allChecked} onChange={toggleAll}
+              className="w-4 h-4 accent-primary-600 flex-shrink-0" title="בחר הכל" />
+            <span className="text-xs text-gray-500 dark:text-gray-400 flex-1">
+              {checkedIds.size > 0 ? `${checkedIds.size} נבחרו` : 'בחר הכל'}
+            </span>
+            {checkedIds.size > 0 && (
+              <div className="flex items-center gap-2">
+                <button onClick={handleBulkLink} disabled={bulkWorking}
+                  className="text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded-full px-3 py-1.5 hover:bg-primary-100 flex items-center gap-1 dark:bg-primary-900/30">
+                  {bulkWorking ? <Loader2 size={11} className="animate-spin" /> : <Link2 size={11} />}
+                  קשר הורים לפי מייל
+                </button>
+                <button onClick={handleBulkDelete} disabled={bulkWorking}
+                  className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1.5 hover:bg-red-100 flex items-center gap-1 dark:bg-red-900/20">
+                  {bulkWorking ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                  מחק נבחרים
+                </button>
+              </div>
+            )}
+          </div>
           {filtered.map((child, i) => {
             const cls = classMap[child.classId]
             return (
@@ -579,6 +696,8 @@ export default function AdminChildrenPage() {
                 'flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
                 i > 0 && 'border-t border-gray-50 dark:border-gray-700'
               )}>
+                <input type="checkbox" checked={checkedIds.has(child.id)} onChange={() => toggleOne(child.id)}
+                  className="w-4 h-4 accent-primary-600 flex-shrink-0" />
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                   style={{ backgroundColor: cls?.color || '#9CA3AF' }}

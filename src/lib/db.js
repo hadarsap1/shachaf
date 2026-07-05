@@ -394,6 +394,14 @@ async function _bulkImportChildren(children) {
   return created
 }
 
+async function _bulkDeleteChildren(ids) {
+  for (let i = 0; i < ids.length; i += 450) {
+    const batch = writeBatch(db)
+    ids.slice(i, i + 450).forEach(id => batch.delete(doc(db, 'children', id)))
+    await batch.commit()
+  }
+}
+
 async function _linkChildToParent(childId, parentUid) {
   const childSnap = await getDoc(doc(db, 'children', childId))
   if (!childSnap.exists()) return
@@ -1059,6 +1067,7 @@ export async function deleteUserCompletely(...args) { const r = await _deleteUse
 export async function saveChild(...args) { const r = await _saveChild(...args); invalidate('children', 'childrenBy'); return r }
 export async function deleteChild(...args) { const r = await _deleteChild(...args); invalidate('children', 'childrenBy'); return r }
 export async function bulkImportChildren(...args) { const r = await _bulkImportChildren(...args); invalidate('children', 'childrenBy'); return r }
+export async function bulkDeleteChildren(...args) { const r = await _bulkDeleteChildren(...args); invalidate('children', 'childrenBy'); return r }
 export async function updateChildProfile(...args) { const r = await _updateChildProfile(...args); invalidate('children', 'childrenBy'); return r }
 export async function linkChildToParent(...args) { const r = await _linkChildToParent(...args); invalidate('children', 'childrenBy', 'users'); return r }
 export async function unlinkChildFromParent(...args) { const r = await _unlinkChildFromParent(...args); invalidate('children', 'childrenBy', 'users'); return r }
