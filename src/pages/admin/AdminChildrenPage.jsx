@@ -169,6 +169,38 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
 
           <AdminNotesSection childId={draft.id} isNew={isNew} />
 
+          {(draft.address || (draft.parents || []).length > 0) && (
+            <div className="bg-gray-50 rounded-xl p-3 space-y-2 dark:bg-gray-900">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטים מהייבוא</div>
+              {draft.address && (
+                <div className="text-sm text-gray-700 dark:text-gray-200">📍 {draft.address}</div>
+              )}
+              {(draft.parents || []).map((p, i) => {
+                const match = p.email && allUsers.find(u => u.email?.toLowerCase() === p.email)
+                const alreadyLinked = match && (draft.parentUids || []).includes(match.uid)
+                return (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800 dark:text-gray-100">{p.name || '—'}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400" dir="ltr">
+                        {[p.phone, p.email].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    {match && !alreadyLinked && (
+                      <button onClick={() => handleLink(match.uid)} disabled={linking}
+                        className="text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded-full px-2.5 py-1 hover:bg-primary-100 flex items-center gap-1 dark:bg-primary-900/30">
+                        <Link2 size={11} /> קשר למשתמש
+                      </button>
+                    )}
+                    {alreadyLinked && (
+                      <span className="text-xs text-secondary-600 flex items-center gap-1"><Check size={11} /> מקושר</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           <div>
             <label className="label mb-3">קישור הורים</label>
             <div className="relative">
@@ -247,9 +279,10 @@ function ImportPanel({ classes, onImport, onClose }) {
   // Accepts either simple format (שם + כיתה) or the school phone-book
   // format (שם פרטי + שם משפחה + כיתה, with parent columns we ignore here)
   const normalizeRows = (data) => {
+    const stripKey = (s) => String(s).trim().replace(/["״]/g, '')
     const get = (row, ...keys) => {
       for (const k of keys) {
-        const found = Object.keys(row).find(h => h.trim().replace(/"/g, '') === k)
+        const found = Object.keys(row).find(h => stripKey(h) === stripKey(k))
         if (found && row[found] != null && String(row[found]).trim()) return String(row[found]).trim()
       }
       return ''
@@ -263,8 +296,15 @@ function ImportPanel({ classes, onImport, onClose }) {
       }
       const className = get(row, 'כיתה', 'class', 'class_name')
       const classId = classByName[normClass(className)]
+      // Phone-book extras: address + parent contact details (stored on the child)
+      const address = [get(row, 'כתובת'), get(row, 'מספר בית'), get(row, 'ישוב')].filter(Boolean).join(' ')
+      const parents = [1, 2].map(n => ({
+        name:  get(row, `שם פרטי הורה ${n}`),
+        phone: get(row, `נייד הורה ${n}`),
+        email: get(row, `דוא"ל הורה ${n}`).toLowerCase(),
+      })).filter(p => p.name || p.phone || p.email)
       // valid = matches an existing class; willCreate = class will be created on import
-      return { name, className, classId, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
+      return { name, className, classId, address, parents, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
     }).filter(r => r.name)
     if (!out.length) throw new Error('העמודות חייבות להיות: שם (או שם פרטי + שם משפחה), כיתה')
     return out
@@ -317,7 +357,12 @@ function ImportPanel({ classes, onImport, onClose }) {
         })
         created[key] = cls.id
       }
-      await onImport(importable.map(r => ({ name: r.name, classId: r.classId || created[normClass(r.className)] })))
+      await onImport(importable.map(r => ({
+        name: r.name,
+        classId: r.classId || created[normClass(r.className)],
+        address: r.address || '',
+        parents: r.parents || [],
+      })))
       onClose()
     } catch (e) {
       setError(e.message)
@@ -449,7 +494,17 @@ export default function AdminChildrenPage() {
   }
 
   const handleImport = async (rows) => {
-    await bulkImportChildren(rows)
+    const created = await bulkImportChildren(rows)
+    // Auto-link children to existing users by parent email
+    const userByEmail = Object.fromEntries(users.filter(u => u.email).map(u => [u.email.toLowerCase(), u.uid]))
+    for (const child of created) {
+      for (const p of child.parents || []) {
+        const uid = p.email && userByEmail[p.email]
+        if (uid) {
+          try { await linkChildToParent(child.id, uid) } catch (e) { console.error('auto-link failed', child.name, e) }
+        }
+      }
+    }
     load()
   }
 

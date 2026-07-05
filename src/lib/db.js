@@ -385,11 +385,13 @@ async function _deleteChild(id) {
 
 async function _bulkImportChildren(children) {
   const batch = writeBatch(db)
-  children.forEach(child => {
+  const created = children.map(child => {
     const ref = doc(collection(db, 'children'))
     batch.set(ref, { ...child, parentUids: [], createdAt: serverTimestamp() })
+    return { ...child, id: ref.id }
   })
   await batch.commit()
+  return created
 }
 
 async function _linkChildToParent(childId, parentUid) {
