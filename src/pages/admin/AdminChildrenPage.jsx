@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  getChildren, getClasses, getUsers, saveChild, deleteChild,
+  getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
   bulkImportChildren, linkChildToParent, unlinkChildFromParent,
   getAdminNote, saveAdminNote,
 } from '../../lib/db'
@@ -263,7 +263,8 @@ function ImportPanel({ classes, onImport, onClose }) {
       }
       const className = get(row, 'כיתה', 'class', 'class_name')
       const classId = classByName[normClass(className)]
-      return { name, className, classId, valid: !!name && !!classId }
+      // valid = matches an existing class; willCreate = class will be created on import
+      return { name, className, classId, valid: !!name && !!classId, willCreate: !!name && !classId && !!className }
     }).filter(r => r.name)
     if (!out.length) throw new Error('העמודות חייבות להיות: שם (או שם פרטי + שם משפחה), כיתה')
     return out
@@ -295,11 +296,28 @@ function ImportPanel({ classes, onImport, onClose }) {
   }
 
   const handleImport = async () => {
-    const valid = rows.filter(r => r.valid)
-    if (!valid.length) return
+    const importable = rows.filter(r => r.valid || r.willCreate)
+    if (!importable.length) return
     setSaving(true)
     try {
-      await onImport(valid.map(({ name, classId }) => ({ name, classId })))
+      // Create classes that don't exist yet, one per unique name
+      const missing = [...new Set(importable.filter(r => r.willCreate).map(r => normClass(r.className)))]
+      const created = {}
+      const CLASS_COLORS = ['#1B3B70', '#0E7490', '#B45309', '#6D28D9', '#BE185D', '#065F46']
+      for (let i = 0; i < missing.length; i++) {
+        const key = missing[i]
+        const display = key.replace(/\s+/g, ' ')
+        const cls = await saveClass({
+          id: 'class-' + Date.now() + i,
+          name: display,
+          grade: display[0] || 'א',
+          color: CLASS_COLORS[i % CLASS_COLORS.length],
+          adminUids: [],
+          needsUpdate: true,
+        })
+        created[key] = cls.id
+      }
+      await onImport(importable.map(r => ({ name: r.name, classId: r.classId || created[normClass(r.className)] })))
       onClose()
     } catch (e) {
       setError(e.message)
@@ -309,7 +327,9 @@ function ImportPanel({ classes, onImport, onClose }) {
   }
 
   const validCount   = rows.filter(r => r.valid).length
-  const invalidCount = rows.filter(r => !r.valid).length
+  const createCount  = rows.filter(r => r.willCreate).length
+  const newClassNames = [...new Set(rows.filter(r => r.willCreate).map(r => normClass(r.className)))]
+  const invalidCount = rows.filter(r => !r.valid && !r.willCreate).length
 
   return (
     <>
@@ -343,27 +363,32 @@ function ImportPanel({ classes, onImport, onClose }) {
               {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
               <div className="flex gap-3">
                 <div className="flex-1 bg-secondary-50 rounded-xl p-3 text-center dark:bg-secondary-900/30">
-                  <div className="text-xl font-bold text-secondary-700">{validCount}</div>
+                  <div className="text-xl font-bold text-secondary-700">{validCount + createCount}</div>
                   <div className="text-xs text-secondary-600">תקין</div>
                 </div>
                 {invalidCount > 0 && (
                   <div className="flex-1 bg-red-50 rounded-xl p-3 text-center dark:bg-red-900/20">
                     <div className="text-xl font-bold text-red-600 dark:text-red-400">{invalidCount}</div>
-                    <div className="text-xs text-red-500">לא זוהה כיתה</div>
+                    <div className="text-xs text-red-500">ללא כיתה</div>
                   </div>
                 )}
               </div>
+              {newClassNames.length > 0 && (
+                <div className="bg-amber-50 rounded-xl px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                  כיתות חדשות שייווצרו: {newClassNames.join(', ')}
+                </div>
+              )}
               <div className="max-h-64 overflow-y-auto space-y-1">
                 {rows.map((r, i) => (
                   <div key={i} className={clsx(
                     'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
-                    r.valid ? 'bg-gray-50' : 'bg-red-50'
+                    r.valid ? 'bg-gray-50' : r.willCreate ? 'bg-amber-50' : 'bg-red-50'
                   )}>
-                    {r.valid
-                      ? <Check size={12} className="text-secondary-500 flex-shrink-0" />
+                    {r.valid || r.willCreate
+                      ? <Check size={12} className={clsx('flex-shrink-0', r.valid ? 'text-secondary-500' : 'text-amber-500')} />
                       : <AlertCircle size={12} className="text-red-400 flex-shrink-0" />}
                     <span className="flex-1 truncate">{r.name}</span>
-                    <span className={clsx('text-xs', r.valid ? 'text-gray-400' : 'text-red-400')}>
+                    <span className={clsx('text-xs', r.valid ? 'text-gray-400' : r.willCreate ? 'text-amber-500' : 'text-red-400')}>
                       {r.className}
                     </span>
                   </div>
@@ -373,10 +398,10 @@ function ImportPanel({ classes, onImport, onClose }) {
                 <button onClick={() => { setPreview(false); setRows([]) }} className="flex-1 btn-outline text-sm py-2">
                   חזור
                 </button>
-                <button onClick={handleImport} disabled={saving || validCount === 0}
+                <button onClick={handleImport} disabled={saving || validCount + createCount === 0}
                   className="flex-1 btn-primary text-sm py-2 flex items-center justify-center gap-2">
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                  ייבא {validCount} ילדים
+                  ייבא {validCount + createCount} ילדים
                 </button>
               </div>
             </>

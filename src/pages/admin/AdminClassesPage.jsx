@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 
-const GRADES = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב']
+const GRADES = ['גן טט״ח', 'גן ט״ח', 'גן חובה', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב']
 
 const SCHEDULE_DAYS  = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
 const SCHEDULE_PERIODS = [
@@ -655,7 +655,8 @@ export default function AdminClassesPage() {
   }, [])
 
   const handleSave = async (cls) => {
-    const saved = await saveClass(cls)
+    // Editing an imported class counts as completing its details
+    const saved = await saveClass({ ...cls, needsUpdate: false })
     setClasses(prev => {
       const idx = prev.findIndex(c => c.id === saved.id)
       return idx >= 0 ? prev.map(c => c.id === saved.id ? saved : c) : [saved, ...prev]
@@ -717,7 +718,10 @@ export default function AdminClassesPage() {
           {filtered.map(cls => (
             <div key={cls.id}
               className="bg-white rounded-2xl shadow-card border border-gray-100 p-4 flex items-center gap-4 dark:bg-gray-800 dark:border-gray-700">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
+              <div className={clsx(
+                'w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden text-center leading-tight px-0.5',
+                (cls.name || '').length > 3 ? 'text-[10px]' : (cls.name || '').length > 1 ? 'text-sm' : 'text-lg'
+              )}
                 style={{ backgroundColor: cls.color || CLASS_COLORS[0] }}>
                 {cls.name || '?'}
               </div>
@@ -726,6 +730,11 @@ export default function AdminClassesPage() {
                   כיתה {cls.name}
                   <span className="text-xs font-normal text-gray-400 ms-2">שכבה {cls.grade}</span>
                 </div>
+                {cls.needsUpdate && (
+                  <div className="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 mt-1 dark:bg-amber-900/20 dark:text-amber-300">
+                    נוצרה מייבוא — יש להשלים פרטים
+                  </div>
+                )}
                 {cls.teacherContact?.name && (
                   <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 dark:text-gray-400">
                     <Users size={11} /> {cls.teacherContact.name}
