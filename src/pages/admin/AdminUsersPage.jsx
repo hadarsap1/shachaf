@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent } from '../../lib/db'
 import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
-  Link2, Loader2, RefreshCw, Upload, MapPin, Phone, Trash2,
+  Link2, Loader2, RefreshCw, Upload, MapPin, Phone, Trash2, Baby,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -294,6 +294,14 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [profileSaved, setProfileSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [kids, setKids] = useState(null)
+  const [classes, setClasses] = useState([])
+
+  useEffect(() => {
+    Promise.all([getChildrenByParent(user.uid), getClasses()])
+      .then(([ch, cl]) => { setKids(ch); setClasses(cl) })
+      .catch(() => setKids([]))
+  }, [user.uid])
 
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
   const rawDigits = (user.phone || '').replace(/\D/g, '')
@@ -447,6 +455,32 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
             >
               {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
+          </div>
+
+          {/* Linked children */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">ילדים</label>
+            {kids === null ? (
+              <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-gray-300" /></div>
+            ) : kids.length === 0 ? (
+              <p className="text-sm text-gray-400 text-right">אין ילדים מקושרים</p>
+            ) : (
+              <div className="space-y-1.5">
+                {kids.map(k => {
+                  const cls = classes.find(c => c.id === k.classId)
+                  return (
+                    <div key={k.id} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                        style={{ backgroundColor: cls?.color || '#9CA3AF' }}>
+                        {cls?.name || <Baby size={12} />}
+                      </div>
+                      <span className="flex-1 text-sm font-medium text-gray-700 text-right dark:text-gray-200">{k.name}</span>
+                      {cls && <span className="text-xs text-gray-400">כיתה {cls.name}</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
 
