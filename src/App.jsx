@@ -86,10 +86,12 @@ function ProtectedOnboarding() {
 }
 
 function RootRedirect() {
-  const { user, loading, isAdmin } = useAuth()
+  const { user, loading, isAdmin, viewAs } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  if (isAdmin) return <Navigate to="/admin" replace />
+  // viewAs check must mirror ProtectedShell's effectiveAdmin — otherwise
+  // /admin→/ and /→/admin bounce forever (blank page, throttled navigation)
+  if (isAdmin && !viewAs) return <Navigate to="/admin" replace />
   return <Navigate to="/dashboard" replace />
 }
 
