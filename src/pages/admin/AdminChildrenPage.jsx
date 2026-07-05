@@ -234,12 +234,14 @@ function ImportPanel({ classes, onImport, onClose }) {
   const [saving, setSaving]   = useState(false)
   const [preview, setPreview] = useState(false)
 
+  // Normalize class labels so "א", "א'", "כיתה א" all match the same class
+  const normClass = (s) => String(s || '')
+    .replace(/['׳"״]/g, '')
+    .replace(/^כיתה\s*/, '')
+    .trim()
+    .toLowerCase()
   const classByName = Object.fromEntries(
-    classes.flatMap(c => [
-      [c.name, c.id],
-      [`כיתה ${c.name}`, c.id],
-      [c.name.toLowerCase(), c.id],
-    ])
+    classes.map(c => [normClass(c.name), c.id])
   )
 
   // Accepts either simple format (שם + כיתה) or the school phone-book
@@ -260,7 +262,7 @@ function ImportPanel({ classes, onImport, onClose }) {
         name = [first, last].filter(Boolean).join(' ')
       }
       const className = get(row, 'כיתה', 'class', 'class_name')
-      const classId = classByName[className] || classByName[className?.toLowerCase()]
+      const classId = classByName[normClass(className)]
       return { name, className, classId, valid: !!name && !!classId }
     }).filter(r => r.name)
     if (!out.length) throw new Error('העמודות חייבות להיות: שם (או שם פרטי + שם משפחה), כיתה')
