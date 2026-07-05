@@ -17,11 +17,66 @@ const COLUMN_ALIASES = {
   'כתובת': 'address', 'address': 'address',
 }
 
+// Column headers for the class-list CSV (ספר טלפונים) format
+const CLASS_LIST_COLS = {
+  'כיתה': 'class', 'שם משפחה': 'familyName', 'שם פרטי': 'childFirst',
+  'כתובת': 'street', 'מספר בית': 'houseNum', 'ישוב': 'city',
+  'שם פרטי הורה 1': 'parent1Name', 'נייד הורה 1': 'parent1Phone', 'דוא"ל הורה 1': 'parent1Email',
+  'שם פרטי הורה 2': 'parent2Name', 'נייד הורה 2': 'parent2Phone', 'דוא"ל הורה 2': 'parent2Email',
+}
+
 const TABS = [
   { key: 'new_family', label: 'משפחות חדשות' },
   { key: 'host_family', label: 'משפחות מארחות' },
   { key: 'community', label: 'קהילה' },
 ]
+
+// Detect if CSV uses the class-list format (has כיתה + הורה columns)
+function isClassListFormat(headers) {
+  const h = headers.map(k => k.toString().trim())
+  return h.includes('כיתה') && h.some(k => k.includes('הורה'))
+}
+
+// ponytail: class-list CSV → one row per parent, children grouped by email
+function normalizeClassListRows(data) {
+  const byEmail = new Map() // email → { name, phone, address, children[] }
+  for (const row of data) {
+    const mapped = {}
+    for (const [key, val] of Object.entries(row)) {
+      const k = CLASS_LIST_COLS[key.toString().trim()] || CLASS_LIST_COLS[key.toString().replace(/"/g, '').trim()]
+      if (k) mapped[k] = String(val ?? '').trim()
+    }
+    const street = mapped.street || ''
+    const houseNum = mapped.houseNum || ''
+    const city = mapped.city || ''
+    const address = [street, houseNum, city].filter(Boolean).join(' ')
+    const familyName = mapped.familyName || ''
+    const childFirst = mapped.childFirst || ''
+    const classId = mapped.class || ''
+
+    const child = { name: childFirst ? `${childFirst} ${familyName}` : familyName, class: classId }
+
+    for (const i of [1, 2]) {
+      const email = (mapped[`parent${i}Email`] || '').toLowerCase().trim()
+      const firstName = mapped[`parent${i}Name`] || ''
+      const phone = mapped[`parent${i}Phone`] || ''
+      if (!email) continue
+      const existing = byEmail.get(email)
+      if (existing) {
+        if (child.name) existing.children.push(child)
+      } else {
+        byEmail.set(email, {
+          name: firstName ? `${firstName} ${familyName}` : familyName,
+          email,
+          phone,
+          address,
+          children: child.name ? [child] : [],
+        })
+      }
+    }
+  }
+  return [...byEmail.values()]
+}
 
 // ── Parse spreadsheet/CSV → normalized rows ───────────────────────────────────
 function normalizeRows(data) {
@@ -43,21 +98,25 @@ function normalizeRows(data) {
 
 async function parseFile(file) {
   const ext = file.name.split('.').pop().toLowerCase()
+  let data, headers
   if (ext === 'csv') {
     const { default: Papa } = await import('papaparse')
     const text = await file.text()
-    const { data } = Papa.parse(text, { header: true, skipEmptyLines: true })
-    return normalizeRows(data)
+    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true })
+    data = parsed.data
+    headers = parsed.meta?.fields || []
+  } else {
+    const { default: readXlsxFile } = await import('read-excel-file/browser')
+    const xlsxRows = await readXlsxFile(file)
+    if (!xlsxRows.length) return []
+    headers = xlsxRows[0].map(h => String(h ?? ''))
+    data = xlsxRows.slice(1).map(row => {
+      const obj = {}
+      headers.forEach((h, i) => { obj[h] = row[i] })
+      return obj
+    })
   }
-  const { default: readXlsxFile } = await import('read-excel-file/browser')
-  const xlsxRows = await readXlsxFile(file)
-  if (!xlsxRows.length) return []
-  const headers = xlsxRows[0]
-  const data = xlsxRows.slice(1).map(row => {
-    const obj = {}
-    headers.forEach((h, i) => { obj[String(h ?? '')] = row[i] })
-    return obj
-  })
+  if (isClassListFormat(headers)) return normalizeClassListRows(data)
   return normalizeRows(data)
 }
 
@@ -105,6 +164,9 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
               <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">אימייל</th>
               <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">טלפון</th>
               <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">כתובת</th>
+              {rows.some(r => r.children?.length) && (
+                <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">ילדים</th>
+              )}
               <th className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-300">סטטוס</th>
             </tr>
           </thead>
@@ -132,6 +194,11 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
                   <td className={clsx('px-4 py-2.5', !row.address && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700')}>
                     {row.address || <span className="text-gray-400 text-xs">—</span>}
                   </td>
+                  {rows.some(r => r.children?.length) && (
+                    <td className="px-4 py-2.5 text-gray-700 text-xs">
+                      {(row.children || []).map(c => `${c.name} (${c.class})`).join(', ') || '—'}
+                    </td>
+                  )}
                   <td className="px-4 py-2.5">
                     {invalid
                       ? <span className="text-xs text-gray-400 italic">ידלג</span>
@@ -333,7 +400,7 @@ export default function AdminImportPage() {
         } else {
           // Write to pendingFamilies using email as doc ID
           const pendingRef = doc(db, 'pendingFamilies', emailLower)
-          batch.set(pendingRef, {
+          const pendingData = {
             email: emailLower,
             name: row.name,
             phone: row.phone,
@@ -341,7 +408,9 @@ export default function AdminImportPage() {
             role: tab,
             importedAt: serverTimestamp(),
             status: 'pending',
-          }, { merge: true })
+          }
+          if (row.children?.length) pendingData.children = row.children
+          batch.set(pendingRef, pendingData, { merge: true })
           opCount++
         }
 

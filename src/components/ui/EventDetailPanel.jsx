@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Clock, MapPin, Plus, Calendar, Users, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
+import { X, Clock, MapPin, Plus, Calendar, Users, ChevronDown, Loader2, CheckCircle2, Maximize2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../../context/AuthContext'
 import { rsvpEvent, unrsvpEvent, getUsersByUids } from '../../lib/db'
@@ -60,6 +60,8 @@ export default function EventDetailPanel({ event, onClose }) {
   const [attendees, setAttendees] = useState(null)
   const [loadingAttendees, setLoadingAttendees] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState(null)
+  const [imageError, setImageError] = useState(false)
+  const [fullScreenImage, setFullScreenImage] = useState(false)
 
   const isGoing = user && attendeeUids.includes(user.uid)
 
@@ -120,12 +122,19 @@ export default function EventDetailPanel({ event, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {event.imageUrl && (
-            <img
-              src={event.imageUrl}
-              alt={event.title}
-              className="w-full object-cover max-h-56 outline outline-1 outline-black/10"
-            />
+          {event.imageUrl && !imageError && (
+            <div className="relative cursor-pointer group" onClick={() => setFullScreenImage(true)}>
+              <img
+                src={event.imageUrl}
+                alt={event.title}
+                className="w-full object-cover max-h-56 outline outline-1 outline-black/10"
+                onError={() => setImageError(true)}
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <Maximize2 size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+              </div>
+            </div>
           )}
 
           <div className="px-5 py-5 space-y-4">
@@ -146,14 +155,14 @@ export default function EventDetailPanel({ event, onClose }) {
                 <div className="flex items-center gap-2 text-sm text-gray-600 justify-end dark:text-gray-300">
                   <span>
                     {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                    {event.time ? ` • ${event.time}` : ''}
+                    {event.tbdFields?.includes('time') ? ' • שעה תפורסם בהמשך' : event.time ? ` • ${event.time}` : ''}
                   </span>
                   <Clock size={15} className="text-primary-400 flex-shrink-0" />
                 </div>
               )}
-              {event.location && (
+              {(event.location || event.tbdFields?.includes('location')) && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 justify-end dark:text-gray-300">
-                  <span>{event.location}</span>
+                  <span>{event.tbdFields?.includes('location') ? 'מיקום יפורסם בהמשך' : event.location}</span>
                   <MapPin size={15} className="text-primary-400 flex-shrink-0" />
                 </div>
               )}
@@ -234,6 +243,20 @@ export default function EventDetailPanel({ event, onClose }) {
 
       {selectedPerson && (
         <ContactModal person={selectedPerson} onClose={() => setSelectedPerson(null)} />
+      )}
+
+      {fullScreenImage && event.imageUrl && (
+        <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4" onClick={() => setFullScreenImage(false)}>
+          <button className="absolute top-4 right-4 p-2 text-white/80 hover:text-white" onClick={() => setFullScreenImage(false)}>
+            <X size={24} />
+          </button>
+          <img
+            src={event.imageUrl}
+            alt={event.title}
+            className="max-w-full max-h-full object-contain rounded-lg"
+            referrerPolicy="no-referrer"
+          />
+        </div>
       )}
     </>
   )

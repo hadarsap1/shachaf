@@ -38,7 +38,7 @@ export default function EventCard({ event, onCardClick }) {
       onClick={onCardClick}
     >
       {event.imageUrl ? (
-        <img src={event.imageUrl} alt={event.title} className="w-full h-36 object-cover outline outline-1 outline-black/10" />
+        <img src={event.imageUrl} alt={event.title} className="w-full h-36 object-cover outline outline-1 outline-black/10" referrerPolicy="no-referrer" />
       ) : (
         <div className={clsx(
           'h-1.5',
@@ -68,16 +68,16 @@ export default function EventCard({ event, onCardClick }) {
               {eventDate.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
-          {event.time && (
+          {(event.time || event.tbdFields?.includes('time')) && (
             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <Clock size={13} className="text-primary-400" />
-              <span>{event.time}</span>
+              <span>{event.tbdFields?.includes('time') ? 'שעה תפורסם בהמשך' : event.time}</span>
             </div>
           )}
-          {event.location && (
+          {(event.location || event.tbdFields?.includes('location')) && (
             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <MapPin size={13} className="text-primary-400" />
-              <span>{event.location}</span>
+              <span>{event.tbdFields?.includes('location') ? 'מיקום יפורסם בהמשך' : event.location}</span>
             </div>
           )}
         </div>

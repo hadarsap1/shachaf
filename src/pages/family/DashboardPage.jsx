@@ -353,9 +353,27 @@ export default function DashboardPage() {
           </section>
         )
 
-      case 'events':
+      case 'events': {
+        const flyerEvents = events.filter(e => e.imageUrl)
         return (
           <section key="events" className="mb-6">
+            {flyerEvents.length > 0 && (
+              <div className="mb-4">
+                <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+                  {flyerEvents.map(ev => (
+                    <div key={`flyer-${ev.id}`} className="flex-shrink-0 w-64 snap-start cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedEvent(ev)}>
+                      <img src={ev.imageUrl} alt={ev.title} className="w-full h-36 object-cover" referrerPolicy="no-referrer"
+                        onError={e => { e.target.style.display = 'none' }} />
+                      <div className="p-2.5 bg-white dark:bg-gray-800 text-right">
+                        <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{ev.title}</div>
+                        {ev.date && <div className="text-xs text-gray-400 mt-0.5">{new Date(`${ev.date}T00:00:00`).toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-3">
               <Link to="/events" className="text-xs text-primary-600 flex items-center gap-1 hover:underline">
                 הכל <ArrowLeft size={12} />
@@ -379,6 +397,7 @@ export default function DashboardPage() {
             )}
           </section>
         )
+      }
 
       case 'activity':
         return (

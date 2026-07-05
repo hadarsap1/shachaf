@@ -56,7 +56,10 @@ const Spinner = () => (
 const ALUMNI_ROUTES = ['/businesses', '/settings', '/help', '/contact']
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
-  const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin, needsOnboarding } = useAuth()
+  const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin, needsOnboarding, viewAs } = useAuth()
+  // Admin in "watch as parent" mode behaves like a regular parent
+  const effectiveAdmin = isAdmin && !viewAs
+  const effectiveClassAdmin = isClassAdmin && !viewAs
   const { pathname } = useLocation()
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
@@ -68,9 +71,9 @@ function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false
   // approval before touching the app — admins/class admins still need access
   // to review and approve them, so they're exempt from this gate.
   if (user.status === 'pending' && !isAdmin && !isClassAdmin) return <PendingApprovalPage />
-  if (adminOnly && !isAdmin && !(classAdminOk && isClassAdmin)) return <Navigate to="/" replace />
+  if (adminOnly && !effectiveAdmin && !(classAdminOk && effectiveClassAdmin)) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />
-  if (hostOnly && !isHostFamily && !isAdmin) return <Navigate to="/" replace />
+  if (hostOnly && !isHostFamily && !effectiveAdmin) return <Navigate to="/" replace />
   return <AppShell />
 }
 

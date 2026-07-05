@@ -136,7 +136,7 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
 // ---- Event slide panel (add / edit) ----
 
 function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommittees = [], restricted = false }) {
-  const [draft, setDraft] = useState({ ...event, classIds: event.classIds || [] })
+  const [draft, setDraft] = useState({ ...event, classIds: event.classIds || [], tbdFields: event.tbdFields || [] })
   const [errors, setErrors] = useState({})
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(event.imageUrl || null)
@@ -164,6 +164,13 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
     } else {
       setDraft(d => ({ ...d, targetGroups: [value], classIds: [] }))
     }
+  }
+
+  const toggleTbd = (field) => {
+    setDraft(d => {
+      const tbd = d.tbdFields || []
+      return { ...d, tbdFields: tbd.includes(field) ? tbd.filter(f => f !== field) : [...tbd, field] }
+    })
   }
 
   const handleImageSelect = (e) => {
@@ -228,14 +235,25 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
             <div>
               <label className="label block mb-1 text-right text-xs">שעה</label>
               <input type="time" value={draft.time || ''} onChange={e => set('time', e.target.value)}
-                className="input w-full text-sm" dir="ltr" />
+                className="input w-full text-sm" dir="ltr" disabled={(draft.tbdFields || []).includes('time')} />
+              <label className="flex items-center gap-1.5 mt-1 cursor-pointer justify-end">
+                <span className="text-xs text-gray-400">טרם נקבע (TBD)</span>
+                <input type="checkbox" checked={(draft.tbdFields || []).includes('time')}
+                  onChange={() => toggleTbd('time')} className="w-3.5 h-3.5 accent-primary-600" />
+              </label>
             </div>
           </div>
 
           <div>
             <label className="label block mb-1 text-right">מיקום</label>
             <input value={draft.location || ''} onChange={e => set('location', e.target.value)}
-              className="input w-full text-right" placeholder="כתובת או שם המקום" />
+              className="input w-full text-right" placeholder="כתובת או שם המקום"
+              disabled={(draft.tbdFields || []).includes('location')} />
+            <label className="flex items-center gap-1.5 mt-1 cursor-pointer justify-end">
+              <span className="text-xs text-gray-400">טרם נקבע (TBD)</span>
+              <input type="checkbox" checked={(draft.tbdFields || []).includes('location')}
+                onChange={() => toggleTbd('location')} className="w-3.5 h-3.5 accent-primary-600" />
+            </label>
           </div>
 
           <div>
@@ -354,7 +372,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
 
 export default function AdminEventsPage() {
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, viewAs } = useAuth()
   const [tab, setTab] = useState('events')
   const [events, setEvents] = useState([])
   const [classes, setClasses] = useState([])
@@ -407,6 +425,7 @@ export default function AdminEventsPage() {
   const handleSave = async (saved, newImageFile, shouldRemoveImage) => {
     setEditing(null)
     try {
+      if (saved.id?.startsWith('event-') && user?.uid) saved.createdBy = user.uid
       let persisted = await saveEvent(saved)
 
       if (newImageFile) {
