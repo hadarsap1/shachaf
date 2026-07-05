@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Clock, MapPin, Plus, Calendar, Users, ChevronDown, Loader2, CheckCircle2, Maximize2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../../context/AuthContext'
+import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { rsvpEvent, unrsvpEvent, getUsersByUids } from '../../lib/db'
 import ContactModal from './ContactModal'
 
@@ -63,6 +64,9 @@ export default function EventDetailPanel({ event, onClose }) {
   const [imageError, setImageError] = useState(false)
   const [fullScreenImage, setFullScreenImage] = useState(false)
 
+  // Escape closes the fullscreen image first, otherwise the panel
+  useEscapeToClose(() => (fullScreenImage ? setFullScreenImage(false) : onClose()))
+
   const isGoing = user && attendeeUids.includes(user.uid)
 
   const handleRsvp = async () => {
@@ -113,7 +117,7 @@ export default function EventDetailPanel({ event, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label="פרטי אירוע" className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700">
             <X size={18} />

@@ -410,7 +410,7 @@ function ClassAdminsTab({ adminUids, allUsers, onAdd, onRemove, saving }) {
       <div className="relative">
         <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="חיפוש הורה לפי שם או מייל" className="input w-full text-sm pe-9" />
+          placeholder="חיפוש הורה לפי שם או מייל" className="input w-full text-sm ps-9" />
         {suggestions.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
             {suggestions.map(u => (
@@ -700,7 +700,7 @@ export default function AdminClassesPage() {
       <div className="relative mb-4">
         <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="חיפוש לפי שם כיתה או שכבה..." className="input w-full pe-10" />
+          placeholder="חיפוש לפי שם כיתה או שכבה..." className="input w-full ps-10" />
       </div>
 
       {loading ? (

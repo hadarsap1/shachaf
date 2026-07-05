@@ -163,8 +163,17 @@ export default function EventsPage() {
           {filteredEvents.length === 0 && (
             <div className="text-center py-16 text-gray-400">
               <Calendar size={44} className="mx-auto mb-4 opacity-25" />
-              <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
-              <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+              {filterValue === 'all' ? (
+                <>
+                  <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
+                  <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים בסינון הזה</p>
+                  <button onClick={() => setFilterValue('all')} className="text-sm mt-1 text-primary-600 hover:underline">נקה סינון</button>
+                </>
+              )}
             </div>
           )}
         </>
@@ -174,8 +183,17 @@ export default function EventsPage() {
       {!loading && displayMode === 'calendar' && filteredEvents.length === 0 && (
         <div className="text-center py-16 text-gray-400 mt-4">
           <Calendar size={44} className="mx-auto mb-4 opacity-25" />
-          <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
-          <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+          {filterValue === 'all' ? (
+            <>
+              <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
+              <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים בסינון הזה</p>
+              <button onClick={() => setFilterValue('all')} className="text-sm mt-1 text-primary-600 hover:underline">נקה סינון</button>
+            </>
+          )}
         </div>
       )}
 

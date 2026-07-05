@@ -5,6 +5,7 @@ import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, L
 import clsx from 'clsx'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import { useAuth } from '../../context/AuthContext'
+import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 
 function googleCalendarUrl(event) {
   const time = event.time || '09:00'
@@ -143,6 +144,8 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
 
+  useEscapeToClose(onClose, !saving)
+
   const set = (field, value) => {
     setDraft(d => ({ ...d, [field]: value }))
     setErrors(e => ({ ...e, [field]: '' }))
@@ -202,7 +205,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label="עריכת אירוע" className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'אירוע חדש' : 'עריכת אירוע'}</h2>

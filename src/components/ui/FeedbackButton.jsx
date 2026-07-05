@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MessageSquarePlus, X, Loader2, Check, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { saveFeedback, uploadFeedbackScreenshot, updateFeedbackScreenshot } from '../../lib/db'
+import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 
 export default function FeedbackButton() {
   const { user } = useAuth()
@@ -13,6 +14,8 @@ export default function FeedbackButton() {
   const [error, setError] = useState('')
 
   const close = () => { setOpen(false); setText(''); setFile(null); setDone(false); setError('') }
+
+  useEscapeToClose(close, open && !saving)
 
   const handleSubmit = async (e) => {
     e.preventDefault()

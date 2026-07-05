@@ -54,33 +54,39 @@ export const NAV_EMOJI = {
 const ADMIN_NAV_LINKS = {
   admin: [
     { to: '/admin',            label: 'מסך הבית' },
+    { heading: 'קהילה' },
     { to: '/admin/users',      label: 'חברים' },
     { to: '/admin/classes',    label: 'כיתות' },
     { to: '/admin/children',   label: 'ילדים', sub: true },
     { to: '/admin/committees', label: 'ועדות' },
     { to: '/admin/community',  label: 'קבוצות קהילה' },
-    { to: '/admin/tasks',      label: 'משימות' },
+    { to: '/businesses',       label: 'עסקים בקהילה' },
+    { heading: 'תוכן' },
     { to: '/admin/events',     label: 'אירועים' },
+    { to: '/admin/tasks',      label: 'משימות' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
     { to: '/admin/activity',   label: 'פעילות' },
+    { heading: 'מערכת' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
-    { to: '/businesses',       label: 'עסקים בקהילה' },
     { to: '/help',             label: 'עזרה' },
   ],
   super_admin: [
     { to: '/admin',            label: 'מסך הבית' },
+    { heading: 'קהילה' },
     { to: '/admin/users',      label: 'חברים' },
     { to: '/admin/classes',    label: 'כיתות' },
     { to: '/admin/children',   label: 'ילדים', sub: true },
     { to: '/admin/committees', label: 'ועדות' },
     { to: '/admin/community',  label: 'קבוצות קהילה' },
+    { to: '/businesses',       label: 'עסקים בקהילה' },
+    { heading: 'תוכן' },
     { to: '/admin/tasks',      label: 'משימות' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },
     { to: '/admin/activity',   label: 'פעילות' },
+    { heading: 'מערכת' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
-    { to: '/businesses',       label: 'עסקים בקהילה' },
     { to: '/super/admins',     label: 'הרשאות מנהלים' },
     { to: '/super/health',     label: 'בקרת תקינות', healthBadge: true },
     { to: '/super/feedback',   label: 'משוב ובאגים', feedbackBadge: true },
@@ -249,15 +255,21 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
-        {links.map(link => (
-          <NavLink
-            key={link.to}
-            {...link}
-            unread={link.badge ? unreadMessages : 0}
-            count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))}
-            sub={!!link.sub}
-            onClick={onClose}
-          />
+        {links.map((link, i) => (
+          link.heading ? (
+            <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold text-white/35 uppercase tracking-wide">
+              {link.heading}
+            </div>
+          ) : (
+            <NavLink
+              key={link.to}
+              {...link}
+              unread={link.badge ? unreadMessages : 0}
+              count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))}
+              sub={!!link.sub}
+              onClick={onClose}
+            />
+          )
         ))}
       </nav>
 
@@ -354,7 +366,7 @@ export default function AppShell() {
   const bottomLinks = links.filter(l => bottomNavPaths.includes(l.to))
 
   const activeLink = links.find(l =>
-    pathname === l.to || (l.to !== '/dashboard' && l.to !== '/admin' && pathname.startsWith(l.to))
+    l.to && (pathname === l.to || (l.to !== '/dashboard' && l.to !== '/admin' && pathname.startsWith(l.to)))
   )
   const pageTitle = activeLink?.label || ''
 

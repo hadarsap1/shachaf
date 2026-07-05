@@ -10,6 +10,8 @@ import {
   Loader2, AlertCircle, StickyNote,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { toast } from '../../components/ui/Toaster'
+import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 
 // Parent full name from the imported first name + the child's family name
 const parentFullName = (p, child) =>
@@ -91,6 +93,8 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
   const [parentSearch, setParentSearch] = useState('')
   const [linking, setLinking]     = useState(false)
 
+  useEscapeToClose(onClose, !saving)
+
   const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
 
   const parentSuggestions = parentSearch.length > 1
@@ -149,7 +153,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label="פרטי ילד" className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">{isNew ? 'הוספת ילד/ה' : `עריכה: ${draft.name}`}</h2>
@@ -241,7 +245,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                 value={parentSearch}
                 onChange={e => setParentSearch(e.target.value)}
                 placeholder="חיפוש הורה לפי שם או מייל"
-                className="input w-full text-sm pe-9"
+                className="input w-full text-sm ps-9"
               />
               {parentSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
@@ -297,6 +301,8 @@ function ImportPanel({ classes, onImport, onClose }) {
   const [error, setError]     = useState('')
   const [saving, setSaving]   = useState(false)
   const [preview, setPreview] = useState(false)
+
+  useEscapeToClose(onClose, !saving)
 
   // Normalize class labels so "א", "א'", "כיתה א" all match the same class
   const normClass = (s) => String(s || '')
@@ -442,7 +448,7 @@ function ImportPanel({ classes, onImport, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label="ייבוא ילדים" className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 flex items-center gap-2 dark:text-gray-100"><Upload size={16} />ייבוא ילדים</h2>
@@ -534,6 +540,7 @@ export default function AdminChildrenPage() {
   const [isNew, setIsNew]         = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [deleting, setDeleting]   = useState(null)
+  const [confirmId, setConfirmId] = useState(null)   // child pending delete confirmation
   const [checkedIds, setCheckedIds] = useState(new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
 
@@ -562,22 +569,26 @@ export default function AdminChildrenPage() {
     const created = await bulkImportChildren(rows)
     // Auto-link children to existing users by parent email
     const userByEmail = Object.fromEntries(users.filter(u => u.email).map(u => [u.email.toLowerCase(), u.uid]))
+    let linked = 0
     for (const child of created) {
       for (const p of child.parents || []) {
         const uid = p.email && userByEmail[p.email]
         if (uid) {
-          try { await linkAndEnrich(child.id, uid, p, child) } catch (e) { console.error('auto-link failed', child.name, e) }
+          try { await linkAndEnrich(child.id, uid, p, child); linked++ } catch (e) { console.error('auto-link failed', child.name, e) }
         }
       }
     }
+    toast(`יובאו ${created.length} ילדים${linked ? ` · קושרו ${linked} הורים` : ''}`)
     load()
   }
 
   const handleDelete = async (id) => {
+    setConfirmId(null)
     setDeleting(id)
     try {
       await deleteChild(id)
       setChildren(prev => prev.filter(c => c.id !== id))
+      toast('הילד נמחק')
     } catch (e) {
       setError(e.message)
     } finally {
@@ -608,9 +619,11 @@ export default function AdminChildrenPage() {
     if (!window.confirm(`למחוק ${checkedIds.size} ילדים?`)) return
     setBulkWorking(true)
     try {
+      const n = checkedIds.size
       await bulkDeleteChildren([...checkedIds])
       setChildren(prev => prev.filter(c => !checkedIds.has(c.id)))
       setCheckedIds(new Set())
+      toast(`${n} ילדים נמחקו`)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -634,7 +647,8 @@ export default function AdminChildrenPage() {
       }
       setCheckedIds(new Set())
       load()
-      if (linked === 0) setError('לא נמצאו הורים רשומים להצמדה (לפי מייל)')
+      if (linked === 0) toast('לא נמצאו הורים רשומים להצמדה (לפי מייל)', 'error')
+      else toast(`קושרו ${linked} הורים`)
     } finally {
       setBulkWorking(false)
     }
@@ -665,7 +679,7 @@ export default function AdminChildrenPage() {
         <div className="relative flex-1">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="חיפוש לפי שם..." className="input w-full pe-10" />
+            placeholder="חיפוש לפי שם..." className="input w-full ps-10" />
         </div>
         <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="input w-36">
           <option value="">כל הכיתות</option>
@@ -735,16 +749,29 @@ export default function AdminChildrenPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => { setSelected(child); setIsNew(false) }}
-                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl dark:hover:bg-primary-900/30">
-                    <Link2 size={14} />
-                  </button>
-                  <button onClick={() => handleDelete(child.id)} disabled={deleting === child.id}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl dark:hover:bg-red-900/20">
-                    {deleting === child.id
-                      ? <Loader2 size={14} className="animate-spin" />
-                      : <Trash2 size={14} />}
-                  </button>
+                  {confirmId === child.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => handleDelete(child.id)} disabled={deleting === child.id}
+                        className="text-xs text-white bg-red-500 hover:bg-red-600 px-2.5 py-1.5 rounded-lg">
+                        {deleting === child.id ? <Loader2 size={13} className="animate-spin" /> : 'מחק'}
+                      </button>
+                      <button onClick={() => setConfirmId(null)}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                        ביטול
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button onClick={() => { setSelected(child); setIsNew(false) }} aria-label="פרטי ילד"
+                        className="p-2.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl dark:hover:bg-primary-900/30">
+                        <Link2 size={15} />
+                      </button>
+                      <button onClick={() => setConfirmId(child.id)} aria-label="מחק ילד"
+                        className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl dark:hover:bg-red-900/20">
+                        <Trash2 size={15} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )

@@ -359,9 +359,15 @@ export default function DashboardPage() {
           <section key="events" className="mb-6">
             {flyerEvents.length > 0 && (
               <div className="mb-4">
-                <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+                <div className={clsx(
+                  'flex gap-3 pb-2 scrollbar-hide',
+                  flyerEvents.length === 1 ? '' : 'overflow-x-auto snap-x snap-mandatory'
+                )}>
                   {flyerEvents.map(ev => (
-                    <div key={`flyer-${ev.id}`} className="flex-shrink-0 w-64 snap-start cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    <div key={`flyer-${ev.id}`} className={clsx(
+                      'flex-shrink-0 snap-start cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow',
+                      flyerEvents.length === 1 ? 'w-full' : 'w-64'
+                    )}
                       onClick={() => setSelectedEvent(ev)}>
                       <img src={ev.imageUrl} alt={ev.title} className="w-full h-36 object-cover" referrerPolicy="no-referrer"
                         onError={e => { e.target.style.display = 'none' }} />

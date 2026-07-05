@@ -5,6 +5,7 @@ import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
+import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
   Link2, Loader2, RefreshCw, Upload, MapPin, Phone, Trash2, Baby,
@@ -297,6 +298,8 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [kids, setKids] = useState(null)
   const [classes, setClasses] = useState([])
 
+  useEscapeToClose(onClose, !profileSaving)
+
   useEffect(() => {
     Promise.all([getChildrenByParent(user.uid), getClasses()])
       .then(([ch, cl]) => { setKids(ch); setClasses(cl) })
@@ -323,7 +326,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   return (
     <>
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label="פרטי משתמש" className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">פרטי משתמש</h2>
@@ -688,7 +691,7 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="flex gap-2 mb-5 flex-wrap items-center">
         <div className="relative flex-1 min-w-48">
-          <Search size={15} className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="חיפוש..." className="input w-full ps-9 text-right py-2 text-sm" />
         </div>
