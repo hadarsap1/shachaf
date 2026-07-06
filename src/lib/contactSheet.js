@@ -52,8 +52,11 @@ function footer(w, h) {
   return `<text x="${w / 2}" y="${h - 24}" text-anchor="middle" font-family="${FONT}" font-size="20" fill="#94a3b8">קהילת שחף 🕊️</text>`
 }
 
+// No direction="rtl" on the root: it flips text-anchor semantics (end↔start)
+// and breaks right-aligned templates. Hebrew glyphs still shape correctly via
+// Unicode bidi within each <text>. Anchoring is done explicitly per template.
 function svgWrap(w, h, body) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" direction="rtl">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
     <rect width="${w}" height="${h}" fill="#ffffff"/>
     <rect x="10" y="10" width="${w - 20}" height="${h - 20}" rx="24" fill="#fdf2f4" stroke="#f9c7d0" stroke-width="2"/>
     ${body}
@@ -128,24 +131,35 @@ export function buildSheetSvg({ template, title, subtitle, entries }) {
 }
 
 // ── Rasterize SVG → JPEG blob ──────────────────────────────────────────────────
+// Uses a data: URL (not a Blob object URL): the object-URL path fails to load
+// as an <img> for SVG in some engines and taints the canvas in others; the
+// data URL is the reliable path (same one the on-screen preview uses).
 export function svgToJpegBlob(svg, quality = 0.92) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
     const img = new Image()
     img.onload = () => {
-      const canvas = document.createElement('canvas')
-      // 1.5× for crisp text on retina/print
-      const scale = 1.5
-      canvas.width = img.width * scale
-      canvas.height = img.height * scale
-      const ctx = canvas.getContext('2d')
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      URL.revokeObjectURL(url)
-      canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', quality)
+      try {
+        const canvas = document.createElement('canvas')
+        const scale = 1.5   // crisp text on retina / print
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        const ctx = canvas.getContext('2d')
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(b => {
+          if (b) return resolve(b)
+          // Fallback for engines where toBlob yields null
+          try {
+            const bin = atob(canvas.toDataURL('image/jpeg', quality).split(',')[1])
+            const arr = new Uint8Array(bin.length)
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+            resolve(new Blob([arr], { type: 'image/jpeg' }))
+          } catch (e) { reject(e) }
+        }, 'image/jpeg', quality)
+      } catch (e) { reject(e) }
     }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('svg load failed')) }
-    img.src = url
+    img.onerror = () => reject(new Error('svg load failed'))
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
   })
 }
