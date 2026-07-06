@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getTasks, saveTask, deleteTask, getClasses, getForms, MILESTONES } from '../../lib/db'
-import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2, Users } from 'lucide-react'
+import { getTasks, saveTask, deleteTask, getClasses, getForms, uploadTaskForm, deleteTaskForm, MILESTONES } from '../../lib/db'
+import { CheckSquare, Plus, Edit2, Trash2, X, Check, Loader2, Users, FileText, Upload } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 
 const FAMILY_CHIPS = [
@@ -61,6 +62,8 @@ const blankTask = () => ({
 function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
   const [draft, setDraft] = useState({ ...task })
   const [errors, setErrors] = useState({})
+  const [formFile, setFormFile] = useState(null)
+  const [formFileName, setFormFileName] = useState(task.formFileName || null)
 
   const set = (field, value) => {
     setDraft(d => ({ ...d, [field]: value }))
@@ -85,10 +88,18 @@ function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
     return e
   }
 
+  const removeFormFile = () => {
+    setFormFile(null)
+    setFormFileName(null)
+    setDraft(d => ({ ...d, formFileUrl: null, formFilePath: null, formFileName: null }))
+  }
+
   const handleSave = () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave({ ...draft, title: draft.title.trim() })
+    // shouldRemoveFile: had a file, now cleared and no new one chosen
+    const shouldRemoveFile = !formFileName && !formFile && !!task.formFilePath
+    onSave({ ...draft, title: draft.title.trim() }, formFile, shouldRemoveFile)
   }
 
   return (
@@ -196,9 +207,10 @@ function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
               className="input w-full" dir="ltr" placeholder="0501234567" />
           </div>
 
-          {forms.length > 0 && (
-            <div>
-              <label className="label block mb-1 text-right">טופס מקושר</label>
+          {/* Linked structured form */}
+          <div>
+            <label className="label block mb-1 text-right">טופס למילוי</label>
+            {forms.filter(f => f.status === 'published').length > 0 ? (
               <select value={draft.linkedFormId || ''} onChange={e => set('linkedFormId', e.target.value)}
                 className="input w-full text-right">
                 <option value="">ללא טופס</option>
@@ -206,9 +218,33 @@ function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
                   <option key={f.id} value={f.id}>{f.title}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1 text-right">הורה יראה כפתור מילוי טופס בתוך המשימה</p>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-gray-400 text-right">אין טפסים מפורסמים.
+                {' '}<Link to="/admin/forms" className="text-primary-600 hover:underline">צרו טופס חדש</Link>
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-1 text-right">ההורה יראה כפתור מילוי טופס בתוך המשימה</p>
+          </div>
+
+          {/* Uploaded form file (PDF / image) */}
+          <div>
+            <label className="label block mb-1 text-right">או צרפו קובץ טופס (PDF / תמונה)</label>
+            {formFileName ? (
+              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
+                <FileText size={15} className="text-primary-600 flex-shrink-0" />
+                <span className="flex-1 text-sm text-gray-700 truncate dark:text-gray-200">{formFileName}</span>
+                <button type="button" onClick={removeFormFile} aria-label="הסר קובץ"
+                  className="p-1 text-gray-400 hover:text-red-500 rounded-lg"><X size={15} /></button>
+              </div>
+            ) : (
+              <label className="w-full border-2 border-dashed border-gray-200 hover:border-primary-300 rounded-xl py-4 flex flex-col items-center gap-1 text-gray-400 hover:text-primary-500 transition-colors cursor-pointer dark:border-gray-700">
+                <Upload size={18} />
+                <span className="text-xs">בחרו קובץ</span>
+                <input type="file" accept="application/pdf,image/*" className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) { setFormFile(f); setFormFileName(f.name) } }} />
+              </label>
+            )}
+          </div>
         </div>
 
         <div className="px-4 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
@@ -256,7 +292,7 @@ export default function AdminTasksPage() {
     return matchStatus && matchFamily
   })
 
-  const handleSave = async (saved) => {
+  const handleSave = async (saved, formFile, shouldRemoveFile) => {
     const prev = [...tasks]
     // Optimistic update
     setTasks(cur => {
@@ -265,11 +301,16 @@ export default function AdminTasksPage() {
     })
     setEditing(null)
     try {
-      const persisted = await saveTask(saved)
-      // If it was a new task, replace temp id with real Firestore id
-      if (persisted.id !== saved.id) {
-        setTasks(cur => cur.map(t => t.id === saved.id ? persisted : t))
+      let persisted = await saveTask(saved)
+      // Form file: upload after we have the real id, or remove if cleared
+      if (formFile) {
+        const { url, path, name } = await uploadTaskForm(persisted.id, formFile)
+        persisted = await saveTask({ ...persisted, formFileUrl: url, formFilePath: path, formFileName: name })
+      } else if (shouldRemoveFile && saved.formFilePath) {
+        await deleteTaskForm(saved.formFilePath)
+        persisted = await saveTask({ ...persisted, formFileUrl: null, formFilePath: null, formFileName: null })
       }
+      setTasks(cur => cur.map(t => (t.id === saved.id || t.id === persisted.id) ? persisted : t))
     } catch (err) {
       console.error('saveTask failed', err)
       setTasks(prev)

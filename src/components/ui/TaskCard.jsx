@@ -141,6 +141,17 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
                 מלא טופס
               </Link>
             )}
+            {task.formFileUrl && (
+              <a
+                href={task.formFileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-primary-700 bg-primary-50 border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-100 transition-[background-color] duration-150 dark:bg-primary-900/30 dark:text-primary-300"
+              >
+                <FileText size={13} />
+                פתח טופס
+              </a>
+            )}
             {task.resourceUrl && (
               <a
                 href={task.resourceUrl}

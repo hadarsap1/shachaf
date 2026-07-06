@@ -51,6 +51,21 @@ export async function deleteEventImage(path) {
   try { await deleteObject(ref(storage, path)) } catch { /* already gone */ }
 }
 
+// A form file attached to a task (PDF or image). Images get compressed; PDFs
+// upload as-is. Returns url + storage path + original file name.
+export async function uploadTaskForm(taskId, file) {
+  const name = file.name
+  if (file.type?.startsWith('image/')) file = await compressImage(file)
+  const path = `tasks/${taskId}.${safeExt(file)}`
+  const snap = await uploadBytes(ref(storage, path), file, { contentType: file.type || 'application/octet-stream' })
+  return { url: await getDownloadURL(snap.ref), path, name }
+}
+
+export async function deleteTaskForm(path) {
+  if (!path) return
+  try { await deleteObject(ref(storage, path)) } catch { /* already gone */ }
+}
+
 export async function uploadChildPhoto(childId, file) {
   file = await compressImage(file)
   const path = `children/${childId}/photo.${safeExt(file)}`
