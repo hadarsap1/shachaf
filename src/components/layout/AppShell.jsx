@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies, getMyMessages } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies, getMyMessages, getCommittees, getHobbyGroups } from '../../lib/db'
 import { computeHealthAnomalies } from '../../lib/health'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
@@ -58,8 +58,8 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/users',      label: 'חברים' },
     { to: '/admin/classes',    label: 'כיתות' },
     { to: '/admin/children',   label: 'ילדים', sub: true },
-    { to: '/admin/committees', label: 'ועדות' },
-    { to: '/admin/community',  label: 'קבוצות קהילה' },
+    { to: '/admin/committees', label: 'ועדות', committeeBadge: true },
+    { to: '/admin/community',  label: 'קבוצות קהילה', groupBadge: true },
     { to: '/businesses',       label: 'עסקים בקהילה' },
     { heading: 'תוכן' },
     { to: '/admin/events',     label: 'אירועים' },
@@ -77,8 +77,8 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/users',      label: 'חברים' },
     { to: '/admin/classes',    label: 'כיתות' },
     { to: '/admin/children',   label: 'ילדים', sub: true },
-    { to: '/admin/committees', label: 'ועדות' },
-    { to: '/admin/community',  label: 'קבוצות קהילה' },
+    { to: '/admin/committees', label: 'ועדות', committeeBadge: true },
+    { to: '/admin/community',  label: 'קבוצות קהילה', groupBadge: true },
     { to: '/businesses',       label: 'עסקים בקהילה' },
     { heading: 'תוכן' },
     { to: '/admin/tasks',      label: 'משימות' },
@@ -244,7 +244,7 @@ function ThemeToggle() {
 }
 
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
-function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, healthCount, myUnreadReplies = 0, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
+function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, healthCount, myUnreadReplies = 0, pendingCommittees = 0, pendingGroups = 0, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Logo */}
@@ -266,7 +266,7 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
               key={link.to}
               {...link}
               unread={link.badge ? unreadMessages : 0}
-              count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : (link.contactBadge ? myUnreadReplies : 0)))}
+              count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : (link.contactBadge ? myUnreadReplies : (link.committeeBadge ? pendingCommittees : (link.groupBadge ? pendingGroups : 0)))))}
               sub={!!link.sub}
               onClick={onClose}
             />
@@ -303,6 +303,8 @@ export default function AppShell() {
   const [healthCount, setHealthCount] = useState(0)
   const [openTaskCount, setOpenTaskCount] = useState(0)
   const [myUnreadReplies, setMyUnreadReplies] = useState(0)
+  const [pendingCommittees, setPendingCommittees] = useState(0)
+  const [pendingGroups, setPendingGroups] = useState(0)
   const [className, setClassName] = useState('')
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
@@ -377,6 +379,9 @@ export default function AppShell() {
     if (!isAdmin) return
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
     getFeedback().then(items => setUnreadFeedback(items.filter(i => !i.status || i.status === 'new').length))
+    // Pending committee / community-group requests awaiting approval
+    getCommittees().then(cs => setPendingCommittees(cs.filter(c => c.status === 'pending').length)).catch(() => {})
+    getHobbyGroups().then(gs => setPendingGroups(gs.filter(g => g.status === 'pending').length)).catch(() => {})
   }, [isAdmin, pathname])
 
   // Parent's own unread admin replies — badge on "צור קשר"
@@ -431,6 +436,8 @@ export default function AppShell() {
           openTaskCount={openTaskCount}
           healthCount={healthCount}
           myUnreadReplies={myUnreadReplies}
+          pendingCommittees={pendingCommittees}
+          pendingGroups={pendingGroups}
           isAdmin={isAdmin}
           viewAs={viewAs}
           activateViewAs={activateViewAs}
