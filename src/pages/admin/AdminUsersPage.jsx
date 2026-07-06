@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids } from '../../lib/db'
 import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -297,12 +297,31 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [deleting, setDeleting] = useState(false)
   const [kids, setKids] = useState(null)
   const [classes, setClasses] = useState([])
+  const [coParents, setCoParents] = useState([])
 
   useEscapeToClose(onClose, !profileSaving)
 
   useEffect(() => {
     Promise.all([getChildrenByParent(user.uid), getClasses()])
-      .then(([ch, cl]) => { setKids(ch); setClasses(cl) })
+      .then(async ([ch, cl]) => {
+        setKids(ch); setClasses(cl)
+        // Co-parents from the imported phone-book data on each child (always
+        // includes the second parent, even if they never registered), plus any
+        // registered users linked to the same children. Deduped by email.
+        const myEmail = (user.email || '').toLowerCase()
+        const linkedUids = [...new Set(ch.flatMap(k => k.parentUids || []).filter(u => u !== user.uid))]
+        const linkedUsers = linkedUids.length ? await getUsersByUids(linkedUids) : []
+        const byEmail = new Map()
+        for (const u of linkedUsers) byEmail.set((u.email || '').toLowerCase(), { name: u.name, phone: u.phone, email: u.email, registered: true })
+        for (const k of ch) {
+          for (const p of k.parents || []) {
+            const e = (p.email || '').toLowerCase()
+            if (!e || e === myEmail || byEmail.has(e)) continue
+            byEmail.set(e, { name: p.name, phone: p.phone, email: p.email, registered: false })
+          }
+        }
+        setCoParents([...byEmail.values()])
+      })
       .catch(() => setKids([]))
   }, [user.uid])
 
@@ -485,6 +504,29 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
               </div>
             )}
           </div>
+
+          {/* Co-parents — other parents linked to the same children */}
+          {coParents.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">הורה נוסף</label>
+              <div className="space-y-1.5">
+                {coParents.map((p, i) => (
+                  <div key={p.email || i} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
+                    <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-[11px] font-bold text-primary-700 flex-shrink-0 dark:bg-primary-900/40 dark:text-primary-300">
+                      {p.name?.[0] || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0 text-right">
+                      <div className="text-sm font-medium text-gray-700 truncate dark:text-gray-200">{p.name || p.email}</div>
+                      {p.phone && <div className="text-xs text-gray-400" dir="ltr">{p.phone}</div>}
+                    </div>
+                    {p.registered
+                      ? <span className="text-[10px] text-secondary-600 flex items-center gap-0.5"><Check size={11} /> רשום</span>
+                      : <span className="text-[10px] text-gray-400">לא רשום</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* WhatsApp — only when there's an actual phone number */}

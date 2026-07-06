@@ -371,11 +371,12 @@ export default function AppShell() {
   )
   const pageTitle = activeLink?.label || ''
 
+  // Re-check on every navigation so the badge clears after messages are read
   useEffect(() => {
     if (!isAdmin) return
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
     getFeedback().then(items => setUnreadFeedback(items.filter(i => !i.status || i.status === 'new').length))
-  }, [isAdmin])
+  }, [isAdmin, pathname])
 
   // Health-anomaly badge — super admin only
   useEffect(() => {

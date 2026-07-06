@@ -11,9 +11,10 @@ export default function FeedbackButton() {
   const [file, setFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
   const [error, setError] = useState('')
 
-  const close = () => { setOpen(false); setText(''); setFile(null); setDone(false); setError('') }
+  const close = () => { setOpen(false); setText(''); setFile(null); setDone(false); setImgFailed(false); setError('') }
 
   useEscapeToClose(close, open && !saving)
 
@@ -25,12 +26,19 @@ export default function FeedbackButton() {
     try {
       const submittedBy = { uid: user?.uid, name: user?.name, email: user?.email }
       const id = await saveFeedback({ text: text.trim(), submittedBy })
+      // The text report is already saved; an image failure (e.g. HEIC that
+      // won't decode/upload) must not discard the whole report.
       if (file) {
-        const url = await uploadFeedbackScreenshot(id, file)
-        await updateFeedbackScreenshot(id, url)
+        try {
+          const url = await uploadFeedbackScreenshot(id, file)
+          await updateFeedbackScreenshot(id, url)
+        } catch (imgErr) {
+          console.error('feedback screenshot failed (report still saved)', imgErr)
+          setImgFailed(true)
+        }
       }
       setDone(true)
-      setTimeout(close, 1800)
+      setTimeout(close, 2200)
     } catch (err) {
       console.error('feedback submit failed', err)
       setError('שליחת הדיווח נכשלה, נסו שוב')
@@ -65,6 +73,7 @@ export default function FeedbackButton() {
                   <Check size={26} className="text-green-600 dark:text-green-400" />
                 </div>
                 <p className="font-bold text-gray-800 dark:text-gray-100">תודה! הדיווח נשלח</p>
+                {imgFailed && <p className="text-xs text-amber-600 mt-1">התמונה לא נטענה, אך הדיווח נשמר</p>}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
