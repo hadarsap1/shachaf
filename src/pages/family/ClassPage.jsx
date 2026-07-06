@@ -3,10 +3,11 @@ import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncemen
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
-  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil,
+  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
+import ContactSheetModal from '../../components/ui/ContactSheetModal'
 
 const SCHEDULE_DAYS    = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
 const SCHEDULE_PERIODS = [
@@ -279,7 +280,8 @@ function ChildNoteCard({ child, parentId, color }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ClassPage() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
+  const [showContactSheet, setShowContactSheet] = useState(false)
   const [myClasses, setMyClasses]         = useState([])
   const [myChildren, setMyChildren]       = useState([])
   const [selectedIdx, setSelectedIdx]     = useState(0)
@@ -402,7 +404,21 @@ export default function ClassPage() {
             </div>
             <GraduationCap size={32} className="opacity-30" />
           </div>
+          {(isAdmin || (user?.classAdminFor || []).includes(cls.id)) && classChildren.length > 0 && (
+            <button onClick={() => setShowContactSheet(true)}
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+              <Contact size={15} /> צור דף קשר
+            </button>
+          )}
         </div>
+      )}
+
+      {showContactSheet && cls && (
+        <ContactSheetModal
+          className={cls.name}
+          children={classChildren}
+          onClose={() => setShowContactSheet(false)}
+        />
       )}
 
       <div className="space-y-4">
