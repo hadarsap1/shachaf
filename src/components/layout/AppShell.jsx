@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies, getMyMessages } from '../../lib/db'
 import { computeHealthAnomalies } from '../../lib/health'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
@@ -124,7 +124,7 @@ function buildMemberNav(allRoles, classIds, className, status) {
   links.push({ to: '/businesses', label: 'עסקים בקהילה' })
 
   links.push({ to: '/resources', label: 'מידע שימושי' })
-  links.push({ to: '/contact',   label: 'צור קשר' })
+  links.push({ to: '/contact',   label: 'צור קשר', contactBadge: true })
   links.push({ to: '/help',      label: 'עזרה' })
   links.push({ to: '/settings',  label: 'הגדרות' })
   return links
@@ -244,7 +244,7 @@ function ThemeToggle() {
 }
 
 // ── Sidebar content (shared desktop + mobile) ──────────────────────────────────
-function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, healthCount, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
+function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, healthCount, myUnreadReplies = 0, isAdmin, viewAs, activateViewAs, user, logout, onClose }) {
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Logo */}
@@ -266,7 +266,7 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
               key={link.to}
               {...link}
               unread={link.badge ? unreadMessages : 0}
-              count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))}
+              count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : (link.contactBadge ? myUnreadReplies : 0)))}
               sub={!!link.sub}
               onClick={onClose}
             />
@@ -302,6 +302,7 @@ export default function AppShell() {
   const [unreadFeedback, setUnreadFeedback] = useState(0)
   const [healthCount, setHealthCount] = useState(0)
   const [openTaskCount, setOpenTaskCount] = useState(0)
+  const [myUnreadReplies, setMyUnreadReplies] = useState(0)
   const [className, setClassName] = useState('')
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
@@ -378,6 +379,12 @@ export default function AppShell() {
     getFeedback().then(items => setUnreadFeedback(items.filter(i => !i.status || i.status === 'new').length))
   }, [isAdmin, pathname])
 
+  // Parent's own unread admin replies — badge on "צור קשר"
+  useEffect(() => {
+    if (isAdmin || !user?.uid) return
+    getMyMessages(user.uid).then(msgs => setMyUnreadReplies(msgs.filter(m => m.userUnread).length)).catch(() => {})
+  }, [isAdmin, user?.uid, pathname])
+
   // Health-anomaly badge — super admin only
   useEffect(() => {
     if (!isSuperAdmin) return
@@ -423,6 +430,7 @@ export default function AppShell() {
           unreadFeedback={unreadFeedback}
           openTaskCount={openTaskCount}
           healthCount={healthCount}
+          myUnreadReplies={myUnreadReplies}
           isAdmin={isAdmin}
           viewAs={viewAs}
           activateViewAs={activateViewAs}
@@ -458,7 +466,7 @@ export default function AppShell() {
                 link.heading ? (
                   <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold text-white/35 tracking-wide">{link.heading}</div>
                 ) : (
-                  <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : 0))} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
+                  <NavLink key={link.to} {...link} unread={link.badge ? unreadMessages : 0} count={link.taskBadge ? openTaskCount : (link.feedbackBadge ? unreadFeedback : (link.healthBadge ? healthCount : (link.contactBadge ? myUnreadReplies : 0)))} sub={!!link.sub} onClick={() => setSidebarOpen(false)} />
                 )
               ))}
             </nav>

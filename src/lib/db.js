@@ -302,6 +302,31 @@ export async function markMessageRead(id) {
   await updateDoc(doc(db, 'messages', id), { read: true })
 }
 
+// Messages a parent sent (their own thread). No orderBy — where+orderBy on
+// different fields needs a composite index that doesn't exist; sort in JS.
+export async function getMyMessages(uid) {
+  const snap = await getDocs(query(collection(db, 'messages'), where('userId', '==', uid)))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+}
+
+// Append a reply to a message thread. fromAdmin replies raise the parent's
+// unread flag; parent replies re-open it for admins (read=false).
+export async function addMessageReply(id, { body, fromAdmin, byName }) {
+  const entry = { body, fromAdmin: !!fromAdmin, byName: byName || '', at: Date.now() }
+  const updates = { replies: arrayUnion(entry) }
+  if (fromAdmin) updates.userUnread = true
+  else { updates.read = false; updates.userUnread = false }
+  await updateDoc(doc(db, 'messages', id), updates)
+  return entry
+}
+
+// Parent opened their inbox — clear their unread flags
+export async function markMyMessagesReadByUser(ids) {
+  await Promise.all(ids.map(id =>
+    updateDoc(doc(db, 'messages', id), { userUnread: false }).catch(() => {})))
+}
+
 // ── Classes ───────────────────────────────────────────────────────────────────
 async function _getClasses() {
   const snap = await getDocs(query(collection(db, 'classes'), orderBy('name', 'asc')))

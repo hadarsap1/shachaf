@@ -181,6 +181,14 @@ service cloud.firestore {
       allow read, update: if request.auth != null
                           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                              in ['admin', 'super_admin'];
+      // The submitter may read their own thread and update only the reply
+      // fields (append replies / toggle unread flags) — not subject/body/userId.
+      // ponytail: content of the appended reply isn't validated server-side;
+      // acceptable for a small trusted community, tighten if abused.
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replies', 'userUnread', 'read']);
     }
 
     // AI usage counters — each user can only read/write their own.

@@ -1,8 +1,26 @@
 import { useState, useEffect } from 'react'
-import { getMessages, markMessageRead, getCommitteeMessages, markCommitteeMessageRead, getCommittees } from '../../lib/db'
-import { MessageSquare, Loader2, User, Mail, Network } from 'lucide-react'
+import { getMessages, markMessageRead, getCommitteeMessages, markCommitteeMessageRead, getCommittees, addMessageReply } from '../../lib/db'
+import { MessageSquare, Loader2, User, Mail, Network, Send } from 'lucide-react'
 import clsx from 'clsx'
+import { useAuth } from '../../context/AuthContext'
 import AdminAnnouncementsPage from './AdminAnnouncementsPage'
+
+function Thread({ replies }) {
+  if (!replies?.length) return null
+  return (
+    <div className="space-y-2">
+      {replies.map((r, i) => (
+        <div key={i} className={clsx('max-w-[85%] rounded-2xl px-3.5 py-2',
+          r.fromAdmin ? 'bg-primary-600 text-white ms-auto' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100')}>
+          <p className="text-sm whitespace-pre-wrap leading-relaxed">{r.body}</p>
+          <div className={clsx('text-[10px] mt-0.5', r.fromAdmin ? 'text-primary-100' : 'text-gray-400')}>
+            {r.byName || (r.fromAdmin ? 'צוות' : 'הורה')}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const ROLE_LABELS = {
   new_family:  'משפחה חדשה',
@@ -18,10 +36,13 @@ function formatDate(ts) {
 }
 
 export default function AdminMessagesPage() {
+  const { user } = useAuth()
   const [tab, setTab] = useState('messages')
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [replyText, setReplyText] = useState('')
+  const [replying, setReplying] = useState(false)
   const [committeeMessages, setCommitteeMessages] = useState([])
   const [committeeNames, setCommitteeNames] = useState({}) // committeeId → name
   const [loadingCommittee, setLoadingCommittee] = useState(false)
@@ -48,9 +69,26 @@ export default function AdminMessagesPage() {
 
   async function handleSelect(msg) {
     setSelected(msg)
+    setReplyText('')
     if (!msg.read) {
       await markMessageRead(msg.id)
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))
+    }
+  }
+
+  async function handleReply() {
+    if (!replyText.trim() || !selected) return
+    setReplying(true)
+    try {
+      const entry = await addMessageReply(selected.id, { body: replyText.trim(), fromAdmin: true, byName: user?.name || 'צוות' })
+      const upd = (m) => ({ ...m, replies: [...(m.replies || []), entry] })
+      setSelected(upd)
+      setMessages(prev => prev.map(m => m.id === selected.id ? upd(m) : m))
+      setReplyText('')
+    } catch (e) {
+      console.error('reply failed', e)
+    } finally {
+      setReplying(false)
     }
   }
 
@@ -218,13 +256,35 @@ export default function AdminMessagesPage() {
               </div>
               <hr />
               <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selected.body}</p>
-              <a
-                href={`mailto:${selected.userEmail}?subject=Re: ${encodeURIComponent(selected.subject)}`}
-                className="btn-primary text-sm py-2 px-4 inline-flex items-center gap-2"
-              >
-                <Mail size={14} />
-                השב במייל
-              </a>
+
+              {/* Reply thread */}
+              {selected.replies?.length > 0 && (
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <Thread replies={selected.replies} />
+                </div>
+              )}
+
+              {/* In-app reply */}
+              <div className="pt-2">
+                <textarea
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  rows={2}
+                  placeholder="כתבו תשובה שההורה יראה באפליקציה..."
+                  className="input w-full text-right text-sm resize-none"
+                />
+                <div className="flex items-center justify-between mt-2 gap-2">
+                  <a href={`mailto:${selected.userEmail}?subject=Re: ${encodeURIComponent(selected.subject)}`}
+                    className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                    <Mail size={12} /> השב במייל במקום
+                  </a>
+                  <button onClick={handleReply} disabled={replying || !replyText.trim()}
+                    className="btn-primary text-sm py-1.5 px-4 inline-flex items-center gap-2 disabled:opacity-50">
+                    {replying ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                    שלח תשובה
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
