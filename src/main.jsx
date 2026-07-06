@@ -20,6 +20,10 @@ class ErrorBoundary extends Component {
   componentDidCatch(err, info) {
     console.error('App crashed:', err, info)
     Sentry.captureException(err, { extra: { componentStack: info?.componentStack } })
+    // Best-effort record; dynamic import so a broken bundle path can't block it
+    import('./lib/db')
+      .then(m => m.logCrash({ message: err?.message || String(err), stack: err?.stack, componentStack: info?.componentStack, route: location.pathname }))
+      .catch(() => {})
   }
   render() {
     if (this.state.hasError) {

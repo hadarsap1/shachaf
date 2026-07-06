@@ -173,6 +173,16 @@ service cloud.firestore {
     }
 
     // Messages (contact us) — any auth user can create; only admins can read/update
+    // Crash logs — any authenticated user may record their own crash; only
+    // admins can read them (for diagnosing intermittent errors).
+    match /crashes/{crashId} {
+      allow create: if request.auth != null
+                    && request.resource.data.get('message', '').size() <= 500;
+      allow read, delete: if request.auth != null
+                          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                             in ['admin', 'super_admin'];
+    }
+
     match /messages/{msgId} {
       allow create: if request.auth != null
                     && request.resource.data.userId == request.auth.uid

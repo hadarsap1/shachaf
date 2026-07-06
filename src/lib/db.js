@@ -304,6 +304,23 @@ export async function deletePendingFamily(emailId) {
 }
 
 // ── Messages (contact us) ─────────────────────────────────────────────────────
+// Best-effort crash logging — records render crashes so we can find and fix
+// the intermittent ones. Never throws (a failing logger must not compound a crash).
+export async function logCrash({ message, stack, componentStack, route, uid, name }) {
+  try {
+    await addDoc(collection(db, 'crashes'), {
+      message: String(message || '').slice(0, 500),
+      stack: String(stack || '').slice(0, 3000),
+      componentStack: String(componentStack || '').slice(0, 3000),
+      route: String(route || '').slice(0, 200),
+      uid: uid || null,
+      name: name || null,
+      ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '').slice(0, 300),
+      createdAt: serverTimestamp(),
+    })
+  } catch { /* swallow */ }
+}
+
 export async function sendMessage(msg) {
   await addDoc(collection(db, 'messages'), { ...msg, createdAt: serverTimestamp(), read: false })
 }

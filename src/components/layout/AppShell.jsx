@@ -8,6 +8,7 @@ import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
 import WelcomeTutorial, { shouldShowTutorial } from '../ui/WelcomeTutorial'
 import Toaster from '../ui/Toaster'
+import RouteErrorBoundary from '../ui/RouteErrorBoundary'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -532,7 +533,9 @@ export default function AppShell() {
         </header>
 
         <main key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in">
-          <Outlet />
+          <RouteErrorBoundary resetKey={pathname} uid={user?.uid} userName={user?.name}>
+            <Outlet />
+          </RouteErrorBoundary>
         </main>
 
         <InstallBanner />
