@@ -9,6 +9,16 @@ const esc = (s) => String(s ?? '')
 // Clip a string to n chars so long names don't overflow a card
 const clip = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
 
+// Restore the leading zero Sheets strips from IL mobile numbers, and format
+// as 0xx-xxxxxxx. Leaves anything that isn't a bare 9/10-digit IL mobile as-is.
+export function formatILPhone(raw) {
+  const d = String(raw || '').replace(/\D/g, '')
+  let n = d
+  if (/^5\d{8}$/.test(d)) n = '0' + d            // 9 digits starting 5 → add 0
+  if (/^0\d{9}$/.test(n)) return n.slice(0, 3) + '-' + n.slice(3)
+  return String(raw || '').trim()
+}
+
 // ── Build editable entries from a class's children ─────────────────────────────
 // entry = { name: childName, lines: ['הורה טלפון', ...] }
 export function entriesFromChildren(children) {
@@ -18,7 +28,7 @@ export function entriesFromChildren(children) {
       name: c.name || '',
       lines: (c.parents || [])
         .filter(p => p.name || p.phone)
-        .map(p => [p.name, p.phone].filter(Boolean).join('  ')),
+        .map(p => [p.name, formatILPhone(p.phone)].filter(Boolean).join('  ')),
     }))
 }
 

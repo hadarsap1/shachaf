@@ -371,8 +371,19 @@ function childParentEmails(data) {
   return [...new Set((data.parents || []).map(p => (p.email || '').toLowerCase().trim()).filter(Boolean))]
 }
 
+// Restore the leading zero Sheets strips from IL mobiles (9 digits starting 5)
+function fixPhone(raw) {
+  const d = String(raw || '').replace(/\D/g, '')
+  return /^5\d{8}$/.test(d) ? '0' + d : (raw || '')
+}
+function normalizeParents(data) {
+  if (!Array.isArray(data.parents)) return data
+  return { ...data, parents: data.parents.map(p => ({ ...p, phone: fixPhone(p.phone) })) }
+}
+
 async function _saveChild(child) {
-  const { id, ...data } = child
+  const { id, ...raw } = child
+  const data = normalizeParents(raw)
   data.parentEmails = childParentEmails(data)
   if (id && !id.startsWith('child-')) {
     await updateDoc(doc(db, 'children', id), { ...data, updatedAt: serverTimestamp() })
@@ -394,8 +405,9 @@ async function _bulkImportChildren(children) {
   const batch = writeBatch(db)
   const created = children.map(child => {
     const ref = doc(collection(db, 'children'))
-    batch.set(ref, { ...child, parentEmails: childParentEmails(child), parentUids: [], createdAt: serverTimestamp() })
-    return { ...child, id: ref.id }
+    const data = normalizeParents(child)
+    batch.set(ref, { ...data, parentEmails: childParentEmails(data), parentUids: [], createdAt: serverTimestamp() })
+    return { ...data, id: ref.id }
   })
   await batch.commit()
   return created

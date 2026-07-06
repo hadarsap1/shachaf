@@ -1,6 +1,13 @@
 // Run: node src/lib/contactSheet.test.mjs
 import assert from 'node:assert'
-import { entriesFromChildren, buildSheetSvg, TEMPLATES } from './contactSheet.js'
+import { entriesFromChildren, buildSheetSvg, TEMPLATES, formatILPhone } from './contactSheet.js'
+
+// formatILPhone: restore leading zero + dash for IL mobiles
+assert.equal(formatILPhone('585105577'), '058-5105577', '9-digit → add 0 + dash')
+assert.equal(formatILPhone('0543113320'), '054-3113320', '10-digit keeps, adds dash')
+assert.equal(formatILPhone('054-3113320'), '054-3113320', 'already formatted unchanged')
+assert.equal(formatILPhone(''), '', 'empty stays empty')
+assert.equal(formatILPhone('03-1234567'), '03-1234567', 'non-mobile left as-is')
 
 // entriesFromChildren: sorts by Hebrew name, builds parent lines from phones
 const kids = [
