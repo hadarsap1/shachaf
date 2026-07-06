@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Download, Share2, Plus, Trash2, Loader2, GripVertical } from 'lucide-react'
 import clsx from 'clsx'
-import { TEMPLATES, buildSheetSvg, entriesFromChildren, svgToJpegBlob } from '../../lib/contactSheet'
+import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob } from '../../lib/contactSheet'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from './Toaster'
 
 export default function ContactSheetModal({ className, children, onClose }) {
   const [template, setTemplate] = useState('cards')
+  const [theme, setTheme] = useState('pink')
   const [title, setTitle] = useState(`דף קשר — כיתה ${className}`)
   const [subtitle, setSubtitle] = useState('')
   const [entries, setEntries] = useState(() => entriesFromChildren(children))
@@ -15,8 +16,8 @@ export default function ContactSheetModal({ className, children, onClose }) {
   useEscapeToClose(onClose, !busy)
 
   const svg = useMemo(
-    () => buildSheetSvg({ template, title, subtitle, entries }),
-    [template, title, subtitle, entries]
+    () => buildSheetSvg({ template, title, subtitle, entries, theme }),
+    [template, title, subtitle, entries, theme]
   )
   const previewUrl = useMemo(
     () => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
@@ -108,6 +109,19 @@ export default function ContactSheetModal({ className, children, onClose }) {
                       template === t.id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700')}>
                     {t.label}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="label block mb-2 text-right">צבע</label>
+              <div className="flex flex-wrap gap-2 justify-end">
+                {THEMES.map(t => (
+                  <button key={t.id} onClick={() => setTheme(t.id)} title={t.label}
+                    aria-label={t.label}
+                    className={clsx('w-9 h-9 rounded-full border-2 transition-transform',
+                      theme === t.id ? 'ring-2 ring-offset-2 ring-primary-500 scale-110 border-white' : 'border-gray-200 hover:scale-105')}
+                    style={{ backgroundColor: t.swatch }} />
                 ))}
               </div>
             </div>

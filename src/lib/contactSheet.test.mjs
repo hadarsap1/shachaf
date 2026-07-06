@@ -1,6 +1,15 @@
 // Run: node src/lib/contactSheet.test.mjs
 import assert from 'node:assert'
-import { entriesFromChildren, buildSheetSvg, TEMPLATES, formatILPhone } from './contactSheet.js'
+import { entriesFromChildren, buildSheetSvg, TEMPLATES, THEMES, formatILPhone } from './contactSheet.js'
+
+// themes recolor the sheet — each theme's card color appears in the SVG
+for (const t of THEMES) {
+  const svg = buildSheetSvg({ template: 'cards', title: 't', entries: [{ name: 'א', lines: ['x'] }], theme: t.id })
+  assert.ok(svg.includes(t.p.card), `theme ${t.id} applies card color`)
+  assert.ok(svg.includes(t.p.title), `theme ${t.id} applies title color`)
+}
+// unknown/empty theme falls back to first theme (no crash)
+assert.ok(buildSheetSvg({ template: 'cards', title: 't', entries: [], theme: 'nope' }).startsWith('<svg'))
 
 // formatILPhone: restore leading zero + dash for IL mobiles
 assert.equal(formatILPhone('585105577'), '058-5105577', '9-digit → add 0 + dash')
