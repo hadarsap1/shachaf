@@ -254,7 +254,7 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
           <div className="flex items-center gap-2 flex-shrink-0">
             {owner?.phone && (
               <a href={ownerWa || `tel:${owner.phone}`} target={ownerWa ? '_blank' : undefined} rel="noreferrer"
-                className="text-xs text-primary-600 hover:underline" dir="ltr">
+                className="text-xs text-primary-600 dark:text-primary-400 hover:underline" dir="ltr">
                 {owner.phone}
               </a>
             )}
