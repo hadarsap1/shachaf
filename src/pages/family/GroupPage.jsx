@@ -149,7 +149,7 @@ function ChatTab({ groupId, user }) {
                 {!isOwn && <p className="text-[10px] text-gray-400 mb-0.5 px-1">{msg.senderName}</p>}
                 <div className={clsx(
                   'rounded-2xl px-3 py-2 text-sm',
-                  isOwn ? 'bg-primary-600 text-white rounded-tl-sm' : 'bg-gray-100 text-gray-800 rounded-tr-sm'
+                  isOwn ? 'bg-primary-600 text-white rounded-tl-sm' : 'bg-gray-100 text-gray-800 rounded-tr-sm dark:bg-gray-700 dark:text-gray-100'
                 )}>
                   {msg.type === 'image' && msg.fileUrl ? (
                     <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
@@ -323,7 +323,7 @@ function EventsTab({ groupId, user }) {
               {t('groupPage', 'add')}
             </button>
             <button type="button" onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+              className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
               {t('groupPage', 'cancel')}
             </button>
           </div>
@@ -601,7 +601,7 @@ function InfoTab({ group, user, onToggle, toggling }) {
         className={clsx(
           'w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
           isMember
-            ? 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+            ? 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/20 dark:hover:text-red-400'
             : 'bg-primary-600 text-white hover:bg-primary-700'
         )}
       >

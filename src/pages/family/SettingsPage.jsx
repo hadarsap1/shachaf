@@ -286,6 +286,7 @@ function ChildProfileCard({ child }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [photoError, setPhotoError] = useState('')
+  const [currentPhotoPath, setCurrentPhotoPath] = useState(child.photoPath || null)
 
   const handlePhoto = (e) => {
     const file = e.target.files?.[0]
@@ -297,24 +298,29 @@ function ChildProfileCard({ child }) {
   const handleSave = async () => {
     setSaving(true)
     setPhotoError('')
+    let photoFailed = false
     try {
-      // Text fields save first — a photo failure must not lose them
       const hobbies = hobbiesInput.split(',').map(h => h.trim()).filter(Boolean)
       await updateChildProfile(child.id, { hobbies, pet: form.pet, birthDate: form.birthDate })
       if (photoFile) {
         try {
-          if (child.photoPath) await deleteChildPhoto(child.photoPath)
+          if (currentPhotoPath) await deleteChildPhoto(currentPhotoPath)
           const { url, path } = await uploadChildPhoto(child.id, photoFile)
           await updateChildProfile(child.id, { photoUrl: url, photoPath: path })
+          setCurrentPhotoPath(path)
+          setPhotoPreview(url)
           setPhotoFile(null)
         } catch (e) {
           console.error('child photo upload failed', e)
+          photoFailed = true
           setPhotoError('התמונה לא נשמרה — נסו תמונה קטנה יותר או פורמט אחר')
           setPhotoPreview(child.photoUrl || null)
         }
       }
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (!photoFailed) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
     } catch (e) {
       console.error('child profile save failed', e)
       setPhotoError('השמירה נכשלה, נסו שוב')
@@ -448,8 +454,8 @@ export default function SettingsPage() {
     e.preventDefault()
     setSaving(true)
     setSaveError('')
+    let avatarFailed = false
     try {
-      // Profile fields save first — an avatar failure must not lose them
       await updateUserProfile(user.uid, {
         name: form.name,
         phone: form.phone,
@@ -464,15 +470,19 @@ export default function SettingsPage() {
           if (user.avatarPath) await deleteUserAvatar(user.avatarPath)
           const { url, path } = await uploadUserAvatar(user.uid, avatarFile)
           await updateUserProfile(user.uid, { avatar: url, avatarPath: path })
+          setAvatarPreview(url)
           setAvatarFile(null)
         } catch (err) {
           console.error('avatar upload failed', err)
+          avatarFailed = true
           setSaveError('התמונה לא נשמרה — נסו תמונה קטנה יותר. שאר הפרטים נשמרו.')
           setAvatarPreview(user.avatar || null)
         }
       }
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      if (!avatarFailed) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
     } catch (err) {
       console.error('profile save failed', err)
       setSaveError('השמירה נכשלה, נסו שוב')

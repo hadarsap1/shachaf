@@ -280,7 +280,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
                       'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
                       isSelected
                         ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                     )}>
                     {g.label}
                   </button>
@@ -491,7 +491,7 @@ export default function AdminEventsPage() {
             onClick={() => setTab(t.id)}
             className={clsx(
               'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
-              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+              tab === t.id ? 'bg-white text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-300' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             )}
           >
             {t.label}
@@ -533,7 +533,7 @@ export default function AdminEventsPage() {
                   'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
                   effectiveClasses.length === allClassIds.length
                     ? 'bg-gray-700 text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                 )}
               >
                 כל הכיתות
@@ -552,7 +552,7 @@ export default function AdminEventsPage() {
                     })}
                     className={clsx(
                       'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5',
-                      active ? 'text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                      active ? 'text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                     )}
                     style={active ? { backgroundColor: color, border: `2px solid ${color}` } : {}}
                   >

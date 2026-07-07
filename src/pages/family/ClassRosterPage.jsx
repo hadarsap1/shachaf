@@ -159,7 +159,7 @@ export default function ClassRosterPage() {
                 'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-all border',
                 i === selectedIdx
                   ? 'text-white border-transparent shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
               )}
               style={i === selectedIdx ? { backgroundColor: c.color || '#1B3B70' } : {}}
             >

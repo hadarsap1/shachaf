@@ -129,7 +129,7 @@ export default function SuperAdminPage() {
                 onClick={() => active ? deactivateViewAs() : handleViewAs(role)}
                 className={clsx(
                   'rounded-2xl border p-3 text-right transition-all flex items-start gap-3',
-                  active ? `${bg} ${border} ring-2 ring-offset-1 ring-current ${text}` : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700'
+                  active ? `${bg} ${border} ring-2 ring-offset-1 ring-current ${text}` : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'
                 )}
               >
                 <Icon size={18} className={clsx('flex-shrink-0 mt-0.5', active ? text : 'text-gray-400')} />

@@ -209,7 +209,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
                     'flex flex-col items-center gap-1 p-2 rounded-xl border text-xs font-medium transition-all',
                     draft.targetRole === opt.value
                       ? 'bg-primary-50 border-primary-300 text-primary-700'
-                      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                   )}
                 >
                   <Icon size={15} />
@@ -462,7 +462,7 @@ export default function AdminFormsPage() {
                   'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
                   targetFilter === opt.value
                     ? 'bg-primary-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                 )}>
                 {opt.label}
               </button>
@@ -494,7 +494,7 @@ export default function AdminFormsPage() {
                         'flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors',
                         form.status === 'published'
                           ? 'text-green-700 bg-green-50 hover:bg-green-100'
-                          : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                          : 'text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       )}
                     >
                       {form.status === 'published' ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}

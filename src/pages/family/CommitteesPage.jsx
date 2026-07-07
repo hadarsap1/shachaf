@@ -97,7 +97,7 @@ function CommitteeChat({ committee, user }) {
                 'max-w-[80%] px-3 py-2 rounded-2xl text-sm',
                 isMe
                   ? 'bg-primary-600 text-white rounded-tl-sm'
-                  : 'bg-gray-100 text-gray-800 rounded-tr-sm'
+                  : 'bg-gray-100 text-gray-800 rounded-tr-sm dark:bg-gray-700 dark:text-gray-100'
               )}>
                 {msg.text}
               </div>
@@ -334,7 +334,7 @@ function CommitteeCard({ committee }) {
                   'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full transition-[background-color,color] duration-150',
                   isMember
                     ? 'bg-primary-100 text-primary-700 hover:bg-red-50 hover:text-red-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary-900/30 dark:hover:text-primary-300'
                 )}
               >
                 {joinLoading ? <Loader2 size={11} className="animate-spin inline" /> : isMember ? '✓ חבר' : '+ הצטרף'}
@@ -354,7 +354,7 @@ function CommitteeCard({ committee }) {
           {hasContacts && (
             <button onClick={() => toggle('members')}
               className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-                activePanel === 'members' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                activePanel === 'members' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
               )}>
               <Users size={12} />
               צוות
@@ -362,14 +362,14 @@ function CommitteeCard({ committee }) {
           )}
           <button onClick={handleShowEvents}
             className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-              activePanel === 'events' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              activePanel === 'events' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             )}>
             <Calendar size={12} />
             אירועים
           </button>
           <button onClick={() => toggle('summaries')}
             className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-              activePanel === 'summaries' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              activePanel === 'summaries' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             )}>
             <FileText size={12} />
             סיכומים
@@ -386,7 +386,7 @@ function CommitteeCard({ committee }) {
           {!isMember && (
             <button onClick={() => toggle('message')}
               className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-                activePanel === 'message' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                activePanel === 'message' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
               )}>
               <MessageSquare size={12} />
               שלח הודעה

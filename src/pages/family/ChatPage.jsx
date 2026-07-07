@@ -172,7 +172,7 @@ export default function ChatPage() {
                   'max-w-xs sm:max-w-md px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap',
                   msg.role === 'user'
                     ? 'bg-primary-600 text-white rounded-tr-sm'
-                    : 'bg-white shadow-card border border-gray-100 text-gray-800 rounded-tl-sm'
+                    : 'bg-white shadow-card border border-gray-100 text-gray-800 rounded-tl-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
                 )}
               >
                 {msg.content}

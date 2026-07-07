@@ -94,7 +94,7 @@ function EventDetailPanel({ event, onClose }) {
   }
 
   const eventDate = new Date(event.date)
-  const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 text-gray-600 border-gray-200'
+  const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
   const typeLabel = TYPE_LABEL[event.type] || event.type
 
   const targetLabel = () => {
@@ -250,7 +250,7 @@ export default function AdminCalendarPage() {
               'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
               filterValue === opt.value
                 ? 'bg-primary-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
             )}
           >
             {opt.label}

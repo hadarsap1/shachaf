@@ -140,7 +140,7 @@ function InvitePanel({ onClose }) {
             <div className="flex gap-2 items-center">
               <button onClick={() => copyText(INVITE_URL, setCopied)}
                 className={clsx('flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  copied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>
+                  copied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600')}>
                 {copied ? '✓ הועתק' : 'העתק'}
               </button>
               <span className="text-xs text-primary-600 font-mono truncate flex-1 text-left" dir="ltr">{INVITE_URL}</span>
@@ -383,7 +383,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
           <h2 className="font-bold text-gray-800 dark:text-gray-100">פרטי משתמש</h2>
           <button
             onClick={() => { setEditing(e => !e); setDraft({ name: user.name || '', phone: user.phone || '', address: user.address || '' }) }}
-            className={clsx('text-xs px-2.5 py-1 rounded-lg border transition-colors font-medium', editing ? 'bg-gray-100 text-gray-600 border-gray-200' : 'bg-primary-50 text-primary-600 border-primary-200 hover:bg-primary-100')}
+            className={clsx('text-xs px-2.5 py-1 rounded-lg border transition-colors font-medium', editing ? 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600' : 'bg-primary-50 text-primary-600 border-primary-200 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-700')}
           >
             {editing ? 'ביטול' : 'עריכה'}
           </button>
