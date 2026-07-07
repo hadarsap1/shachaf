@@ -114,7 +114,7 @@ export default function AdminMessagesPage() {
             onClick={() => setTab(t.id)}
             className={clsx(
               'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
-              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             )}
           >
             {t.label}
@@ -275,7 +275,7 @@ export default function AdminMessagesPage() {
                 />
                 <div className="flex items-center justify-between mt-2 gap-2">
                   <a href={`mailto:${selected.userEmail}?subject=Re: ${encodeURIComponent(selected.subject)}`}
-                    className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                    className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 dark:text-gray-300">
                     <Mail size={12} /> השב במייל במקום
                   </a>
                   <button onClick={handleReply} disabled={replying || !replyText.trim()}

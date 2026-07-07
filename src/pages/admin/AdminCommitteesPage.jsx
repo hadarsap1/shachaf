@@ -166,7 +166,7 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
                     'w-9 h-9 rounded-xl flex items-center justify-center border-2 transition-all',
                     draft.icon === icon
                       ? 'border-primary-600 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                      : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:text-gray-300'
                   )}>
                   <CommitteeIcon name={icon} size={16} />
                 </button>

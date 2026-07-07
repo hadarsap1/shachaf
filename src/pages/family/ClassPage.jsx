@@ -85,7 +85,7 @@ function ScheduleView({ schedule, classId, uid }) {
         )}
         {editing && (
           <div className="flex gap-2 ms-auto">
-            <button onClick={cancelEdit} className="text-xs text-gray-400 hover:text-gray-600">ביטול</button>
+            <button onClick={cancelEdit} className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-300">ביטול</button>
             <button onClick={saveEdit} className="text-xs text-primary-600 font-semibold hover:text-primary-700">שמור</button>
           </div>
         )}

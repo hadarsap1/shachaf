@@ -9,7 +9,7 @@ const ICON_MAP = {
   map:      { icon: Map,          bg: 'bg-green-50',     color: 'text-green-600' },
   phone:    { icon: Phone,        bg: 'bg-teal-50',      color: 'text-teal-600' },
   video:    { icon: Video,        bg: 'bg-purple-50',    color: 'text-purple-600' },
-  external: { icon: ExternalLink, bg: 'bg-gray-50',      color: 'text-gray-500' },
+  external: { icon: ExternalLink, bg: 'bg-gray-50',      color: 'text-gray-500 dark:text-gray-400' },
 }
 
 export default function ResourcesPage() {

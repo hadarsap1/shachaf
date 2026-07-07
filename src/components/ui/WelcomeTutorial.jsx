@@ -80,7 +80,7 @@ export default function WelcomeTutorial({ onDone }) {
         {/* Skip */}
         <button
           onClick={finish}
-          className="absolute top-4 start-4 z-10 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="absolute top-4 start-4 z-10 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors dark:text-gray-300"
           aria-label="דלג על ההדרכה"
         >
           <X size={14} />

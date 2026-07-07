@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids, getChildren, linkChildToParent } from '../../lib/db'
 import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -109,7 +109,7 @@ function InvitePanel({ onClose }) {
           {[{ key: 'new_family', label: 'משפחה חדשה' }, { key: 'host_family', label: 'משפחה מארחת' }, { key: 'community', label: 'קהילה' }].map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); setCopied(false); setMsgCopied(false) }}
               className={clsx('flex-1 py-3 text-sm font-medium transition-all border-b-2',
-                tab === t.key ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700')}>
+                tab === t.key ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400')}>
               {t.label}
             </button>
           ))}
@@ -298,6 +298,9 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [kids, setKids] = useState(null)
   const [classes, setClasses] = useState([])
   const [coParents, setCoParents] = useState([])
+  const [childSearch, setChildSearch] = useState('')
+  const [allChildren, setAllChildren] = useState(null)   // lazy-loaded on first search
+  const [linkingChild, setLinkingChild] = useState(false)
 
   useEscapeToClose(onClose, !profileSaving)
 
@@ -328,6 +331,35 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
   const rawDigits = (user.phone || '').replace(/\D/g, '')
   const waPhone = rawDigits.length > 3 ? (rawDigits.startsWith('972') ? rawDigits : '972' + rawDigits.replace(/^0/, '')) : null
+
+  // Link a child by name search — for parents who registered with a different
+  // email than the phone-book one (auto-link by email can't find them)
+  const handleChildSearch = async (q) => {
+    setChildSearch(q)
+    if (q.length > 1 && allChildren === null) {
+      try { setAllChildren(await getChildren()) } catch { setAllChildren([]) }
+    }
+  }
+  const childSuggestions = childSearch.length > 1 && allChildren
+    ? allChildren.filter(c =>
+        !(kids || []).some(k => k.id === c.id) &&
+        c.name?.includes(childSearch.trim())
+      ).slice(0, 5)
+    : []
+  const handleLinkChild = async (child) => {
+    setLinkingChild(true)
+    try {
+      await linkChildToParent(child.id, user.uid)
+      setKids(prev => [...(prev || []), child])
+      setChildSearch('')
+      toast(`${child.name} קושר/ה ל${user.name}`)
+    } catch (e) {
+      console.error('link child failed', e)
+      toast('הקישור נכשל', 'error')
+    } finally {
+      setLinkingChild(false)
+    }
+  }
 
   const handleSaveProfile = async () => {
     setProfileSaving(true)
@@ -503,6 +535,33 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
                 })}
               </div>
             )}
+
+            {/* Link a child by name — for parents registered with a different email */}
+            <div className="relative mt-2">
+              <Search size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={childSearch}
+                onChange={e => handleChildSearch(e.target.value)}
+                placeholder="קשרו ילד/ה לפי שם..."
+                className="input w-full text-right text-sm py-2 ps-9"
+              />
+              {childSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-card z-10 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+                  {childSuggestions.map(c => {
+                    const cls = classes.find(x => x.id === c.classId)
+                    return (
+                      <button key={c.id} onClick={() => handleLinkChild(c)} disabled={linkingChild}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 text-right dark:hover:bg-gray-700/50">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                          style={{ backgroundColor: cls?.color || '#9CA3AF' }}>{cls?.name || '?'}</div>
+                        <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{c.name}</span>
+                        {(c.parentUids || []).length === 0 && <span className="text-[10px] text-amber-600">ללא הורה</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Co-parents — other parents linked to the same children */}

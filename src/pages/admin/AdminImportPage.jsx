@@ -182,20 +182,20 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
                     invalid ? 'opacity-50 bg-gray-50' : missingName ? 'bg-red-50' : 'hover:bg-gray-50'
                   )}
                 >
-                  <td className={clsx('px-4 py-2.5', missingName && !invalid ? 'text-red-600 font-medium' : 'text-gray-800')}>
+                  <td className={clsx('px-4 py-2.5', missingName && !invalid ? 'text-red-600 font-medium' : 'text-gray-800 dark:text-gray-100')}>
                     {row.name || <span className="italic text-gray-400">—</span>}
                   </td>
-                  <td className={clsx('px-4 py-2.5 font-mono text-xs', invalid ? 'text-gray-400 italic' : 'text-gray-700')} dir="ltr">
+                  <td className={clsx('px-4 py-2.5 font-mono text-xs', invalid ? 'text-gray-400 italic' : 'text-gray-700 dark:text-gray-200')} dir="ltr">
                     {row.email || <span className="not-italic">—</span>}
                   </td>
-                  <td className={clsx('px-4 py-2.5', !row.phone && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700')}>
+                  <td className={clsx('px-4 py-2.5', !row.phone && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700 dark:text-gray-200')}>
                     {row.phone || <span className="text-gray-400 text-xs">—</span>}
                   </td>
-                  <td className={clsx('px-4 py-2.5', !row.address && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700')}>
+                  <td className={clsx('px-4 py-2.5', !row.address && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700 dark:text-gray-200')}>
                     {row.address || <span className="text-gray-400 text-xs">—</span>}
                   </td>
                   {rows.some(r => r.children?.length) && (
-                    <td className="px-4 py-2.5 text-gray-700 text-xs">
+                    <td className="px-4 py-2.5 text-gray-700 text-xs dark:text-gray-200">
                       {(row.children || []).map(c => `${c.name} (${c.class})`).join(', ') || '—'}
                     </td>
                   )}
@@ -465,7 +465,7 @@ export default function AdminImportPage() {
               'px-5 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px',
               tab === t.key
                 ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
             )}
           >
             {t.label}

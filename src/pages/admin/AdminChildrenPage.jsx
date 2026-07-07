@@ -541,6 +541,7 @@ export default function AdminChildrenPage() {
   const [showImport, setShowImport] = useState(false)
   const [deleting, setDeleting]   = useState(null)
   const [confirmId, setConfirmId] = useState(null)   // child pending delete confirmation
+  const [onlyUnlinked, setOnlyUnlinked] = useState(false)
   const [checkedIds, setCheckedIds] = useState(new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
 
@@ -600,8 +601,10 @@ export default function AdminChildrenPage() {
     const q = search.toLowerCase()
     const matchSearch = !q || c.name?.toLowerCase().includes(q)
     const matchClass  = !filterClass || c.classId === filterClass
-    return matchSearch && matchClass
+    const matchLinked = !onlyUnlinked || (c.parentUids || []).length === 0
+    return matchSearch && matchClass && matchLinked
   })
+  const unlinkedCount = children.filter(c => (c.parentUids || []).length === 0).length
 
   const allChecked = filtered.length > 0 && filtered.every(c => checkedIds.has(c.id))
   const toggleAll = () => {
@@ -685,6 +688,13 @@ export default function AdminChildrenPage() {
           <option value="">כל הכיתות</option>
           {classes.map(c => <option key={c.id} value={c.id}>כיתה {c.name}</option>)}
         </select>
+        <button onClick={() => setOnlyUnlinked(v => !v)}
+          className={clsx('px-3 py-2 rounded-xl text-sm font-medium border whitespace-nowrap transition-colors',
+            onlyUnlinked
+              ? 'bg-amber-100 border-amber-300 text-amber-800'
+              : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300')}>
+          ללא הורה ({unlinkedCount})
+        </button>
       </div>
 
       {loading ? (

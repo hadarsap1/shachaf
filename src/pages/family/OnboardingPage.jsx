@@ -242,7 +242,7 @@ export default function OnboardingPage() {
             <button onClick={() => setStep(2)} className="btn-primary w-full mb-2">
               המשך
             </button>
-            <button onClick={() => setStep(2)} className="w-full text-sm text-gray-400 hover:text-gray-600 py-1">
+            <button onClick={() => setStep(2)} className="w-full text-sm text-gray-400 hover:text-gray-600 py-1 dark:text-gray-300">
               אחר כך
             </button>
           </div>
@@ -299,7 +299,7 @@ export default function OnboardingPage() {
                   {busy && <Loader2 size={16} className="animate-spin" />}
                   שלחו הזמנה
                 </button>
-                <button onClick={() => setStep(3)} className="w-full text-sm text-gray-400 hover:text-gray-600 py-1">
+                <button onClick={() => setStep(3)} className="w-full text-sm text-gray-400 hover:text-gray-600 py-1 dark:text-gray-300">
                   דלג
                 </button>
               </>

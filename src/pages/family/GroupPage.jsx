@@ -265,7 +265,7 @@ function EventsTab({ groupId, user }) {
   return (
     <div className="flex flex-col h-full overflow-y-auto px-4 py-3">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-gray-800">{t('groupPage', 'groupEvents')}</h3>
+        <h3 className="font-bold text-gray-800 dark:text-gray-100">{t('groupPage', 'groupEvents')}</h3>
         <button onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-1 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-xl hover:bg-primary-700 transition-colors">
           <Plus size={14} /> {t('groupPage', 'newEvent')}
@@ -346,18 +346,18 @@ function EventsTab({ groupId, user }) {
               <div key={ev.id} className={clsx('bg-white border rounded-2xl p-4', isPast ? 'border-gray-100 opacity-60' : 'border-primary-100')}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">{ev.title}</h4>
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-100">{ev.title}</h4>
                     {d && (
                       <p className="text-xs text-primary-600 flex items-center gap-1 mt-1">
                         <Calendar size={11} /> {formatDate(ev.date)}
                       </p>
                     )}
                     {ev.location && (
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 dark:text-gray-400">
                         <MapPin size={11} /> {ev.location}
                       </p>
                     )}
-                    {ev.description && <p className="text-sm text-gray-600 mt-2">{ev.description}</p>}
+                    {ev.description && <p className="text-sm text-gray-600 mt-2 dark:text-gray-300">{ev.description}</p>}
                   </div>
                   {ev.createdBy === user.uid && (
                     <button onClick={() => handleDelete(ev.id, ev.createdBy)}
@@ -403,7 +403,7 @@ function FilesTab({ groupId, user }) {
     <div className="flex flex-col h-full overflow-y-auto px-4 py-3">
       {images.length > 0 && (
         <div className="mb-5">
-          <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-1">
+          <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-1 dark:text-gray-200">
             <ImageIcon size={14} /> {t('groupPage', 'images').replace('{count}', images.length)}
           </h3>
           <div className="grid grid-cols-3 gap-2">
@@ -419,7 +419,7 @@ function FilesTab({ groupId, user }) {
 
       {files.length > 0 && (
         <div>
-          <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-1">
+          <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-1 dark:text-gray-200">
             <File size={14} /> {t('groupPage', 'files').replace('{count}', files.length)}
           </h3>
           <div className="space-y-2">
@@ -430,7 +430,7 @@ function FilesTab({ groupId, user }) {
                   <File size={16} className="text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{m.fileName}</p>
+                  <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{m.fileName}</p>
                   {m.fileSize && <p className="text-xs text-gray-400">{(m.fileSize / 1024).toFixed(0)} KB</p>}
                 </div>
                 <ExternalLink size={14} className="text-gray-400 flex-shrink-0" />
@@ -452,13 +452,13 @@ function GroupFields({ fields }) {
       {fields.map((f, i) => {
         if (f.type === 'text') return (
           <div key={i}>
-            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5">{f.label}</p>}
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{f.value}</p>
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
+            <p className="text-sm text-gray-700 whitespace-pre-wrap dark:text-gray-200">{f.value}</p>
           </div>
         )
         if (f.type === 'link') return (
           <div key={i}>
-            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5">{f.label}</p>}
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
             <a href={f.value} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:underline">
               <ExternalLink size={13} /> {linkLabel(f)}
@@ -467,16 +467,16 @@ function GroupFields({ fields }) {
         )
         if (f.type === 'table' && f.columns?.length) return (
           <div key={i}>
-            {f.label && <p className="text-xs font-semibold text-gray-500 mb-1">{f.label}</p>}
+            {f.label && <p className="text-xs font-semibold text-gray-500 mb-1 dark:text-gray-400">{f.label}</p>}
             <div className="overflow-x-auto rounded-xl border border-gray-100">
               <table className="w-full text-xs">
                 <thead className="bg-gray-50">
-                  <tr>{f.columns.map((c, ci) => <th key={ci} className="px-3 py-2 text-right font-semibold text-gray-600">{c}</th>)}</tr>
+                  <tr>{f.columns.map((c, ci) => <th key={ci} className="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-300">{c}</th>)}</tr>
                 </thead>
                 <tbody>
                   {(f.rows || []).map((row, ri) => (
                     <tr key={ri} className="border-t border-gray-100">
-                      {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-700">{cell}</td>)}
+                      {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-700 dark:text-gray-200">{cell}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -508,9 +508,9 @@ function MemberCard({ member, classMap }) {
 
         {/* Name + classes */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-800 text-sm">{member.name || '—'}</p>
+          <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{member.name || '—'}</p>
           {classes.length > 0 && (
-            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 dark:text-gray-400">
               <GraduationCap size={11} />
               {classes.join(' • ')}
             </p>
@@ -560,21 +560,21 @@ function InfoTab({ group, user, onToggle, toggling }) {
     <div className="overflow-y-auto px-4 py-4 space-y-5">
       {group.description && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 mb-1.5">{t('groupPage', 'description')}</h3>
-          <p className="text-sm text-gray-700 leading-relaxed">{group.description}</p>
+          <h3 className="text-xs font-semibold text-gray-500 mb-1.5 dark:text-gray-400">{t('groupPage', 'description')}</h3>
+          <p className="text-sm text-gray-700 leading-relaxed dark:text-gray-200">{group.description}</p>
         </div>
       )}
 
       {group.fields?.length > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 mb-2">{t('groupPage', 'linksInfo')}</h3>
+          <h3 className="text-xs font-semibold text-gray-500 mb-2 dark:text-gray-400">{t('groupPage', 'linksInfo')}</h3>
           <GroupFields fields={group.fields} />
         </div>
       )}
 
       {/* Member list */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+        <h3 className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1 dark:text-gray-400">
           <Users size={12} /> {t('groupPage', 'groupMembers').replace('{count}', (group.memberUids || []).length)}
         </h3>
 
@@ -674,7 +674,7 @@ export default function GroupPage() {
       <div className="bg-white border-b border-gray-100 px-4 py-3 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/community')}
-            className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 flex-shrink-0">
+            className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 flex-shrink-0 dark:text-gray-300">
             <ArrowRight size={18} />
           </button>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -683,7 +683,7 @@ export default function GroupPage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-bold text-gray-900 text-base leading-tight">{group.name}</h1>
+              <h1 className="font-bold text-gray-900 text-base leading-tight dark:text-gray-100">{group.name}</h1>
               {isMember && (
                 <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
                   {t('groupPage', 'member')}
@@ -725,7 +725,7 @@ export default function GroupPage() {
                 'flex-1 flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium transition-colors border-b-2',
                 tab === key
                   ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                  : 'border-transparent text-gray-400 hover:text-gray-600 dark:text-gray-300'
               )}
             >
               <TabIcon size={16} />

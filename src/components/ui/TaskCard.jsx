@@ -93,7 +93,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
             <div className="flex items-start justify-between gap-2">
               <h3 className={clsx(
                 'text-sm font-semibold leading-tight',
-                task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800'
+                task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-100'
               )}>
                 {task.title}
               </h3>

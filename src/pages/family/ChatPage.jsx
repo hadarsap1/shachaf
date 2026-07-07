@@ -144,7 +144,7 @@ export default function ChatPage() {
               setMessages([{ id: 1, role: 'assistant', content: `שלום ${user?.name}! 👋\nאיך אוכל לעזור?` }])
               setSuggestions(INITIAL_SUGGESTIONS)
             }}
-            className="mr-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors dark:hover:bg-gray-700"
+            className="mr-auto p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors dark:hover:bg-gray-700 dark:text-gray-300"
             aria-label="שיחה חדשה"
             title="שיחה חדשה"
           >

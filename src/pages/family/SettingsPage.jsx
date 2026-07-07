@@ -285,6 +285,7 @@ function ChildProfileCard({ child }) {
   const [photoFile, setPhotoFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [photoError, setPhotoError] = useState('')
 
   const handlePhoto = (e) => {
     const file = e.target.files?.[0]
@@ -295,18 +296,28 @@ function ChildProfileCard({ child }) {
 
   const handleSave = async () => {
     setSaving(true)
+    setPhotoError('')
     try {
+      // Text fields save first — a photo failure must not lose them
       const hobbies = hobbiesInput.split(',').map(h => h.trim()).filter(Boolean)
-      const update = { hobbies, pet: form.pet, birthDate: form.birthDate }
+      await updateChildProfile(child.id, { hobbies, pet: form.pet, birthDate: form.birthDate })
       if (photoFile) {
-        if (child.photoPath) await deleteChildPhoto(child.photoPath)
-        const { url, path } = await uploadChildPhoto(child.id, photoFile)
-        update.photoUrl = url
-        update.photoPath = path
+        try {
+          if (child.photoPath) await deleteChildPhoto(child.photoPath)
+          const { url, path } = await uploadChildPhoto(child.id, photoFile)
+          await updateChildProfile(child.id, { photoUrl: url, photoPath: path })
+          setPhotoFile(null)
+        } catch (e) {
+          console.error('child photo upload failed', e)
+          setPhotoError('התמונה לא נשמרה — נסו תמונה קטנה יותר או פורמט אחר')
+          setPhotoPreview(child.photoUrl || null)
+        }
       }
-      await updateChildProfile(child.id, update)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      console.error('child profile save failed', e)
+      setPhotoError('השמירה נכשלה, נסו שוב')
     } finally {
       setSaving(false)
     }
@@ -367,6 +378,7 @@ function ChildProfileCard({ child }) {
           placeholder="כלב, חתול..."
         />
       </div>
+      {photoError && <p className="text-xs text-red-600 text-right bg-red-50 rounded-lg px-2.5 py-1.5 dark:bg-red-900/20 dark:text-red-400">{photoError}</p>}
       <button
         onClick={handleSave}
         disabled={saving}
@@ -386,6 +398,7 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [coParent, setCoParent] = useState(user?.coParent || null)
   const [children, setChildren] = useState([])
   const [avatarFile, setAvatarFile] = useState(null)
@@ -434,14 +447,9 @@ export default function SettingsPage() {
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
+    setSaveError('')
     try {
-      let avatarUpdates = {}
-      if (avatarFile) {
-        if (user.avatarPath) await deleteUserAvatar(user.avatarPath)
-        const { url, path } = await uploadUserAvatar(user.uid, avatarFile)
-        avatarUpdates = { avatar: url, avatarPath: path }
-        setAvatarFile(null)
-      }
+      // Profile fields save first — an avatar failure must not lose them
       await updateUserProfile(user.uid, {
         name: form.name,
         phone: form.phone,
@@ -450,10 +458,24 @@ export default function SettingsPage() {
         profession: form.profession,
         hobbies: form.hobbies.split(',').map(h => h.trim()).filter(Boolean),
         temporaryStatus: form.temporaryStatus,
-        ...avatarUpdates,
       })
+      if (avatarFile) {
+        try {
+          if (user.avatarPath) await deleteUserAvatar(user.avatarPath)
+          const { url, path } = await uploadUserAvatar(user.uid, avatarFile)
+          await updateUserProfile(user.uid, { avatar: url, avatarPath: path })
+          setAvatarFile(null)
+        } catch (err) {
+          console.error('avatar upload failed', err)
+          setSaveError('התמונה לא נשמרה — נסו תמונה קטנה יותר. שאר הפרטים נשמרו.')
+          setAvatarPreview(user.avatar || null)
+        }
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error('profile save failed', err)
+      setSaveError('השמירה נכשלה, נסו שוב')
     } finally {
       setSaving(false)
     }
@@ -594,6 +616,7 @@ export default function SettingsPage() {
             </select>
           </div>
 
+          {saveError && <p className="text-xs text-red-600 text-right bg-red-50 rounded-lg px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{saveError}</p>}
           <button
             type="submit"
             disabled={saving}

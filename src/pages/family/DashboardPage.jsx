@@ -94,7 +94,7 @@ function CustomizePanel({ config, onChange, onClose }) {
                 <GripVertical size={16} className="text-gray-300 flex-shrink-0" />
                 <div className="flex items-center gap-2 flex-1">
                   <Icon size={16} className={w.visible ? 'text-primary-600' : 'text-gray-300'} />
-                  <span className={clsx('text-sm font-medium', w.visible ? 'text-gray-800' : 'text-gray-400')}>{def.label}</span>
+                  <span className={clsx('text-sm font-medium', w.visible ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400')}>{def.label}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => move(idx, -1)} disabled={idx === 0}

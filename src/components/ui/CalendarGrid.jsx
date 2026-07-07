@@ -297,7 +297,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
               )}>
                 <span className={clsx(
                   'text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full',
-                  isToday ? 'bg-primary-600 text-white' : 'text-gray-600'
+                  isToday ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'
                 )}>
                   {day.date.getDate()}
                 </span>

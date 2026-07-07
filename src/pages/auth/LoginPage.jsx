@@ -185,7 +185,7 @@ export default function LoginPage() {
           {mode === 'demo' ? (
             <>
               <div className="flex items-center gap-2 mb-5">
-                <button onClick={() => setMode('login')} className="p-1 text-gray-400 hover:text-gray-600">
+                <button onClick={() => setMode('login')} className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-300">
                   <ArrowRight size={18} />
                 </button>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">כניסת דמו</h2>
@@ -206,7 +206,7 @@ export default function LoginPage() {
                         <Icon size={20} className={role.iconColor} />
                       </div>
                       <div className="text-right flex-1">
-                        <div className={`font-semibold text-sm ${role.subtle ? 'text-gray-600' : 'text-gray-800'}`}>{role.label}</div>
+                        <div className={`font-semibold text-sm ${role.subtle ? 'text-gray-600 dark:text-gray-300' : 'text-gray-800 dark:text-gray-100'}`}>{role.label}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">{role.sub}</div>
                       </div>
                       {loading === role.key && <div className="w-5 h-5 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />}
@@ -218,7 +218,7 @@ export default function LoginPage() {
           ) : mode === 'reset' ? (
             <>
               <div className="flex items-center gap-2 mb-5">
-                <button onClick={() => { setMode('login'); setResetSent(false); setError('') }} className="p-1 text-gray-400 hover:text-gray-600">
+                <button onClick={() => { setMode('login'); setResetSent(false); setError('') }} className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-300">
                   <ArrowRight size={18} />
                 </button>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">איפוס סיסמה</h2>
@@ -360,7 +360,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setShowPass(!showPass)}
                       aria-label={showPass ? 'הסתר סיסמה' : 'הצג סיסמה'}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-300"
                     >
                       {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -399,7 +399,7 @@ export default function LoginPage() {
 
                 {import.meta.env.DEV && (
                   <button onClick={() => { setMode('demo'); setError('') }}
-                    className="text-xs text-gray-400 hover:text-gray-600">
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-300">
                     כניסת דמו (בדיקות)
                   </button>
                 )}

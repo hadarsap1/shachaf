@@ -82,6 +82,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/community',  label: 'קבוצות קהילה', groupBadge: true },
     { to: '/businesses',       label: 'עסקים בקהילה' },
     { heading: 'תוכן' },
+    { to: '/admin/events',     label: 'אירועים' },
     { to: '/admin/tasks',      label: 'משימות' },
     { to: '/admin/resources',  label: 'מידע שימושי' },
     { to: '/admin/messages',   label: 'הודעות', badge: true },

@@ -94,8 +94,8 @@ function FieldEditor({ field, onChange, onRemove, onMoveUp, onMoveDown, isFirst,
     <div className="bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
       <div className="flex items-center gap-2">
         <div className="flex flex-col gap-0.5">
-          <button onClick={onMoveUp} disabled={isFirst} className="text-gray-300 hover:text-gray-500 disabled:opacity-30"><ChevronUp size={14} /></button>
-          <button onClick={onMoveDown} disabled={isLast} className="text-gray-300 hover:text-gray-500 disabled:opacity-30"><ChevronDown size={14} /></button>
+          <button onClick={onMoveUp} disabled={isFirst} className="text-gray-300 hover:text-gray-500 disabled:opacity-30 dark:text-gray-400"><ChevronUp size={14} /></button>
+          <button onClick={onMoveDown} disabled={isLast} className="text-gray-300 hover:text-gray-500 disabled:opacity-30 dark:text-gray-400"><ChevronDown size={14} /></button>
         </div>
         <input value={field.label} onChange={e => onChange({ ...field, label: e.target.value })}
           placeholder="כותרת השדה" className="flex-1 input text-sm py-1.5 text-right" dir="rtl" />
