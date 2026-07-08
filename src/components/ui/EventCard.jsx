@@ -86,7 +86,7 @@ export default function EventCard({ event, onCardClick }) {
           <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium dark:bg-primary-900/30"
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium dark:bg-primary-900/30 dark:hover:bg-primary-900/50 dark:border-primary-800"
             >
               <Plus size={13} />
               Google Calendar

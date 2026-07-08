@@ -332,7 +332,7 @@ export default function LoginPage() {
                               })}
                               className={clsx(
                                 'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
-                                on ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-400'
+                                on ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-400 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                               )}>
                               {r.label}
                             </button>

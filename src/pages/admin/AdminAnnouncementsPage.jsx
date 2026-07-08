@@ -87,7 +87,7 @@ function AnnPanel({ ann, isNew, onSave, onClose, allClasses }) {
                     'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
                     currentAudience === opt.value
                       ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                   )}>
                   {opt.label}
                 </button>
@@ -195,7 +195,7 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
           <Megaphone size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין הודעות עדיין</p>
           <button onClick={() => { setSelected(blankAnn()); setIsNew(true) }}
-            className="mt-3 text-sm text-primary-600 hover:underline">
+            className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
             צור הודעה ראשונה
           </button>
         </div>

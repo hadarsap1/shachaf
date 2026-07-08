@@ -137,7 +137,7 @@ function ChatTab({ groupId, user }) {
           return (
             <div key={msg.id} className={clsx('flex items-end gap-2', isOwn ? 'flex-row-reverse' : 'flex-row')}>
               {/* Avatar */}
-              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-700 flex-shrink-0">
+              <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-xs font-bold text-primary-700 dark:text-primary-300 flex-shrink-0">
                 {msg.senderAvatar
                   ? <img src={msg.senderAvatar} alt="" className="w-full h-full rounded-full object-cover" />
                   : (msg.senderName?.[0] || '?')
@@ -149,7 +149,7 @@ function ChatTab({ groupId, user }) {
                 {!isOwn && <p className="text-[10px] text-gray-400 mb-0.5 px-1">{msg.senderName}</p>}
                 <div className={clsx(
                   'rounded-2xl px-3 py-2 text-sm',
-                  isOwn ? 'bg-primary-600 text-white rounded-tl-sm' : 'bg-gray-100 text-gray-800 rounded-tr-sm'
+                  isOwn ? 'bg-primary-600 text-white rounded-tl-sm' : 'bg-gray-100 text-gray-800 rounded-tr-sm dark:bg-gray-700 dark:text-gray-100'
                 )}>
                   {msg.type === 'image' && msg.fileUrl ? (
                     <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
@@ -157,7 +157,7 @@ function ChatTab({ groupId, user }) {
                     </a>
                   ) : msg.type === 'file' && msg.fileUrl ? (
                     <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"
-                      className={clsx('flex items-center gap-2 hover:underline', isOwn ? 'text-white' : 'text-primary-600')}>
+                      className={clsx('flex items-center gap-2 hover:underline', isOwn ? 'text-white' : 'text-primary-600 dark:text-primary-400')}>
                       <File size={14} />
                       <span>{msg.fileName}</span>
                     </a>
@@ -182,7 +182,7 @@ function ChatTab({ groupId, user }) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-100 px-4 py-3 flex items-center gap-2 bg-white">
+      <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center gap-2 bg-white dark:bg-gray-800">
         <input
           ref={fileRef}
           type="file"
@@ -193,7 +193,7 @@ function ChatTab({ groupId, user }) {
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="p-2 text-gray-400 hover:text-primary-600 rounded-xl hover:bg-primary-50 transition-colors flex-shrink-0"
+          className="p-2 text-gray-400 hover:text-primary-600 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors flex-shrink-0"
         >
           {uploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
         </button>
@@ -203,7 +203,7 @@ function ChatTab({ groupId, user }) {
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
           placeholder={t('groupPage', 'msgPlaceholder')}
           dir="rtl"
-          className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none"
+          className="flex-1 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none dark:text-gray-100"
         />
         <button
           onClick={handleSend}
@@ -274,8 +274,8 @@ function EventsTab({ groupId, user }) {
 
       {/* Add event form */}
       {showForm && (
-        <form onSubmit={handleAdd} className="bg-primary-50 border border-primary-100 rounded-2xl p-4 mb-4 space-y-3">
-          <h4 className="font-semibold text-primary-800 text-sm">{t('groupPage', 'addEvent')}</h4>
+        <form onSubmit={handleAdd} className="bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-700 rounded-2xl p-4 mb-4 space-y-3">
+          <h4 className="font-semibold text-primary-800 dark:text-primary-200 text-sm">{t('groupPage', 'addEvent')}</h4>
           <input
             required
             value={form.title}
@@ -323,7 +323,7 @@ function EventsTab({ groupId, user }) {
               {t('groupPage', 'add')}
             </button>
             <button type="button" onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">
+              className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
               {t('groupPage', 'cancel')}
             </button>
           </div>
@@ -343,12 +343,12 @@ function EventsTab({ groupId, user }) {
             const d = ev.date?.toDate ? ev.date.toDate() : ev.date ? new Date(ev.date) : null
             const isPast = d && d < now
             return (
-              <div key={ev.id} className={clsx('bg-white border rounded-2xl p-4', isPast ? 'border-gray-100 opacity-60' : 'border-primary-100')}>
+              <div key={ev.id} className={clsx('bg-white dark:bg-gray-800 border rounded-2xl p-4', isPast ? 'border-gray-100 dark:border-gray-700 opacity-60' : 'border-primary-100 dark:border-primary-700')}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-800 dark:text-gray-100">{ev.title}</h4>
                     {d && (
-                      <p className="text-xs text-primary-600 flex items-center gap-1 mt-1">
+                      <p className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 mt-1">
                         <Calendar size={11} /> {formatDate(ev.date)}
                       </p>
                     )}
@@ -409,7 +409,7 @@ function FilesTab({ groupId, user }) {
           <div className="grid grid-cols-3 gap-2">
             {images.map(m => (
               <a key={m.id} href={m.fileUrl} target="_blank" rel="noopener noreferrer"
-                className="aspect-square rounded-xl overflow-hidden bg-gray-100 hover:opacity-90 transition-opacity">
+                className="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 hover:opacity-90 transition-opacity">
                 <img src={m.fileUrl} alt={m.fileName} className="w-full h-full object-cover" />
               </a>
             ))}
@@ -425,9 +425,9 @@ function FilesTab({ groupId, user }) {
           <div className="space-y-2">
             {files.map(m => (
               <a key={m.id} href={m.fileUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors">
-                <div className="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <File size={16} className="text-primary-600" />
+                className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl hover:border-primary-200 dark:hover:border-primary-700 transition-colors">
+                <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <File size={16} className="text-primary-600 dark:text-primary-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{m.fileName}</p>
@@ -460,7 +460,7 @@ function GroupFields({ fields }) {
           <div key={i}>
             {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
             <a href={f.value} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:underline">
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
               <ExternalLink size={13} /> {linkLabel(f)}
             </a>
           </div>
@@ -468,14 +468,14 @@ function GroupFields({ fields }) {
         if (f.type === 'table' && f.columns?.length) return (
           <div key={i}>
             {f.label && <p className="text-xs font-semibold text-gray-500 mb-1 dark:text-gray-400">{f.label}</p>}
-            <div className="overflow-x-auto rounded-xl border border-gray-100">
+            <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
               <table className="w-full text-xs">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>{f.columns.map((c, ci) => <th key={ci} className="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-300">{c}</th>)}</tr>
                 </thead>
                 <tbody>
                   {(f.rows || []).map((row, ri) => (
-                    <tr key={ri} className="border-t border-gray-100">
+                    <tr key={ri} className="border-t border-gray-100 dark:border-gray-700">
                       {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-700 dark:text-gray-200">{cell}</td>)}
                     </tr>
                   ))}
@@ -496,10 +496,10 @@ function MemberCard({ member, classMap }) {
     .filter(Boolean)
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-4">
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4">
       <div className="flex items-center gap-3">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center font-bold text-primary-700 flex-shrink-0 overflow-hidden">
+        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center font-bold text-primary-700 dark:text-primary-300 flex-shrink-0 overflow-hidden">
           {member.avatar
             ? <img src={member.avatar} alt="" className="w-full h-full object-cover" />
             : (member.name?.[0] || '?')
@@ -522,13 +522,13 @@ function MemberCard({ member, classMap }) {
       <div className="mt-3 flex flex-wrap gap-3">
         {member.phone && (
           <a href={`tel:${member.phone}`} dir="ltr"
-            className="flex items-center gap-1.5 text-xs text-primary-600 hover:underline">
+            className="flex items-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 hover:underline">
             <Phone size={12} /> {member.phone}
           </a>
         )}
         {member.email && (
           <a href={`mailto:${member.email}`}
-            className="flex items-center gap-1.5 text-xs text-primary-600 hover:underline">
+            className="flex items-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 hover:underline">
             <Mail size={12} /> {member.email}
           </a>
         )}
@@ -601,7 +601,7 @@ function InfoTab({ group, user, onToggle, toggling }) {
         className={clsx(
           'w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
           isMember
-            ? 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+            ? 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/20 dark:hover:text-red-400'
             : 'bg-primary-600 text-white hover:bg-primary-700'
         )}
       >
@@ -669,12 +669,12 @@ export default function GroupPage() {
   const isMember = (group.memberUids || []).includes(user.uid)
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50" dir="rtl">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3 flex-shrink-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-3 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/community')}
-            className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 flex-shrink-0 dark:text-gray-300">
+            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 flex-shrink-0 dark:text-gray-300">
             <ArrowRight size={18} />
           </button>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -685,7 +685,7 @@ export default function GroupPage() {
             <div className="flex items-center gap-2">
               <h1 className="font-bold text-gray-900 text-base leading-tight dark:text-gray-100">{group.name}</h1>
               {isMember && (
-                <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                <span className="text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-full font-medium">
                   {t('groupPage', 'member')}
                 </span>
               )}
@@ -708,14 +708,14 @@ export default function GroupPage() {
 
         {/* Non-member banner */}
         {!isMember && (
-          <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 text-xs text-amber-700 text-center">
+          <div className="mt-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-700 rounded-xl px-3 py-2 text-xs text-amber-700 dark:text-amber-400 text-center">
             {t('groupPage', 'joinBanner')}
           </div>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-100 flex-shrink-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
         <div className="flex">
           {TABS.map(({ key, label, icon: TabIcon }) => (
             <button
@@ -724,8 +724,8 @@ export default function GroupPage() {
               className={clsx(
                 'flex-1 flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium transition-colors border-b-2',
                 tab === key
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-400 hover:text-gray-600 dark:text-gray-300'
+                  ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-400 dark:text-gray-300'
               )}
             >
               <TabIcon size={16} />

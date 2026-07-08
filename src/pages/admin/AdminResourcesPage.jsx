@@ -17,13 +17,13 @@ const ICON_OPTIONS = [
 ]
 
 const ICON_MAP = {
-  link:     { Icon: Link,         bg: 'bg-primary-50',   color: 'text-primary-600' },
-  doc:      { Icon: FileText,     bg: 'bg-blue-50',      color: 'text-blue-600' },
-  calendar: { Icon: Calendar,     bg: 'bg-accent-50',    color: 'text-accent-600' },
-  map:      { Icon: Map,          bg: 'bg-green-50',     color: 'text-green-600' },
-  phone:    { Icon: Phone,        bg: 'bg-teal-50',      color: 'text-teal-600' },
-  video:    { Icon: Video,        bg: 'bg-purple-50',    color: 'text-purple-600' },
-  external: { Icon: ExternalLink, bg: 'bg-gray-50',      color: 'text-gray-500 dark:text-gray-400' },
+  link:     { Icon: Link,         bg: 'bg-primary-50 dark:bg-primary-900/30',   color: 'text-primary-600 dark:text-primary-400' },
+  doc:      { Icon: FileText,     bg: 'bg-blue-50 dark:bg-blue-900/30',         color: 'text-blue-600 dark:text-blue-400' },
+  calendar: { Icon: Calendar,     bg: 'bg-accent-50 dark:bg-accent-900/30',     color: 'text-accent-600 dark:text-accent-400' },
+  map:      { Icon: Map,          bg: 'bg-green-50 dark:bg-green-900/30',       color: 'text-green-600 dark:text-green-400' },
+  phone:    { Icon: Phone,        bg: 'bg-teal-50',                              color: 'text-teal-600' },
+  video:    { Icon: Video,        bg: 'bg-purple-50 dark:bg-purple-900/30',     color: 'text-purple-600 dark:text-purple-400' },
+  external: { Icon: ExternalLink, bg: 'bg-gray-50 dark:bg-gray-800',            color: 'text-gray-500 dark:text-gray-400' },
 }
 
 const blank = (order) => ({
@@ -92,7 +92,7 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
                       'flex flex-col items-center gap-1 p-2 rounded-xl border transition-all text-xs',
                       draft.iconType === value
                         ? `${bg} border-primary-300 ${color} font-semibold`
-                        : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                        : 'border-gray-200 dark:border-gray-600 text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                     )}
                   >
                     <Icon size={16} />

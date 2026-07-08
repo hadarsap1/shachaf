@@ -114,7 +114,7 @@ export default function AdminMessagesPage() {
             onClick={() => setTab(t.id)}
             className={clsx(
               'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
-              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+              tab === t.id ? 'bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             )}
           >
             {t.label}
@@ -152,10 +152,10 @@ export default function AdminMessagesPage() {
                 className={clsx(
                   'w-full text-right card p-4 border-2 transition-all',
                   selectedCMsg?.id === msg.id
-                    ? 'border-primary-500 bg-primary-50'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
                     : msg.read
                       ? 'border-transparent hover:border-gray-200'
-                      : 'border-primary-200 bg-blue-50 hover:border-primary-400'
+                      : 'border-primary-200 bg-blue-50 dark:bg-blue-900/30 hover:border-primary-400'
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -218,10 +218,10 @@ export default function AdminMessagesPage() {
                 className={clsx(
                   'w-full text-right card p-4 border-2 transition-all',
                   selected?.id === msg.id
-                    ? 'border-primary-500 bg-primary-50'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
                     : msg.read
                       ? 'border-transparent hover:border-gray-200'
-                      : 'border-primary-200 bg-blue-50 hover:border-primary-400'
+                      : 'border-primary-200 bg-blue-50 dark:bg-blue-900/30 hover:border-primary-400'
                 )}
               >
                 <div className="flex items-start justify-between gap-2">

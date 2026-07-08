@@ -202,7 +202,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                 {overflow && (
                   <button
                     onClick={() => onEventClick(dayEvents[3])}
-                    className="text-xs text-primary-600 hover:underline text-start px-1"
+                    className="text-xs text-primary-600 dark:text-primary-400 hover:underline text-start px-1"
                   >
                     +{dayEvents.length - 3} נוספים
                   </button>
@@ -293,7 +293,7 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
             <div key={day.key} className={clsx('card p-3', !isToday && dayEvents.length === 0 && 'opacity-60')}>
               <div className={clsx(
                 'flex items-center gap-2 mb-2',
-                isToday && 'text-primary-700'
+                isToday && 'text-primary-700 dark:text-primary-300'
               )}>
                 <span className={clsx(
                   'text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full',

@@ -35,10 +35,10 @@ const TYPE_LABEL = {
 }
 
 const TYPE_BADGE = {
-  social:      'bg-primary-50 text-primary-700 border-primary-200',
-  orientation: 'bg-secondary-50 text-secondary-700 border-secondary-200',
-  ceremony:    'bg-accent-50 text-accent-700 border-accent-200',
-  community:   'bg-purple-50 text-purple-700 border-purple-200',
+  social:      'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800',
+  orientation: 'bg-secondary-50 text-secondary-700 border-secondary-200 dark:bg-secondary-900/30 dark:text-secondary-300 dark:border-secondary-800',
+  ceremony:    'bg-accent-50 text-accent-700 border-accent-200 dark:bg-accent-900/30 dark:text-accent-300 dark:border-accent-800',
+  community:   'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
 }
 
 // ── Calendar helpers ──────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ function EventDetailPanel({ event, onClose }) {
   }
 
   const eventDate = new Date(event.date)
-  const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 text-gray-600 border-gray-200'
+  const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
   const typeLabel = TYPE_LABEL[event.type] || event.type
 
   const targetLabel = () => {
@@ -250,7 +250,7 @@ export default function AdminCalendarPage() {
               'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0',
               filterValue === opt.value
                 ? 'bg-primary-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
             )}
           >
             {opt.label}

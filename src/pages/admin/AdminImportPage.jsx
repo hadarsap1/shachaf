@@ -129,7 +129,7 @@ function MissingBadges({ row }) {
   return (
     <span className="inline-flex gap-1 flex-wrap">
       {missing.map(f => (
-        <span key={f} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+        <span key={f} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200">
           חסר {f}
         </span>
       ))}
@@ -150,7 +150,7 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
   return (
     <div className="mt-6">
       {summaryParts.length > 0 && (
-        <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+        <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl text-sm text-amber-800 dark:text-amber-200">
           <AlertCircle size={15} className="flex-shrink-0" />
           {summaryParts.join(' · ')}
         </div>
@@ -179,19 +179,19 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
                   key={i}
                   className={clsx(
                     'transition-colors',
-                    invalid ? 'opacity-50 bg-gray-50' : missingName ? 'bg-red-50' : 'hover:bg-gray-50'
+                    invalid ? 'opacity-50 bg-gray-50 dark:bg-gray-800' : missingName ? 'bg-red-50 dark:bg-red-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                   )}
                 >
-                  <td className={clsx('px-4 py-2.5', missingName && !invalid ? 'text-red-600 font-medium' : 'text-gray-800 dark:text-gray-100')}>
+                  <td className={clsx('px-4 py-2.5', missingName && !invalid ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-800 dark:text-gray-100')}>
                     {row.name || <span className="italic text-gray-400">—</span>}
                   </td>
                   <td className={clsx('px-4 py-2.5 font-mono text-xs', invalid ? 'text-gray-400 italic' : 'text-gray-700 dark:text-gray-200')} dir="ltr">
                     {row.email || <span className="not-italic">—</span>}
                   </td>
-                  <td className={clsx('px-4 py-2.5', !row.phone && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700 dark:text-gray-200')}>
+                  <td className={clsx('px-4 py-2.5', !row.phone && !invalid ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' : 'text-gray-700 dark:text-gray-200')}>
                     {row.phone || <span className="text-gray-400 text-xs">—</span>}
                   </td>
-                  <td className={clsx('px-4 py-2.5', !row.address && !invalid ? 'bg-amber-50 text-amber-800' : 'text-gray-700 dark:text-gray-200')}>
+                  <td className={clsx('px-4 py-2.5', !row.address && !invalid ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' : 'text-gray-700 dark:text-gray-200')}>
                     {row.address || <span className="text-gray-400 text-xs">—</span>}
                   </td>
                   {rows.some(r => r.children?.length) && (
@@ -464,7 +464,7 @@ export default function AdminImportPage() {
             className={clsx(
               'px-5 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px',
               tab === t.key
-                ? 'border-primary-600 text-primary-700'
+                ? 'border-primary-600 text-primary-700 dark:text-primary-300'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
             )}
           >
@@ -500,8 +500,8 @@ export default function AdminImportPage() {
             className={clsx(
               'relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed cursor-pointer transition-all py-14 px-6 text-center',
               dragging
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 bg-gray-50 hover:border-primary-400 hover:bg-primary-50/40'
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                : 'border-gray-300 bg-gray-50 dark:bg-gray-800 hover:border-primary-400 hover:bg-primary-50/40'
             )}
           >
             <Upload size={36} className={clsx('transition-colors', dragging ? 'text-primary-600' : 'text-gray-400')} />

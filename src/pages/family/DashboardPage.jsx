@@ -324,7 +324,7 @@ export default function DashboardPage() {
         return (
           <section key="class" className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <Link to="/class" className="text-xs text-primary-600 flex items-center gap-1 hover:underline">
+              <Link to="/class" className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 hover:underline">
                 {myClasses.length > 1 ? 'לכיתות' : 'לכיתה'} <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
@@ -336,14 +336,14 @@ export default function DashboardPage() {
               {myClasses.map(cls => (
                 <div key={cls.id} className="px-4 py-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0 dark:bg-primary-900/30">
-                    <GraduationCap size={16} className="text-primary-600" />
+                    <GraduationCap size={16} className="text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="flex-1 text-right">
                     <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{cls.name}</div>
                     {cls.teacherName && <div className="text-xs text-gray-400 mt-0.5">מורה: {cls.teacherName}</div>}
                   </div>
                   <div className="flex gap-2">
-                    <Link to="/class" className="text-xs text-primary-600 hover:underline flex items-center gap-0.5">
+                    <Link to="/class" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5">
                       <Users size={12} /> חברים.ות בכיתה
                     </Link>
                   </div>
@@ -381,7 +381,7 @@ export default function DashboardPage() {
               </div>
             )}
             <div className="flex items-center justify-between mb-3">
-              <Link to="/events" className="text-xs text-primary-600 flex items-center gap-1 hover:underline">
+              <Link to="/events" className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 hover:underline">
                 הכל <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
@@ -423,7 +423,7 @@ export default function DashboardPage() {
         return (
           <section key="tasks" className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <Link to="/tasks" className="text-xs text-primary-600 flex items-center gap-1 hover:underline">
+              <Link to="/tasks" className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 hover:underline">
                 הכל <ArrowLeft size={12} />
               </Link>
               <div className="section-title flex items-center gap-2">
@@ -443,15 +443,15 @@ export default function DashboardPage() {
         if (!isFamily || pendingForms === 0) return null
         return (
           <Link key="forms" to="/forms"
-            className="card p-4 flex items-center gap-3 mb-6 bg-amber-50 border border-amber-200 hover:shadow-card-hover transition-[box-shadow] duration-200">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            className="card p-4 flex items-center gap-3 mb-6 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 hover:shadow-card-hover transition-[box-shadow] duration-200">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
               <ClipboardList size={18} className="text-amber-600" />
             </div>
             <div className="flex-1 text-right">
-              <div className="font-semibold text-amber-900 text-sm">
+              <div className="font-semibold text-amber-900 dark:text-amber-200 text-sm">
                 יש לך {pendingForms} טופס{pendingForms > 1 ? 'ים' : ''} למילוי
               </div>
-              <div className="text-xs text-amber-700 mt-0.5">לחצו כדי למלא את הפרטים הנדרשים</div>
+              <div className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">לחצו כדי למלא את הפרטים הנדרשים</div>
             </div>
             <ArrowLeft size={16} className="text-amber-400 flex-shrink-0" />
           </Link>
@@ -484,12 +484,12 @@ export default function DashboardPage() {
       {/* Emergency banner */}
       {emergency && (
         <Link to="/emergency"
-          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 hover:shadow-card-hover transition-[box-shadow] duration-200 dark:bg-red-900/20">
+          className="flex items-center gap-3 bg-red-50 border border-red-200 dark:border-red-800 rounded-2xl p-4 mb-5 hover:shadow-card-hover transition-[box-shadow] duration-200 dark:bg-red-900/20">
           <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 dark:bg-red-900/30">
             <AlertTriangle size={18} className="text-red-600 dark:text-red-400" />
           </div>
           <div className="flex-1 text-right">
-            <div className="font-bold text-red-800 text-sm">{emergency.title || 'שגרת חירום פעילה'}</div>
+            <div className="font-bold text-red-800 dark:text-red-200 text-sm">{emergency.title || 'שגרת חירום פעילה'}</div>
             {emergency.message && <div className="text-xs text-red-600 mt-0.5 line-clamp-1 dark:text-red-400">{emergency.message}</div>}
             <div className="text-xs text-red-500 mt-0.5">לחצו לצפייה בלוח השיעורים</div>
           </div>

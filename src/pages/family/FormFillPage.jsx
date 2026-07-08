@@ -17,9 +17,9 @@ function FormCard({ form, submission, currentUserId, onFill }) {
       <div className="flex items-start justify-between gap-3">
         <div className={clsx(
           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-          done ? 'bg-green-100' : 'bg-primary-100'
+          done ? 'bg-green-100 dark:bg-green-900/40' : 'bg-primary-100 dark:bg-primary-900/40'
         )}>
-          <CheckCircle2 size={20} className={done ? 'text-green-600' : 'text-primary-400'} />
+          <CheckCircle2 size={20} className={done ? 'text-green-600 dark:text-green-400' : 'text-primary-400'} />
         </div>
         <div className="flex-1 text-right">
           <h3 className="font-semibold text-gray-800 dark:text-gray-100">{form.title}</h3>
@@ -140,7 +140,7 @@ function FillView({ form, existing, onSubmit, onBack }) {
 
   return (
     <div>
-      <button onClick={onBack} className="text-sm text-primary-600 hover:underline mb-4 block">
+      <button onClick={onBack} className="text-sm text-primary-600 dark:text-primary-400 hover:underline mb-4 block">
         ← חזור
       </button>
       <h2 className="text-lg font-bold text-gray-800 mb-1 dark:text-gray-100">{form.title}</h2>

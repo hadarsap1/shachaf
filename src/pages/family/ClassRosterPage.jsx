@@ -18,7 +18,7 @@ function ChildCard({ child, parents }) {
             <p className="text-xs text-gray-400">🐾 {child.pet}</p>
           )}
         </div>
-        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600 dark:bg-primary-900/40">
+        <div className="w-10 h-10 rounded-full bg-primary-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400 dark:bg-primary-900/40">
           {child.photoUrl
             ? <img src={child.photoUrl} alt="" className="w-full h-full object-cover" />
             : child.name?.[0] || '?'
@@ -33,13 +33,13 @@ function ChildCard({ child, parents }) {
                 <p className="text-xs font-medium text-gray-700 dark:text-gray-200">{p.name}</p>
                 <div className="flex gap-3 mt-0.5 justify-end">
                   {p.phone && (
-                    <a href={`tel:${p.phone}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+                    <a href={`tel:${p.phone}`} className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400" dir="ltr">
                       <Phone size={10} />
                       {p.phone}
                     </a>
                   )}
                   {p.email && (
-                    <a href={`mailto:${p.email}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+                    <a href={`mailto:${p.email}`} className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400" dir="ltr">
                       <Mail size={10} />
                       {p.email}
                     </a>
@@ -159,7 +159,7 @@ export default function ClassRosterPage() {
                 'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-all border',
                 i === selectedIdx
                   ? 'text-white border-transparent shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
               )}
               style={i === selectedIdx ? { backgroundColor: c.color || '#1B3B70' } : {}}
             >
@@ -212,12 +212,12 @@ export default function ClassRosterPage() {
                       <div key={a.uid} className="flex flex-wrap gap-3 mt-1 justify-end">
                         <span className="text-xs text-gray-700 dark:text-gray-200">{a.name}</span>
                         {a.phone && (
-                          <a href={`tel:${a.phone}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+                          <a href={`tel:${a.phone}`} className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400" dir="ltr">
                             <Phone size={10} />{a.phone}
                           </a>
                         )}
                         {a.email && (
-                          <a href={`mailto:${a.email}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+                          <a href={`mailto:${a.email}`} className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400" dir="ltr">
                             <Mail size={10} />{a.email}
                           </a>
                         )}

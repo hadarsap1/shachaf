@@ -119,16 +119,16 @@ export default function OnboardingPage() {
                 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all',
                 i < step  ? 'bg-green-500 text-white' :
                 i === step ? 'bg-primary-600 text-white' :
-                             'bg-gray-200 text-gray-400'
+                             'bg-gray-200 dark:bg-gray-600 text-gray-400'
               )}>
                 {i < step ? '✓' : i + 1}
               </div>
-              <span className={clsx('text-xs', i === step ? 'text-primary-600 font-medium' : 'text-gray-400')}>
+              <span className={clsx('text-xs', i === step ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-400')}>
                 {label}
               </span>
             </div>
             {i < STEP_LABELS.length - 1 && (
-              <div className={clsx('w-8 h-0.5 mb-4', i < step ? 'bg-green-500' : 'bg-gray-200')} />
+              <div className={clsx('w-8 h-0.5 mb-4', i < step ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600')} />
             )}
           </div>
         ))}

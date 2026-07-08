@@ -90,7 +90,7 @@ function PeopleEditor({ people, onChange, showTitle = false, placeholder = 'שם
         </div>
       ))}
       <button type="button" onClick={add}
-        className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-800 font-medium">
+        className="flex items-center gap-1.5 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 font-medium">
         <Plus size={14} /> הוסף
       </button>
     </div>
@@ -363,7 +363,7 @@ function ClassChildrenTab({ classId, classColor }) {
                   <Cake size={13} />
                 </button>
                 {child.parentUids?.length > 0 && (
-                  <span className="text-[10px] text-secondary-600">{child.parentUids.length} הורים</span>
+                  <span className="text-[10px] text-secondary-600 dark:text-secondary-400">{child.parentUids.length} הורים</span>
                 )}
                 <button onClick={() => handleDelete(child.id)} disabled={deleting === child.id}
                   className="p-1 text-gray-300 hover:text-red-500 rounded-lg transition-colors">
@@ -535,7 +535,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
               className={clsx(
                 'px-3 py-2.5 text-xs font-medium whitespace-nowrap transition-all border-b-2 flex-shrink-0',
                 tab === t.id
-                  ? 'border-primary-600 text-primary-700'
+                  ? 'border-primary-600 text-primary-700 dark:text-primary-300'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
               )}>
               {t.label}
@@ -741,7 +741,7 @@ export default function AdminClassesPage() {
                   </div>
                 )}
                 {cls.adminUids?.length > 0 && (
-                  <div className="text-xs text-secondary-600 mt-0.5">
+                  <div className="text-xs text-secondary-600 dark:text-secondary-400 mt-0.5">
                     {cls.adminUids.length} מנהל{cls.adminUids.length > 1 ? 'ים' : ''} כיתה
                   </div>
                 )}

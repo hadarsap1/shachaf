@@ -141,7 +141,7 @@ function getMemberBottomNav(allRoles, classIds, status) {
   return ['/dashboard', '/events', '/resources', '/contact']
 }
 
-const ADMIN_BOTTOM_NAV = ['/admin', '/admin/users', '/admin/tasks', '/admin/messages']
+const ADMIN_BOTTOM_NAV = ['/admin', '/admin/users', '/admin/events', '/admin/tasks', '/admin/messages']
 
 // ── NavLink ────────────────────────────────────────────────────────────────────
 function NavLink({ to, label, onClick, unread = 0, count = 0, sub = false }) {

@@ -33,7 +33,7 @@ const TYPE_COLOR = {
   social:      'badge-primary',
   orientation: 'badge-secondary',
   ceremony:    'badge-accent',
-  community:   'bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full text-xs font-medium',
+  community:   'bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full text-xs font-medium dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
 }
 
 const formatDate = (str) => {
@@ -280,7 +280,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
                       'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
                       isSelected
                         ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                     )}>
                     {g.label}
                   </button>
@@ -491,7 +491,7 @@ export default function AdminEventsPage() {
             onClick={() => setTab(t.id)}
             className={clsx(
               'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
-              tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+              tab === t.id ? 'bg-white text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-300' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             )}
           >
             {t.label}
@@ -514,7 +514,7 @@ export default function AdminEventsPage() {
                   )}
                   className={clsx(
                     'flex-1 rounded-2xl py-3 px-4 text-center font-semibold text-sm transition-all border-2',
-                    active ? '' : 'bg-gray-50 border-gray-200 text-gray-400'
+                    active ? '' : 'bg-gray-50 border-gray-200 text-gray-400 dark:bg-gray-800 dark:border-gray-600'
                   )}
                   style={active ? { backgroundColor: bg, borderColor: color, color } : {}}
                 >
@@ -533,7 +533,7 @@ export default function AdminEventsPage() {
                   'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
                   effectiveClasses.length === allClassIds.length
                     ? 'bg-gray-700 text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                 )}
               >
                 כל הכיתות
@@ -552,7 +552,7 @@ export default function AdminEventsPage() {
                     })}
                     className={clsx(
                       'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5',
-                      active ? 'text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                      active ? 'text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                     )}
                     style={active ? { backgroundColor: color, border: `2px solid ${color}` } : {}}
                   >
@@ -697,7 +697,7 @@ export default function AdminEventsPage() {
         <div className="text-center py-12 text-gray-400">
           <Calendar size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין אירועים מתוכננים</p>
-          <button onClick={() => setEditing(newBlankEvent())} className="mt-3 text-sm text-primary-600 hover:underline">
+          <button onClick={() => setEditing(newBlankEvent())} className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
             הוסף אירוע ראשון
           </button>
         </div>

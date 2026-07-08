@@ -164,7 +164,7 @@ function MemberSearch({ communityUsers, onSelect }) {
               onMouseDown={() => pick(u)}
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 text-right transition-colors dark:hover:bg-primary-900/30"
             >
-              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40">
+              <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40 dark:text-primary-400">
                 {u.name?.[0] || '?'}
               </div>
               <div className="flex-1 min-w-0">
@@ -248,8 +248,8 @@ function GroupPanel({ group, isNew, onSave, onClose, communityUsers, allUsers })
                   <button key={name} type="button" onClick={() => set('icon', name)}
                     className={clsx('w-9 h-9 rounded-xl flex items-center justify-center border-2 transition-all',
                       draft.icon === name
-                        ? 'border-primary-600 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                        ? 'border-primary-600 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                        : 'border-gray-200 text-gray-400 hover:border-gray-300 dark:border-gray-600'
                     )}>
                     <Icon size={16} />
                   </button>

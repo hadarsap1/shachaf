@@ -202,7 +202,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                     <button
                       onClick={async () => { for (const { p, u } of matchable) await handleLink(u.uid, p) }}
                       disabled={linking}
-                      className="text-xs text-primary-600 hover:underline flex items-center gap-1">
+                      className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                       <Link2 size={11} /> קשר את כולם ({matchable.length})
                     </button>
                   ) : null
@@ -224,12 +224,12 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                     </div>
                     {match && !alreadyLinked && (
                       <button onClick={() => handleLink(match.uid, p)} disabled={linking}
-                        className="text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded-full px-2.5 py-1 hover:bg-primary-100 flex items-center gap-1 dark:bg-primary-900/30">
+                        className="text-xs text-primary-600 dark:text-primary-400 bg-primary-50 border border-primary-200 rounded-full px-2.5 py-1 hover:bg-primary-100 dark:hover:bg-primary-900/40 flex items-center gap-1 dark:bg-primary-900/30">
                         <Link2 size={11} /> קשר למשתמש
                       </button>
                     )}
                     {alreadyLinked && (
-                      <span className="text-xs text-secondary-600 flex items-center gap-1"><Check size={11} /> מקושר</span>
+                      <span className="text-xs text-secondary-600 dark:text-secondary-400 flex items-center gap-1"><Check size={11} /> מקושר</span>
                     )}
                   </div>
                 )
@@ -477,8 +477,8 @@ function ImportPanel({ classes, onImport, onClose }) {
               {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
               <div className="flex gap-3">
                 <div className="flex-1 bg-secondary-50 rounded-xl p-3 text-center dark:bg-secondary-900/30">
-                  <div className="text-xl font-bold text-secondary-700">{validCount + createCount}</div>
-                  <div className="text-xs text-secondary-600">תקין</div>
+                  <div className="text-xl font-bold text-secondary-700 dark:text-secondary-300">{validCount + createCount}</div>
+                  <div className="text-xs text-secondary-600 dark:text-secondary-400">תקין</div>
                 </div>
                 {invalidCount > 0 && (
                   <div className="flex-1 bg-red-50 rounded-xl p-3 text-center dark:bg-red-900/20">
@@ -496,7 +496,7 @@ function ImportPanel({ classes, onImport, onClose }) {
                 {rows.map((r, i) => (
                   <div key={i} className={clsx(
                     'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
-                    r.valid ? 'bg-gray-50' : r.willCreate ? 'bg-amber-50' : 'bg-red-50'
+                    r.valid ? 'bg-gray-50 dark:bg-gray-800' : r.willCreate ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-red-50 dark:bg-red-900/30'
                   )}>
                     {r.valid || r.willCreate
                       ? <Check size={12} className={clsx('flex-shrink-0', r.valid ? 'text-secondary-500' : 'text-amber-500')} />
@@ -691,7 +691,7 @@ export default function AdminChildrenPage() {
         <button onClick={() => setOnlyUnlinked(v => !v)}
           className={clsx('px-3 py-2 rounded-xl text-sm font-medium border whitespace-nowrap transition-colors',
             onlyUnlinked
-              ? 'bg-amber-100 border-amber-300 text-amber-800'
+              ? 'bg-amber-100 dark:bg-amber-900/40 border-amber-300 text-amber-800 dark:text-amber-200'
               : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300')}>
           ללא הורה ({unlinkedCount})
         </button>
@@ -719,12 +719,12 @@ export default function AdminChildrenPage() {
             {checkedIds.size > 0 && (
               <div className="flex items-center gap-2">
                 <button onClick={handleBulkLink} disabled={bulkWorking}
-                  className="text-xs text-primary-600 bg-primary-50 border border-primary-200 rounded-full px-3 py-1.5 hover:bg-primary-100 flex items-center gap-1 dark:bg-primary-900/30">
+                  className="text-xs text-primary-600 dark:text-primary-400 bg-primary-50 border border-primary-200 rounded-full px-3 py-1.5 hover:bg-primary-100 dark:hover:bg-primary-900/40 flex items-center gap-1 dark:bg-primary-900/30">
                   {bulkWorking ? <Loader2 size={11} className="animate-spin" /> : <Link2 size={11} />}
                   קשר הורים לפי מייל
                 </button>
                 <button onClick={handleBulkDelete} disabled={bulkWorking}
-                  className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-full px-3 py-1.5 hover:bg-red-100 flex items-center gap-1 dark:bg-red-900/20">
+                  className="text-xs text-red-600 dark:text-red-400 bg-red-50 border border-red-200 dark:border-red-700 rounded-full px-3 py-1.5 hover:bg-red-100 flex items-center gap-1 dark:bg-red-900/20">
                   {bulkWorking ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
                   מחק נבחרים
                 </button>
@@ -751,7 +751,7 @@ export default function AdminChildrenPage() {
                   <div className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
                     {cls ? `כיתה ${cls.name}` : 'כיתה לא ידועה'}
                     {child.parentUids?.length > 0 && (
-                      <span className="text-secondary-600">· {child.parentUids.length} הורה/ים</span>
+                      <span className="text-secondary-600 dark:text-secondary-400">· {child.parentUids.length} הורה/ים</span>
                     )}
                     {child.notes && (
                       <span className="text-amber-500 flex items-center gap-0.5"><StickyNote size={11} /> הערות</span>

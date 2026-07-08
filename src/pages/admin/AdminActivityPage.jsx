@@ -13,17 +13,17 @@ function buildLogs(messages, tasks, events) {
 
   messages.forEach(m => {
     const d = toDate(m.createdAt)
-    if (d) logs.push({ id: `msg-${m.id}`, type: 'message', date: d, title: m.userName, detail: `שלח הודעה: ${m.subject}`, icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' })
+    if (d) logs.push({ id: `msg-${m.id}`, type: 'message', date: d, title: m.userName, detail: `שלח הודעה: ${m.subject}`, icon: MessageSquare, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' })
   })
 
   tasks.forEach(t => {
     const d = toDate(t.createdAt)
-    if (d) logs.push({ id: `task-${t.id}`, type: 'task', date: d, title: 'מנהל', detail: `נוצרה משימה: ${t.title}`, icon: CheckSquare, color: 'text-primary-600', bg: 'bg-primary-50' })
+    if (d) logs.push({ id: `task-${t.id}`, type: 'task', date: d, title: 'מנהל', detail: `נוצרה משימה: ${t.title}`, icon: CheckSquare, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-900/30' })
   })
 
   events.forEach(e => {
     const d = toDate(e.createdAt)
-    if (d) logs.push({ id: `event-${e.id}`, type: 'event', date: d, title: 'מנהל', detail: `נוסף אירוע: ${e.title}`, icon: Calendar, color: 'text-accent-600', bg: 'bg-accent-50' })
+    if (d) logs.push({ id: `event-${e.id}`, type: 'event', date: d, title: 'מנהל', detail: `נוסף אירוע: ${e.title}`, icon: Calendar, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-900/30' })
   })
 
   return logs.sort((a, b) => b.date - a.date)

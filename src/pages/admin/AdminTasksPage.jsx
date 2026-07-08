@@ -37,9 +37,9 @@ const AUDIENCE_LABEL = {
 }
 
 const STATUS_COLOR = {
-  pending:     'bg-gray-100 text-gray-600',
-  in_progress: 'bg-primary-50 text-primary-700',
-  done:        'bg-green-50 text-green-700',
+  pending:     'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  in_progress: 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
+  done:        'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300',
 }
 
 const blankTask = () => ({
@@ -163,7 +163,7 @@ function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
                     'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
                     currentAudience === opt.value
                       ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                   )}>
                   {opt.label}
                 </button>
@@ -220,7 +220,7 @@ function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
               </select>
             ) : (
               <p className="text-xs text-gray-400 text-right">אין טפסים מפורסמים.
-                {' '}<Link to="/admin/forms" className="text-primary-600 hover:underline">צרו טופס חדש</Link>
+                {' '}<Link to="/admin/forms" className="text-primary-600 dark:text-primary-400 hover:underline">צרו טופס חדש</Link>
               </p>
             )}
             <p className="text-xs text-gray-400 mt-1 text-right">ההורה יראה כפתור מילוי טופס בתוך המשימה</p>
@@ -370,7 +370,7 @@ export default function AdminTasksPage() {
               'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
               familyFilter === c.value
                 ? 'bg-primary-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
             )}>
             {c.label}
           </button>
@@ -385,7 +385,7 @@ export default function AdminTasksPage() {
               'flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
               statusFilter === s
                 ? 'bg-primary-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
             )}>
             {s === 'all' ? 'הכל' : STATUS_OPTIONS.find(o => o.value === s)?.label}
             <span className="mr-1 text-xs opacity-60">
@@ -489,7 +489,7 @@ export default function AdminTasksPage() {
         <div className="text-center py-12 text-gray-400">
           <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין משימות להצגה</p>
-          <button onClick={() => setEditing(blankTask())} className="mt-3 text-sm text-primary-600 hover:underline">
+          <button onClick={() => setEditing(blankTask())} className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
             הוסף משימה ראשונה
           </button>
         </div>

@@ -254,7 +254,7 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
           <div className="flex items-center gap-2 flex-shrink-0">
             {owner?.phone && (
               <a href={ownerWa || `tel:${owner.phone}`} target={ownerWa ? '_blank' : undefined} rel="noreferrer"
-                className="text-xs text-primary-600 hover:underline" dir="ltr">
+                className="text-xs text-primary-600 dark:text-primary-400 hover:underline" dir="ltr">
                 {owner.phone}
               </a>
             )}
@@ -266,7 +266,7 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
             </div>
             {isUrl(owner?.avatar)
               ? <img src={owner.avatar} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-100 flex-shrink-0" />
-              : <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0">
+              : <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400 flex-shrink-0">
                   {(owner?.name || biz.ownerName || '?')[0]}
                 </div>
             }

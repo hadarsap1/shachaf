@@ -77,13 +77,13 @@ export default function AdminDashboard() {
             {/* Task status */}
             <div className="card p-5">
               <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2 dark:text-gray-200">
-                <CheckSquare size={16} className="text-primary-600" />
+                <CheckSquare size={16} className="text-primary-600 dark:text-primary-400" />
                 סטטוס משימות
               </h2>
               {totalTasks === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-sm text-gray-400 mb-3">אין משימות עדיין</p>
-                  <a href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors font-medium dark:bg-primary-900/30">
+                  <a href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 hover:bg-primary-100 dark:hover:bg-primary-900/40 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors font-medium dark:bg-primary-900/30">
                     <CheckSquare size={13} />
                     פרסם משימה ראשונה
                   </a>
@@ -114,10 +114,10 @@ export default function AdminDashboard() {
               <h2 className="font-bold text-gray-700 mb-4 dark:text-gray-200">פעולות מהירות</h2>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { to: '/admin/users',    label: 'ניהול משפחות',  icon: Activity,     color: 'bg-primary-50 text-primary-600 border-primary-200' },
-                  { to: '/admin/tasks',    label: 'פרסם משימה',    icon: CheckSquare,  color: 'bg-secondary-50 text-secondary-600 border-secondary-200' },
-                  { to: '/admin/events',   label: 'צור אירוע',     icon: Calendar,     color: 'bg-accent-50 text-accent-600 border-accent-200' },
-                  { to: '/admin/messages', label: `הודעות${unreadMessages > 0 ? ` (${unreadMessages})` : ''}`, icon: MessageSquare, color: 'bg-purple-50 text-purple-600 border-purple-200' },
+                  { to: '/admin/users',    label: 'ניהול משפחות',  icon: Activity,     color: 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 border-primary-200' },
+                  { to: '/admin/tasks',    label: 'פרסם משימה',    icon: CheckSquare,  color: 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400 border-secondary-200 dark:border-secondary-700' },
+                  { to: '/admin/events',   label: 'צור אירוע',     icon: Calendar,     color: 'bg-accent-50 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400 border-accent-200 dark:border-accent-700' },
+                  { to: '/admin/messages', label: `הודעות${unreadMessages > 0 ? ` (${unreadMessages})` : ''}`, icon: MessageSquare, color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-700' },
                 ].map(action => {
                   const Icon = action.icon
                   return (
@@ -136,9 +136,9 @@ export default function AdminDashboard() {
           {messages.length > 0 && (
             <div className="card p-5">
               <div className="flex items-center justify-between mb-4">
-                <Link to="/admin/messages" className="text-xs text-primary-600 hover:underline">הצג הכל</Link>
+                <Link to="/admin/messages" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">הצג הכל</Link>
                 <h2 className="font-bold text-gray-700 flex items-center gap-2 dark:text-gray-200">
-                  <MessageSquare size={16} className="text-primary-600" />
+                  <MessageSquare size={16} className="text-primary-600 dark:text-primary-400" />
                   הודעות אחרונות
                   {unreadMessages > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{unreadMessages}</span>
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 {tasks.length === 0 && <p className="text-center text-sm text-gray-400 py-6">אין משימות</p>}
                 {tasks.map(t => (
-                  <div key={t.id} className={clsx('bg-gray-50 rounded-xl p-3 text-right',
+                  <div key={t.id} className={clsx('bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-right',
                     t.status === 'done' && 'opacity-60')}>
                     <div className="font-medium text-gray-800 text-sm dark:text-gray-100">{t.title}</div>
                     <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                   .sort((a, b) => new Date(a.date) - new Date(b.date))
                   .map(ev => (
                     <Link key={ev.id} to="/admin/events" onClick={() => setActivePanel(null)}
-                      className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 transition-colors dark:bg-primary-900/30">
+                      className="block bg-primary-50 rounded-xl p-3 text-right hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors dark:bg-primary-900/30">
                       <div className="font-semibold text-gray-800 text-sm dark:text-gray-100">{ev.title}</div>
                       <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                         {new Date(ev.date).toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'long' })}
