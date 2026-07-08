@@ -33,7 +33,7 @@ const TYPE_COLOR = {
   social:      'badge-primary',
   orientation: 'badge-secondary',
   ceremony:    'badge-accent',
-  community:   'bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full text-xs font-medium',
+  community:   'bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full text-xs font-medium dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
 }
 
 const formatDate = (str) => {
@@ -514,7 +514,7 @@ export default function AdminEventsPage() {
                   )}
                   className={clsx(
                     'flex-1 rounded-2xl py-3 px-4 text-center font-semibold text-sm transition-all border-2',
-                    active ? '' : 'bg-gray-50 border-gray-200 text-gray-400'
+                    active ? '' : 'bg-gray-50 border-gray-200 text-gray-400 dark:bg-gray-800 dark:border-gray-600'
                   )}
                   style={active ? { backgroundColor: bg, borderColor: color, color } : {}}
                 >
@@ -697,7 +697,7 @@ export default function AdminEventsPage() {
         <div className="text-center py-12 text-gray-400">
           <Calendar size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין אירועים מתוכננים</p>
-          <button onClick={() => setEditing(newBlankEvent())} className="mt-3 text-sm text-primary-600 hover:underline">
+          <button onClick={() => setEditing(newBlankEvent())} className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
             הוסף אירוע ראשון
           </button>
         </div>

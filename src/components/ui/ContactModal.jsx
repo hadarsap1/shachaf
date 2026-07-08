@@ -65,7 +65,7 @@ export default function ContactModal({ person, onClose }) {
                 dir="ltr"
               >
                 <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 dark:bg-primary-900/40">
-                  <Phone size={18} className="text-primary-600" />
+                  <Phone size={18} className="text-primary-600 dark:text-primary-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-400 text-right">טלפון</p>
@@ -96,7 +96,7 @@ export default function ContactModal({ person, onClose }) {
                 dir="ltr"
               >
                 <div className="w-10 h-10 rounded-xl bg-secondary-100 flex items-center justify-center flex-shrink-0 dark:bg-secondary-900/40">
-                  <Mail size={18} className="text-secondary-600" />
+                  <Mail size={18} className="text-secondary-600 dark:text-secondary-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-400 text-right">אימייל</p>

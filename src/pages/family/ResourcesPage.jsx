@@ -3,13 +3,13 @@ import { getResources } from '../../lib/db'
 import { BookOpen, ExternalLink, Loader2, FileText, Map, Phone, Calendar, Video, Link } from 'lucide-react'
 
 const ICON_MAP = {
-  link:     { icon: Link,         bg: 'bg-primary-50',   color: 'text-primary-600' },
-  doc:      { icon: FileText,     bg: 'bg-blue-50',      color: 'text-blue-600' },
-  calendar: { icon: Calendar,     bg: 'bg-accent-50',    color: 'text-accent-600' },
-  map:      { icon: Map,          bg: 'bg-green-50',     color: 'text-green-600' },
-  phone:    { icon: Phone,        bg: 'bg-teal-50',      color: 'text-teal-600' },
-  video:    { icon: Video,        bg: 'bg-purple-50',    color: 'text-purple-600' },
-  external: { icon: ExternalLink, bg: 'bg-gray-50',      color: 'text-gray-500 dark:text-gray-400' },
+  link:     { icon: Link,         bg: 'bg-primary-50 dark:bg-primary-900/30',   color: 'text-primary-600 dark:text-primary-400' },
+  doc:      { icon: FileText,     bg: 'bg-blue-50 dark:bg-blue-900/30',         color: 'text-blue-600 dark:text-blue-400' },
+  calendar: { icon: Calendar,     bg: 'bg-accent-50',                           color: 'text-accent-600' },
+  map:      { icon: Map,          bg: 'bg-green-50 dark:bg-green-900/30',       color: 'text-green-600 dark:text-green-400' },
+  phone:    { icon: Phone,        bg: 'bg-teal-50 dark:bg-teal-900/30',         color: 'text-teal-600 dark:text-teal-400' },
+  video:    { icon: Video,        bg: 'bg-purple-50 dark:bg-purple-900/30',     color: 'text-purple-600 dark:text-purple-400' },
+  external: { icon: ExternalLink, bg: 'bg-gray-50 dark:bg-gray-800',            color: 'text-gray-500 dark:text-gray-400' },
 }
 
 export default function ResourcesPage() {

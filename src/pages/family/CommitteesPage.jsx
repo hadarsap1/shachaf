@@ -174,7 +174,7 @@ function CommitteeSummaries({ committee, isAdmin }) {
       {isAdmin && (
         <button
           onClick={() => setAdding(a => !a)}
-          className="flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-800 transition-[color] duration-150"
+          className="flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-[color] duration-150"
         >
           {adding ? <X size={14} /> : <Plus size={14} />}
           {adding ? 'ביטול' : 'הוסף סיכום'}
@@ -333,7 +333,7 @@ function CommitteeCard({ committee }) {
                 className={clsx(
                   'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full transition-[background-color,color] duration-150',
                   isMember
-                    ? 'bg-primary-100 text-primary-700 hover:bg-red-50 hover:text-red-600'
+                    ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600'
                     : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary-900/30 dark:hover:text-primary-300'
                 )}
               >
@@ -377,7 +377,7 @@ function CommitteeCard({ committee }) {
           {isMember && (
             <button onClick={() => toggle('chat')}
               className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-                activePanel === 'chat' ? 'bg-primary-600 text-white' : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                activePanel === 'chat' ? 'bg-primary-600 text-white' : 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 hover:bg-primary-200'
               )}>
               <MessageCircle size={12} />
               צ׳אט

@@ -173,7 +173,7 @@ export default function EventsPage() {
               ) : (
                 <>
                   <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים בסינון הזה</p>
-                  <button onClick={() => setFilterValue('all')} className="text-sm mt-1 text-primary-600 hover:underline">נקה סינון</button>
+                  <button onClick={() => setFilterValue('all')} className="text-sm mt-1 text-primary-600 dark:text-primary-400 hover:underline">נקה סינון</button>
                 </>
               )}
             </div>
@@ -193,7 +193,7 @@ export default function EventsPage() {
           ) : (
             <>
               <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים בסינון הזה</p>
-              <button onClick={() => setFilterValue('all')} className="text-sm mt-1 text-primary-600 hover:underline">נקה סינון</button>
+              <button onClick={() => setFilterValue('all')} className="text-sm mt-1 text-primary-600 dark:text-primary-400 hover:underline">נקה סינון</button>
             </>
           )}
         </div>

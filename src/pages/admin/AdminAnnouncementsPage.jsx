@@ -195,7 +195,7 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
           <Megaphone size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין הודעות עדיין</p>
           <button onClick={() => { setSelected(blankAnn()); setIsNew(true) }}
-            className="mt-3 text-sm text-primary-600 hover:underline">
+            className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
             צור הודעה ראשונה
           </button>
         </div>

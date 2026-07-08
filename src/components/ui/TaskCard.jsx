@@ -157,7 +157,7 @@ export default function TaskCard({ task, onStatusChange, isAdmin = false }) {
                 href={task.resourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-primary-600 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150 dark:bg-gray-800 dark:hover:bg-primary-900/30"
+                className="flex items-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-[background-color] duration-150 dark:bg-gray-800 dark:hover:bg-primary-900/30 dark:border-primary-800"
               >
                 <ExternalLink size={13} />
                 פתח קישור

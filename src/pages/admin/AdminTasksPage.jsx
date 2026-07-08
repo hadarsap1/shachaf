@@ -38,8 +38,8 @@ const AUDIENCE_LABEL = {
 
 const STATUS_COLOR = {
   pending:     'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-  in_progress: 'bg-primary-50 text-primary-700',
-  done:        'bg-green-50 text-green-700',
+  in_progress: 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
+  done:        'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300',
 }
 
 const blankTask = () => ({
@@ -220,7 +220,7 @@ function TaskPanel({ task, isNew, onSave, onClose, classes, forms = [] }) {
               </select>
             ) : (
               <p className="text-xs text-gray-400 text-right">אין טפסים מפורסמים.
-                {' '}<Link to="/admin/forms" className="text-primary-600 hover:underline">צרו טופס חדש</Link>
+                {' '}<Link to="/admin/forms" className="text-primary-600 dark:text-primary-400 hover:underline">צרו טופס חדש</Link>
               </p>
             )}
             <p className="text-xs text-gray-400 mt-1 text-right">ההורה יראה כפתור מילוי טופס בתוך המשימה</p>
@@ -489,7 +489,7 @@ export default function AdminTasksPage() {
         <div className="text-center py-12 text-gray-400">
           <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">אין משימות להצגה</p>
-          <button onClick={() => setEditing(blankTask())} className="mt-3 text-sm text-primary-600 hover:underline">
+          <button onClick={() => setEditing(blankTask())} className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
             הוסף משימה ראשונה
           </button>
         </div>

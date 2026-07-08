@@ -128,7 +128,7 @@ export default function ContactSheetModal({ className, children, onClose }) {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <button onClick={addEntry} className="text-xs text-primary-600 hover:underline flex items-center gap-1"><Plus size={12} /> הוסף שורה</button>
+                <button onClick={addEntry} className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"><Plus size={12} /> הוסף שורה</button>
                 <label className="label">רשומות ({entries.filter(e => e.name).length})</label>
               </div>
               <div className="space-y-2">

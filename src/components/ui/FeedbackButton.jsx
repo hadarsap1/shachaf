@@ -73,7 +73,7 @@ export default function FeedbackButton() {
                   <Check size={26} className="text-green-600 dark:text-green-400" />
                 </div>
                 <p className="font-bold text-gray-800 dark:text-gray-100">תודה! הדיווח נשלח</p>
-                {imgFailed && <p className="text-xs text-amber-600 mt-1">התמונה לא נטענה, אך הדיווח נשמר</p>}
+                {imgFailed && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">התמונה לא נטענה, אך הדיווח נשמר</p>}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">

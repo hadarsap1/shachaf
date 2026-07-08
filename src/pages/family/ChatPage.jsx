@@ -209,7 +209,7 @@ export default function ChatPage() {
                 <button
                   key={i}
                   onClick={() => sendMessage(q)}
-                  className="text-xs bg-white text-primary-600 border border-primary-200 px-3 py-1.5 rounded-full hover:bg-primary-50 hover:border-primary-300 transition-colors shadow-sm dark:bg-gray-800 dark:hover:bg-primary-900/30"
+                  className="text-xs bg-white text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-700 px-3 py-1.5 rounded-full hover:bg-primary-50 hover:border-primary-300 transition-colors shadow-sm dark:bg-gray-800 dark:hover:bg-primary-900/30"
                 >
                   {q}
                 </button>

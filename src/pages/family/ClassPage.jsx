@@ -79,14 +79,14 @@ function ScheduleView({ schedule, classId, uid }) {
         )}
         {!editing && (
           <button onClick={startEdit}
-            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 ms-auto">
+            className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 ms-auto">
             <Pencil size={11} /> ערוך לפי הבחירות שלי
           </button>
         )}
         {editing && (
           <div className="flex gap-2 ms-auto">
             <button onClick={cancelEdit} className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-300">ביטול</button>
-            <button onClick={saveEdit} className="text-xs text-primary-600 font-semibold hover:text-primary-700">שמור</button>
+            <button onClick={saveEdit} className="text-xs text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300">שמור</button>
           </div>
         )}
       </div>
@@ -155,7 +155,7 @@ function ScheduleView({ schedule, classId, uid }) {
 function PersonCard({ person }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40">
+      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400 flex-shrink-0 dark:bg-primary-900/40">
         {person.name?.[0] || '?'}
       </div>
       <div className="flex-1 min-w-0">
@@ -166,13 +166,13 @@ function PersonCard({ person }) {
         </div>
         <div className="flex flex-wrap gap-3 mt-0.5">
           {person.phone && (
-            <a href={`tel:${person.phone}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+            <a href={`tel:${person.phone}`} className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400" dir="ltr">
               <Phone size={11} />
               {person.phone}
             </a>
           )}
           {person.email && (
-            <a href={`mailto:${person.email}`} className="flex items-center gap-1 text-xs text-primary-600" dir="ltr">
+            <a href={`mailto:${person.email}`} className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400" dir="ltr">
               <Mail size={11} />
               {person.email}
             </a>
@@ -476,7 +476,7 @@ export default function ClassPage() {
             title="אירועי הכיתה"
             icon={Calendar}
             color={cls?.color || '#1B3B70'}
-            action={<Link to="/events" className="text-xs text-primary-600 hover:underline">כל האירועים</Link>}
+            action={<Link to="/events" className="text-xs text-primary-600 dark:text-primary-400 hover:underline">כל האירועים</Link>}
           >
             <div className="space-y-2">
               {classEvents.map(ev => (
@@ -546,7 +546,7 @@ export default function ClassPage() {
                         {parents.map(p => (
                           <div key={p.uid} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                             <span>{p.phone ? (
-                              <a href={`tel:${p.phone}`} className="text-primary-600 hover:underline">{p.phone}</a>
+                              <a href={`tel:${p.phone}`} className="text-primary-600 dark:text-primary-400 hover:underline">{p.phone}</a>
                             ) : '—'}</span>
                             <span>{p.name}</span>
                           </div>

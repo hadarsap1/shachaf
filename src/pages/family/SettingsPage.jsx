@@ -334,7 +334,7 @@ function ChildProfileCard({ child }) {
       <div className="flex items-center gap-3 justify-end">
         <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{child.name}</span>
         <label className="relative cursor-pointer group">
-          <div className="w-12 h-12 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center text-base font-bold text-primary-600 dark:bg-primary-900/40">
+          <div className="w-12 h-12 rounded-full bg-primary-100 overflow-hidden flex items-center justify-center text-base font-bold text-primary-600 dark:text-primary-400 dark:bg-primary-900/40">
             {photoPreview
               ? <img src={photoPreview} alt="" className="w-full h-full object-cover" />
               : child.name?.[0] || '?'
@@ -511,7 +511,7 @@ export default function SettingsPage() {
           {/* Avatar upload */}
           <div className="flex justify-center">
             <label className="relative cursor-pointer group">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 border-2 border-white shadow dark:bg-primary-900/40">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 dark:text-primary-400 border-2 border-white shadow dark:bg-primary-900/40">
                 {avatarPreview
                   ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
                   : user?.name?.[0] || '?'

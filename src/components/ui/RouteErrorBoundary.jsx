@@ -42,7 +42,7 @@ export default class RouteErrorBoundary extends Component {
             <button onClick={() => this.setState({ hasError: false })}
               className="btn-primary px-5 py-2 text-sm">נסו שוב</button>
             <button onClick={() => { window.location.href = '/' }}
-              className="px-5 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300">
+              className="px-5 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
               לדף הבית
             </button>
           </div>

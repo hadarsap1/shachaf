@@ -44,7 +44,7 @@ function FieldRow({ field, index, total, onChange, onDelete, onMove }) {
           <span className="text-xs text-gray-400">{FIELD_TYPES.find(t => t.value === field.type)?.label}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {field.required && <span className="text-xs bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded dark:bg-primary-900/30">נדרש</span>}
+          {field.required && <span className="text-xs bg-primary-50 text-primary-600 dark:text-primary-400 px-1.5 py-0.5 rounded dark:bg-primary-900/30">נדרש</span>}
           <button onClick={e => { e.stopPropagation(); onMove(index, -1) }} disabled={index === 0}
             className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 dark:hover:bg-gray-700">
             <ChevronUp size={14} />
@@ -208,7 +208,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
                   className={clsx(
                     'flex flex-col items-center gap-1 p-2 rounded-xl border text-xs font-medium transition-all',
                     draft.targetRole === opt.value
-                      ? 'bg-primary-50 border-primary-300 text-primary-700'
+                      ? 'bg-primary-50 border-primary-300 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-700'
                       : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                   )}
                 >
@@ -249,12 +249,13 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={addField}
-            className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+            className="flex items-center gap-1.5 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 font-medium"
           >
             <Plus size={15} />
             הוסף שדה
           </button>
           <h3 className="font-bold text-gray-700 text-sm dark:text-gray-200">שדות הטופס ({draft.fields.length})</h3>
+
         </div>
         <div className="space-y-2">
           {draft.fields.map((field, i) => (
@@ -423,7 +424,7 @@ export default function AdminFormsPage() {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => { setView('list'); setEditingForm(null) }}
-              className="text-sm text-primary-600 hover:underline flex items-center gap-1"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
             >
               ← חזור לרשימה
             </button>
@@ -483,7 +484,7 @@ export default function AdminFormsPage() {
                     </button>
                     <button
                       onClick={() => handleEdit(form)}
-                      className="flex items-center gap-1 text-xs text-primary-600 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded-lg transition-colors dark:bg-primary-900/30"
+                      className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 hover:bg-primary-100 px-2 py-1 rounded-lg transition-colors dark:bg-primary-900/30"
                     >
                       <Edit2 size={12} />
                       ערוך
@@ -493,7 +494,7 @@ export default function AdminFormsPage() {
                       className={clsx(
                         'flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors',
                         form.status === 'published'
-                          ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                          ? 'text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-300 dark:bg-green-900/40 dark:hover:bg-green-900/60'
                           : 'text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       )}
                     >
@@ -522,7 +523,7 @@ export default function AdminFormsPage() {
               <div className="text-center py-12 text-gray-400">
                 <FileText size={40} className="mx-auto mb-3 opacity-30" />
                 <p className="font-medium">אין טפסים עדיין</p>
-                <button onClick={handleNew} className="mt-3 text-sm text-primary-600 hover:underline">
+                <button onClick={handleNew} className="mt-3 text-sm text-primary-600 dark:text-primary-400 hover:underline">
                   צור את הטופס הראשון
                 </button>
               </div>

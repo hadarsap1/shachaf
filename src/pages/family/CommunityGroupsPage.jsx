@@ -45,7 +45,7 @@ function GroupFields({ fields }) {
               href={f.value}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-xl transition-[background-color,color] duration-150 max-w-full dark:bg-primary-900/30"
+              className="inline-flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/50 border border-primary-200 dark:border-primary-700 px-3 py-2 rounded-xl transition-[background-color,color] duration-150 max-w-full"
             >
               <ExternalLink size={13} className="flex-shrink-0" />
               <span className="truncate">{f.label || 'פתח קישור'}</span>
@@ -139,7 +139,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
           <p className="text-xs font-semibold text-gray-500 flex items-center gap-1 dark:text-gray-400"><Link2 size={12} />קישורים מחברי הקבוצה</p>
           {isMember && (
             <button onClick={() => setShowLinkForm(v => !v)}
-              className="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-0.5 font-medium">
+              className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 flex items-center gap-0.5 font-medium">
               <Plus size={12} />הוסף
             </button>
           )}
@@ -177,7 +177,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             : links.map(l => (
               <div key={l.id} className="flex items-center gap-2 py-1.5 group">
                 <a href={/^https?:\/\//.test(l.url) ? l.url : '#'} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 min-w-0">
+                  className="flex-1 flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 min-w-0">
                   <ExternalLink size={13} className="flex-shrink-0" />
                   <span className="truncate">{l.label || l.url}</span>
                 </a>
@@ -201,7 +201,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             <>
               <button onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingFile}
-                className="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-0.5 font-medium disabled:opacity-40">
+                className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 flex items-center gap-0.5 font-medium disabled:opacity-40">
                 {uploadingFile ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                 {uploadingFile ? 'מעלה...' : 'העלה'}
               </button>
@@ -218,7 +218,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
               <div key={f.id} className="flex items-center gap-2 py-1.5 group">
                 <span className="flex-shrink-0 text-base leading-none">{fileIcon(f.fileName)}</span>
                 <a href={f.fileUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 min-w-0 text-sm text-primary-600 hover:text-primary-800 truncate">
+                  className="flex-1 min-w-0 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 truncate">
                   {f.label || f.fileName}
                 </a>
                 <span className="text-xs text-gray-400 hidden group-hover:inline flex-shrink-0">{f.postedBy}</span>
@@ -271,7 +271,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
       {isMember && (
         <div className="flex justify-end">
           <button onClick={() => setShowForm(v => !v)}
-            className="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-1 font-medium">
+            className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 flex items-center gap-1 font-medium">
             <Plus size={12} />צור אירוע קבוצתי
           </button>
         </div>
@@ -463,7 +463,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
                 className={clsx(
                   'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full transition-[background-color,color] duration-150',
                   isMember
-                    ? 'bg-primary-100 text-primary-700 hover:bg-red-50 hover:text-red-600'
+                    ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600'
                     : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary-900/30 dark:hover:text-primary-300'
                 )}
               >
@@ -508,7 +508,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
           {isMember && (
             <button onClick={() => toggle('chat')}
               className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-                activePanel === 'chat' ? 'bg-primary-600 text-white' : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                activePanel === 'chat' ? 'bg-primary-600 text-white' : 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 hover:bg-primary-200'
               )}>
               <MessageCircle size={12} />
               צ׳אט
