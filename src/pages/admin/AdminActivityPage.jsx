@@ -23,7 +23,7 @@ function buildLogs(messages, tasks, events) {
 
   events.forEach(e => {
     const d = toDate(e.createdAt)
-    if (d) logs.push({ id: `event-${e.id}`, type: 'event', date: d, title: 'מנהל', detail: `נוסף אירוע: ${e.title}`, icon: Calendar, color: 'text-accent-600', bg: 'bg-accent-50' })
+    if (d) logs.push({ id: `event-${e.id}`, type: 'event', date: d, title: 'מנהל', detail: `נוסף אירוע: ${e.title}`, icon: Calendar, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-900/30' })
   })
 
   return logs.sort((a, b) => b.date - a.date)
