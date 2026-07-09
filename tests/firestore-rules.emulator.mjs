@@ -1,0 +1,103 @@
+// Firestore security-rules tests — run with: npm run test:rules
+// (requires Java for the Firestore emulator; firebase-tools is fetched via npx)
+//
+// Covers the auto-link flow (parentEmails read + append-uid update) and the
+// privilege-escalation guards from the 2026-07 security review.
+import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
+
+const rulesPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'firestore.rules')
+
+const env = await initializeTestEnvironment({
+  projectId: 'shachaf-rules-test',
+  firestore: { rules: readFileSync(rulesPath, 'utf8'), host: '127.0.0.1', port: 8080 },
+})
+
+await env.withSecurityRulesDisabled(async (ctx) => {
+  const db = ctx.firestore()
+  await setDoc(doc(db, 'users', 'admin1'), { role: 'admin', name: 'Admin', email: 'admin@x.com' })
+  await setDoc(doc(db, 'users', 'parent1'), { role: 'new_family', name: 'Parent', email: 'parent@x.com', classIds: [], childIds: [] })
+  await setDoc(doc(db, 'users', 'stranger1'), { role: 'community', name: 'Stranger', email: 'stranger@x.com', classIds: [] })
+  // unlinked imported child whose phone-book data lists parent1's email
+  await setDoc(doc(db, 'children', 'childA'), {
+    name: 'Child A', classId: 'class-1', parentUids: [],
+    parents: [{ name: 'Parent', email: 'parent@x.com' }],
+    parentEmails: ['parent@x.com'],
+  })
+  // child already linked to the other parent — co-parent auto-link flow
+  await setDoc(doc(db, 'children', 'childB'), {
+    name: 'Child B', classId: 'class-2', parentUids: ['otherparent'],
+    parentEmails: ['parent@x.com', 'other@x.com'],
+  })
+  // unrelated child — must stay invisible to both test users
+  await setDoc(doc(db, 'children', 'childC'), {
+    name: 'Child C', classId: 'class-3', parentUids: ['someuid'], parentEmails: ['nobody@x.com'],
+  })
+})
+
+const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
+const stranger = env.authenticatedContext('stranger1', { email: 'stranger@x.com' }).firestore()
+
+let pass = 0, fail = 0
+async function check(name, promise, expect) {
+  try {
+    await (expect === 'allow' ? assertSucceeds(promise) : assertFails(promise))
+    console.log(`  ✓ ${name}`)
+    pass++
+  } catch (e) {
+    console.log(`  ✗ ${name}: ${e.message?.split('\n')[0]}`)
+    fail++
+  }
+}
+
+console.log('\n— auto-link read path —')
+await check('parent can QUERY children by own email (autoLinkChildrenByEmail)',
+  getDocs(query(collection(parent, 'children'), where('parentEmails', 'array-contains', 'parent@x.com'))), 'allow')
+await check('parent can GET unlinked child listing their email (linkChildToParent getDoc)',
+  getDoc(doc(parent, 'children', 'childA')), 'allow')
+await check('parent can GET already-linked child listing their email (co-parent flow)',
+  getDoc(doc(parent, 'children', 'childB')), 'allow')
+
+console.log('\n— auto-link write path (append-uid rule) —')
+await check('parent can append own uid to childA parentUids',
+  updateDoc(doc(parent, 'children', 'childA'), { parentUids: ['parent1'] }), 'allow')
+await check('parent can append own uid to childB parentUids (after other parent)',
+  updateDoc(doc(parent, 'children', 'childB'), { parentUids: ['otherparent', 'parent1'] }), 'allow')
+
+console.log('\n— full linkChildToParent batch (child link + classIds proof) —')
+{
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'children', 'childA'), {
+      name: 'Child A', classId: 'class-1', parentUids: [], parentEmails: ['parent@x.com'],
+    })
+  })
+  const batch = writeBatch(parent)
+  batch.update(doc(parent, 'children', 'childA'), { parentUids: ['parent1'] })
+  batch.update(doc(parent, 'users', 'parent1'), { childIds: ['childA'], classIds: ['class-1'], classProofChildId: 'childA' })
+  await check('batch: link child + add classId with classProofChildId', batch.commit(), 'allow')
+}
+
+console.log('\n— escalation guards stay closed —')
+await check('stranger CANNOT query children by an email that is not theirs',
+  getDocs(query(collection(stranger, 'children'), where('parentEmails', 'array-contains', 'parent@x.com'))), 'deny')
+await check('stranger CANNOT read an unrelated child',
+  getDoc(doc(stranger, 'children', 'childC')), 'deny')
+await check('stranger CANNOT append own uid to a child whose parentEmails do not list them',
+  updateDoc(doc(stranger, 'children', 'childC'), { parentUids: ['someuid', 'stranger1'] }), 'deny')
+await check('parent CANNOT edit other fields on an email-matched child before linking',
+  updateDoc(doc(parent, 'children', 'childB'), { name: 'Hacked' }), 'deny')
+await check('stranger CANNOT blanket-list all children',
+  getDocs(collection(stranger, 'children')), 'deny')
+await check('user CANNOT self-escalate role',
+  updateDoc(doc(stranger, 'users', 'stranger1'), { role: 'admin' }), 'deny')
+await check('user CANNOT self-set classIds',
+  updateDoc(doc(stranger, 'users', 'stranger1'), { classIds: ['class-1'] }), 'deny')
+await check('user CANNOT self-set classAdminFor',
+  updateDoc(doc(stranger, 'users', 'stranger1'), { classAdminFor: ['class-1'] }), 'deny')
+
+console.log(`\n${pass} passed, ${fail} failed`)
+await env.cleanup()
+process.exit(fail ? 1 : 0)

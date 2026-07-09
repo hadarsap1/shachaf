@@ -1,8 +1,22 @@
 import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Vitest transforms JSX with esbuild (plugin-react's babel transform only
+  // runs in serve/build) — use the automatic runtime so component tests work.
+  // Scoped to test mode so the production build pipeline is untouched.
+  esbuild: mode === 'test' ? { jsx: 'automatic' } : undefined,
+  test: {
+    exclude: [
+      ...configDefaults.exclude,
+      // plain `node` assert script (run directly), not a vitest suite
+      'src/lib/contactSheet.test.mjs',
+      // firestore-rules test needs the emulator — run via `npm run test:rules`
+      'tests/**',
+    ],
+  },
   plugins: [
     react(),
     VitePWA({
@@ -63,4 +77,4 @@ export default defineConfig({
       },
     }),
   ],
-})
+}))
