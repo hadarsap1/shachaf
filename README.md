@@ -226,10 +226,16 @@ Form submissions use `coParentUids[]` — if one parent submits, the other sees 
 ```bash
 npm run build       # Verify build passes
 vercel --prod       # Deploy to production
-firebase deploy --only firestore:rules   # Deploy security rules
+firebase deploy --only firestore:rules,storage   # Deploy security rules
 ```
 
 The `api/chat.js` serverless function is picked up automatically by Vercel.
+
+**Automatic rules deploy:** `.github/workflows/deploy-firebase-rules.yml` deploys
+`firestore.rules` + `storage.rules` on every push to `main` that touches them,
+gated by the emulator rules tests (`npm run test:rules`). One-time setup in the
+repo settings: secret `FIREBASE_SERVICE_ACCOUNT` (service-account JSON key with
+the *Firebase Rules Admin* role) and variable `FIREBASE_PROJECT_ID`.
 
 ---
 

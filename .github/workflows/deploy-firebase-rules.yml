@@ -1,0 +1,69 @@
+# Deploys Firestore + Storage security rules to production on every push to
+# main that touches them — after the emulator rules tests pass.
+#
+# One-time setup (repo Settings):
+#   1. Secret  FIREBASE_SERVICE_ACCOUNT — JSON key of a GCP service account
+#      with the "Firebase Rules Admin" role (IAM → Service Accounts → create
+#      key). Settings → Secrets and variables → Actions → New repository secret.
+#   2. Variable FIREBASE_PROJECT_ID — the Firebase project id (same value as
+#      VITE_FIREBASE_PROJECT_ID). Settings → ... → Variables → New variable.
+name: Deploy Firebase Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - storage.rules
+      - firebase.json
+      - tests/firestore-rules.emulator.mjs
+      - .github/workflows/deploy-firebase-rules.yml
+  workflow_dispatch: {}
+
+jobs:
+  test-rules:
+    name: Rules emulator tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4   # Firestore emulator needs a JRE
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run test:rules
+
+  deploy:
+    name: Deploy rules to Firebase
+    needs: test-rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Check deploy configuration
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PROJECT: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: |
+          if [ -z "$SA" ] || [ -z "$PROJECT" ]; then
+            echo "::error::Missing FIREBASE_SERVICE_ACCOUNT secret and/or FIREBASE_PROJECT_ID variable — see the setup comment at the top of this workflow file."
+            exit 1
+          fi
+      - name: Write service-account credentials
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: printf '%s' "$SA" > "$RUNNER_TEMP/firebase-sa.json"
+      - name: Deploy firestore + storage rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: npx --yes firebase-tools deploy --only firestore:rules,storage --project "${{ vars.FIREBASE_PROJECT_ID }}" --non-interactive
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json"
