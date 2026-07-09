@@ -172,6 +172,15 @@ const ALLOWED_PROFILE_FIELDS = [
   'workplace', 'profession', 'hobbies', 'temporaryStatus',
 ]
 
+// Record the user's informed consent — consentVersion + consentAt on the
+// user doc are the stored evidence required by the privacy regulations.
+export async function recordConsent(uid, version) {
+  await updateDoc(doc(db, 'users', uid), {
+    consentVersion: version,
+    consentAt: serverTimestamp(),
+  })
+}
+
 // Backfill for pre-2026-07 imported families — lets them browse the
 // unlinked-children roster during onboarding (admin-only by rules)
 async function _markUsersImported(uids) {

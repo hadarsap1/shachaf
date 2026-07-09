@@ -19,6 +19,7 @@ import {
   MapPin, Phone, Mail, GraduationCap,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { safeHref } from '../../lib/safeUrl'
 
 const ICON_MAP = {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -152,11 +153,11 @@ function ChatTab({ groupId, user }) {
                   isOwn ? 'bg-primary-600 text-white rounded-tl-sm' : 'bg-gray-100 text-gray-800 rounded-tr-sm dark:bg-gray-700 dark:text-gray-100'
                 )}>
                   {msg.type === 'image' && msg.fileUrl ? (
-                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={safeHref(msg.fileUrl)} target="_blank" rel="noopener noreferrer">
                       <img src={msg.fileUrl} alt={msg.fileName} className="max-w-full rounded-xl max-h-48 object-cover" />
                     </a>
                   ) : msg.type === 'file' && msg.fileUrl ? (
-                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"
+                    <a href={safeHref(msg.fileUrl)} target="_blank" rel="noopener noreferrer"
                       className={clsx('flex items-center gap-2 hover:underline', isOwn ? 'text-white' : 'text-primary-600 dark:text-primary-400')}>
                       <File size={14} />
                       <span>{msg.fileName}</span>
@@ -408,7 +409,7 @@ function FilesTab({ groupId, user }) {
           </h3>
           <div className="grid grid-cols-3 gap-2">
             {images.map(m => (
-              <a key={m.id} href={m.fileUrl} target="_blank" rel="noopener noreferrer"
+              <a key={m.id} href={safeHref(m.fileUrl)} target="_blank" rel="noopener noreferrer"
                 className="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 hover:opacity-90 transition-opacity">
                 <img src={m.fileUrl} alt={m.fileName} className="w-full h-full object-cover" />
               </a>
@@ -424,7 +425,7 @@ function FilesTab({ groupId, user }) {
           </h3>
           <div className="space-y-2">
             {files.map(m => (
-              <a key={m.id} href={m.fileUrl} target="_blank" rel="noopener noreferrer"
+              <a key={m.id} href={safeHref(m.fileUrl)} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl hover:border-primary-200 dark:hover:border-primary-700 transition-colors">
                 <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                   <File size={16} className="text-primary-600 dark:text-primary-400" />
@@ -459,7 +460,7 @@ function GroupFields({ fields }) {
         if (f.type === 'link') return (
           <div key={i}>
             {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
-            <a href={f.value} target="_blank" rel="noopener noreferrer"
+            <a href={safeHref(f.value)} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
               <ExternalLink size={13} /> {linkLabel(f)}
             </a>

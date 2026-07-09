@@ -36,6 +36,8 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'children', 'childC'), {
     name: 'Child C', classId: 'class-3', parentUids: ['someuid'], parentEmails: ['nobody@x.com'],
   })
+  // hobby group with parent1 as a member — for groupLinks URL-scheme tests
+  await setDoc(doc(db, 'hobbyGroups', 'groupX'), { name: 'Group X', memberUids: ['parent1'] })
 })
 
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
@@ -79,6 +81,22 @@ console.log('\n— full linkChildToParent batch (child link + classIds proof) �
   batch.update(doc(parent, 'users', 'parent1'), { childIds: ['childA'], classIds: ['class-1'], classProofChildId: 'childA' })
   await check('batch: link child + add classId with classProofChildId', batch.commit(), 'allow')
 }
+
+console.log('\n— consent recording (users self-update) —')
+await check('user CAN record own consentVersion + consentAt',
+  updateDoc(doc(parent, 'users', 'parent1'), { consentVersion: '1.0', consentAt: new Date() }), 'allow')
+await check('user CANNOT write consent onto someone else',
+  updateDoc(doc(stranger, 'users', 'parent1'), { consentVersion: '1.0' }), 'deny')
+
+console.log('\n— groupLinks URL scheme (stored-XSS guard) —')
+await check('member can post an https:// link',
+  setDoc(doc(parent, 'groupLinks', 'link1'), {
+    uid: 'parent1', groupId: 'groupX', label: 'אתר', url: 'https://example.com', createdAt: new Date(),
+  }), 'allow')
+await check('member CANNOT post a javascript: link',
+  setDoc(doc(parent, 'groupLinks', 'link2'), {
+    uid: 'parent1', groupId: 'groupX', label: 'תמים', url: 'javascript:alert(1)', createdAt: new Date(),
+  }), 'deny')
 
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
