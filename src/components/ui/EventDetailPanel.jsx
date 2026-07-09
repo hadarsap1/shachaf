@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { rsvpEvent, unrsvpEvent, getUsersByUids } from '../../lib/db'
 import ContactModal from './ContactModal'
+import DietaryBadges from './DietaryBadges'
 
 const TYPE_LABEL = {
   social:      'חברתי',
@@ -171,6 +172,8 @@ export default function EventDetailPanel({ event, onClose }) {
                 </div>
               )}
             </div>
+
+            <DietaryBadges event={event} />
 
             {/* RSVP button */}
             <button

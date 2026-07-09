@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
+import { DIETARY_OPTIONS, DIETARY_NOTE_MAX } from '../../lib/dietary'
 
 function googleCalendarUrl(event) {
   const time = event.time || '09:00'
@@ -61,6 +62,8 @@ const blankEvent = () => ({
   targetGroups: ['all'],
   classIds: [],
   committeeId: null,
+  dietaryRestrictions: [],
+  dietaryNote: '',
 })
 
 // ---- Class multi-select dropdown ----
@@ -176,6 +179,13 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
     })
   }
 
+  const toggleDietary = (value) => {
+    setDraft(d => {
+      const tags = d.dietaryRestrictions || []
+      return { ...d, dietaryRestrictions: tags.includes(value) ? tags.filter(t => t !== value) : [...tags, value] }
+    })
+  }
+
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -265,6 +275,37 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
               className="input w-full text-right">
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+          </div>
+
+          {/* Anonymous, event-level only — never tied to a specific child
+              (privacy: identified medical info raises the DB classification) */}
+          <div>
+            <label className="label block mb-1 text-right">הגבלות תזונה ואלרגיה</label>
+            <p className="text-xs text-gray-400 text-right mb-2">ברמת האירוע בלבד, ללא שיוך לילד מסוים</p>
+            <div className="flex flex-wrap gap-2 justify-end">
+              {DIETARY_OPTIONS.map(o => {
+                const isSelected = (draft.dietaryRestrictions || []).includes(o.value)
+                return (
+                  <button key={o.value} type="button"
+                    onClick={() => toggleDietary(o.value)}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                      isSelected
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
+                    )}>
+                    ללא {o.label}
+                  </button>
+                )
+              })}
+            </div>
+            <input
+              value={draft.dietaryNote || ''}
+              onChange={e => set('dietaryNote', e.target.value.slice(0, DIETARY_NOTE_MAX))}
+              maxLength={DIETARY_NOTE_MAX}
+              className="input w-full text-right mt-2"
+              placeholder="הערה נוספת (למשל: נא להימנע מחטיפים ביתיים)"
+            />
           </div>
 
           <div>

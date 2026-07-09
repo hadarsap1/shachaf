@@ -58,7 +58,9 @@ export const MOCK_FORMS = [
       { id: 'f6',  type: 'text',     label: 'כתובת מגורים',       placeholder: 'רחוב, מספר, עיר',     required: true },
       { id: 'f7',  type: 'text',     label: 'שם הילד/ה',          placeholder: 'שם פרטי',             required: true },
       { id: 'f8',  type: 'select',   label: 'כיתה',               placeholder: '',                    required: true, options: ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳'] },
-      { id: 'f9',  type: 'textarea', label: 'מידע רפואי חשוב',    placeholder: 'אלרגיות, תרופות…',    required: false },
+      // NOTE: no medical/allergy field here — identified medical info raises
+      // the DB classification (see docs/security-compliance-plan-2026-07.md §5.2).
+      // Allergy restrictions are managed anonymously at the event level.
       { id: 'f10', type: 'textarea', label: 'הערות נוספות',        placeholder: '',                    required: false },
     ],
   },

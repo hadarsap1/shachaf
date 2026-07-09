@@ -1,6 +1,7 @@
 import { Calendar, MapPin, Clock, Plus } from 'lucide-react'
 import clsx from 'clsx'
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent, isEventPast } from '../../lib/calendar'
+import DietaryBadges from './DietaryBadges'
 
 const TYPE_CONFIG = {
   social:      { label: 'חברתי',     color: 'badge-primary' },
@@ -60,6 +61,10 @@ export default function EventCard({ event, onCardClick }) {
         </div>
 
         <p className="text-xs text-gray-600 leading-relaxed mb-3 dark:text-gray-300">{event.description}</p>
+
+        {(event.dietaryRestrictions?.length > 0 || event.dietaryNote) && (
+          <div className="mb-3"><DietaryBadges event={event} compact /></div>
+        )}
 
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
