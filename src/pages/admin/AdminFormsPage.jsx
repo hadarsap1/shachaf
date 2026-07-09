@@ -257,6 +257,10 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
           <h3 className="font-bold text-gray-700 text-sm dark:text-gray-200">שדות הטופס ({draft.fields.length})</h3>
 
         </div>
+        <p className="text-xs text-amber-600 dark:text-amber-400 text-right mb-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+          שימו לב: תשובות הטופס נקשרות למשפחה מזוהה — אין לאסוף כאן מידע רפואי
+          (אלרגיות, תרופות וכד'). להגבלות אלרגיה השתמשו בהגדרות האירוע.
+        </p>
         <div className="space-y-2">
           {draft.fields.map((field, i) => (
             <FieldRow

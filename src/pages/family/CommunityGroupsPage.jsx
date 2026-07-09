@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import ContactModal from '../../components/ui/ContactModal'
+import { safeHref } from '../../lib/safeUrl'
 
 const ICON_MAP = {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -42,7 +43,7 @@ function GroupFields({ fields }) {
           <div key={i}>
             {f.label && <p className="text-xs font-semibold text-gray-500 mb-0.5 dark:text-gray-400">{f.label}</p>}
             <a
-              href={f.value}
+              href={safeHref(f.value)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 bg-primary-50 dark:bg-primary-900/30 hover:bg-primary-100 dark:hover:bg-primary-900/50 border border-primary-200 dark:border-primary-700 px-3 py-2 rounded-xl transition-[background-color,color] duration-150 max-w-full"
@@ -176,7 +177,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             ? <p className="text-xs text-gray-400">{isMember ? 'אין קישורים עדיין — הוסיפו ראשונים!' : 'אין קישורים עדיין'}</p>
             : links.map(l => (
               <div key={l.id} className="flex items-center gap-2 py-1.5 group">
-                <a href={/^https?:\/\//.test(l.url) ? l.url : '#'} target="_blank" rel="noopener noreferrer"
+                <a href={safeHref(l.url)} target="_blank" rel="noopener noreferrer"
                   className="flex-1 flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 min-w-0">
                   <ExternalLink size={13} className="flex-shrink-0" />
                   <span className="truncate">{l.label || l.url}</span>
@@ -217,7 +218,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
             : files.map(f => (
               <div key={f.id} className="flex items-center gap-2 py-1.5 group">
                 <span className="flex-shrink-0 text-base leading-none">{fileIcon(f.fileName)}</span>
-                <a href={f.fileUrl} target="_blank" rel="noopener noreferrer"
+                <a href={safeHref(f.fileUrl)} target="_blank" rel="noopener noreferrer"
                   className="flex-1 min-w-0 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 truncate">
                   {f.label || f.fileName}
                 </a>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import clsx from 'clsx'
@@ -409,6 +409,12 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-primary-200 text-xs mt-4">
+          בהצטרפות תתבקשו לאשר את{' '}
+          <Link to="/legal/privacy" className="underline hover:text-white">מדיניות הפרטיות</Link>
+          {' ואת '}
+          <Link to="/legal/terms" className="underline hover:text-white">תנאי השימוש</Link>
+        </p>
+        <p className="text-center text-primary-200 text-xs mt-2">
           קהילת שחף © {new Date().getFullYear()}
         </p>
       </div>

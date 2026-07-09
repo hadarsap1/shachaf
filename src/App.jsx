@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import AppShell from './components/layout/AppShell'
+import ConsentModal from './components/ConsentModal'
+import { needsConsent } from './lib/consent'
 
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/family/DashboardPage'
@@ -55,6 +57,18 @@ const Spinner = () => (
 // their own settings, help, and contact. Everything else redirects.
 const ALUMNI_ROUTES = ['/businesses', '/settings', '/help', '/contact']
 
+// Blocks every signed-in view behind the informed-consent dialog until the
+// user approves the current CONSENT_VERSION (new users, existing users after
+// a version bump, and co-parents on their first login).
+function ConsentGate({ user, children }) {
+  return (
+    <>
+      {children}
+      {needsConsent(user) && <ConsentModal />}
+    </>
+  )
+}
+
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
   const { user, loading, isAdmin, isSuperAdmin, isHostFamily, isClassAdmin, needsOnboarding, viewAs } = useAuth()
   // Admin in "watch as parent" mode behaves like a regular parent
@@ -70,11 +84,13 @@ function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false
   // Pending accounts (matched from an imported class list) need class-admin
   // approval before touching the app — admins/class admins still need access
   // to review and approve them, so they're exempt from this gate.
-  if (user.status === 'pending' && !isAdmin && !isClassAdmin) return <PendingApprovalPage />
+  if (user.status === 'pending' && !isAdmin && !isClassAdmin) {
+    return <ConsentGate user={user}><PendingApprovalPage /></ConsentGate>
+  }
   if (adminOnly && !effectiveAdmin && !(classAdminOk && effectiveClassAdmin)) return <Navigate to="/" replace />
   if (superOnly && !isSuperAdmin) return <Navigate to="/" replace />
   if (hostOnly && !isHostFamily && !effectiveAdmin) return <Navigate to="/" replace />
-  return <AppShell />
+  return <ConsentGate user={user}><AppShell /></ConsentGate>
 }
 
 function ProtectedOnboarding() {
@@ -82,7 +98,7 @@ function ProtectedOnboarding() {
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
   if (!needsOnboarding) return <Navigate to="/dashboard" replace />
-  return <OnboardingPage />
+  return <ConsentGate user={user}><OnboardingPage /></ConsentGate>
 }
 
 function RootRedirect() {

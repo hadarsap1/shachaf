@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { getBusinesses, saveBusiness, deleteBusiness, uploadBusinessImage, getUsersByUids } from '../../lib/db'
 import { Plus, Search, Phone, Globe, Mail, Pencil, Trash2, X, Check, Loader2, ImagePlus, Store } from 'lucide-react'
 import clsx from 'clsx'
+import { safeWebsiteHref } from '../../lib/safeUrl'
 import { toast } from '../../components/ui/Toaster'
 
 const CATEGORIES = [
@@ -233,7 +234,7 @@ function BusinessCard({ biz, owner, isOwner, isAdmin, onEdit, onDelete }) {
             </a>
           )}
           {biz.website && (
-            <a href={biz.website.startsWith('http') ? biz.website : 'https://' + biz.website}
+            <a href={safeWebsiteHref(biz.website)}
               target="_blank" rel="noreferrer"
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100 transition-colors dark:bg-primary-900/20 dark:text-primary-300">
               <Globe size={12} />
