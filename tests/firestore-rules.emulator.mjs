@@ -98,6 +98,34 @@ await check('member CANNOT post a javascript: link',
     uid: 'parent1', groupId: 'groupX', label: 'תמים', url: 'javascript:alert(1)', createdAt: new Date(),
   }), 'deny')
 
+console.log('\n— write-boundary size caps (events / businesses / children) —')
+const admin = env.authenticatedContext('admin1', { email: 'admin@x.com' }).firestore()
+await check('admin can create a normal event (incl. dietary fields)',
+  setDoc(doc(admin, 'events', 'ev1'), {
+    title: 'פיקניק', description: 'כיף', date: '2030-05-01', type: 'social',
+    dietaryRestrictions: ['peanuts'], dietaryNote: 'ללא חטיפים ביתיים',
+  }), 'allow')
+await check('admin can update and delete an event',
+  updateDoc(doc(admin, 'events', 'ev1'), { title: 'פיקניק מעודכן' }), 'allow')
+await check('admin CANNOT create an event with an oversized title',
+  setDoc(doc(admin, 'events', 'ev2'), { title: 'א'.repeat(201), date: '2030-05-01' }), 'deny')
+await check('group member can create a group event within caps',
+  setDoc(doc(parent, 'events', 'ev3'), {
+    title: 'מפגש קבוצה', groupId: 'groupX', createdBy: 'parent1', date: '2030-06-01',
+  }), 'allow')
+await check('group member CANNOT create a group event with oversized description',
+  setDoc(doc(parent, 'events', 'ev4'), {
+    title: 'מפגש', description: 'א'.repeat(5001), groupId: 'groupX', createdBy: 'parent1', date: '2030-06-01',
+  }), 'deny')
+await check('business create with oversized website is denied',
+  setDoc(doc(parent, 'communityBusinesses', 'biz1'), {
+    uid: 'parent1', businessName: 'עסק', description: 'תיאור', website: 'x'.repeat(301),
+  }), 'deny')
+await check('linked parent can update child hobbies/pet within caps',
+  updateDoc(doc(parent, 'children', 'childA'), { hobbies: ['כדורגל', 'ציור'], pet: 'תוכי' }), 'allow')
+await check('linked parent CANNOT set an oversized pet field',
+  updateDoc(doc(parent, 'children', 'childA'), { pet: 'א'.repeat(201) }), 'deny')
+
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
   getDocs(query(collection(stranger, 'children'), where('parentEmails', 'array-contains', 'parent@x.com'))), 'deny')

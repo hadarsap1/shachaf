@@ -162,6 +162,34 @@ export default function SuperAdminPage() {
         </div>
       ) : (
         <>
+          {/* Authorized-access compliance counter — the data-security
+              regulations tier we target assumes ≤10 access holders
+              (docs/security-compliance-plan-2026-07.md §5.4) */}
+          {(() => {
+            const privileged = users.filter(u =>
+              u.role === 'admin' || u.role === 'super_admin' || (u.classAdminFor || []).length > 0)
+            const over = privileged.length > 10
+            return (
+              <section className="mb-6">
+                <div className={clsx(
+                  'rounded-2xl border px-4 py-3 text-right',
+                  over
+                    ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                    : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
+                )}>
+                  <p className={clsx('text-sm font-semibold', over ? 'text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-200')}>
+                    מורשי גישה במערכת: {privileged.length} / 10
+                  </p>
+                  <p className={clsx('text-xs mt-0.5', over ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400')}>
+                    {over
+                      ? 'חריגה מתקרת 10 מורשי הגישה שהוגדרה בתוכנית אבטחת המידע — חובות מוגברות לפי תקנות אבטחת מידע. יש לצמצם הרשאות.'
+                      : 'כל בעלי תפקיד ניהולי או ניהול-כיתה. יש לסקור ולתעד את הרשימה אחת לשנה (תוכנית אבטחת המידע, סעיף 5.4).'}
+                  </p>
+                </div>
+              </section>
+            )
+          })()}
+
           {/* Admins section */}
           {admins.length > 0 && (
             <section className="mb-6">
