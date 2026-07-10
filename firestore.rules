@@ -303,6 +303,26 @@ service cloud.firestore {
                     && request.resource.data.parentUids == resource.data.get('parentUids', []).concat([request.auth.uid]);
     }
 
+    // Audit log — append-only record of privileged actions. Admins and class
+    // admins may CREATE entries about their own actions; nobody (super_admin
+    // included) may update or delete, so the trail can't be doctored.
+    match /auditLog/{entryId} {
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+           in ['admin', 'super_admin'];
+      allow create: if request.auth != null
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.get('action', '').size() > 0
+        && request.resource.data.get('action', '').size() <= 60
+        && request.resource.data.get('actorName', '').size() <= 200
+        && request.resource.data.get('targetName', '').size() <= 200
+        && request.resource.data.get('details', '').size() <= 1000
+        && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+              in ['admin', 'super_admin']
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []).size() > 0);
+      // no update/delete — append-only by design
+    }
+
     // Admin notes — admin-only read/write, invisible to families
     match /adminNotes/{childId} {
       allow read, write: if request.auth != null

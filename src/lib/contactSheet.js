@@ -20,7 +20,7 @@ export function formatILPhone(raw) {
 }
 
 // ── Build editable entries from a class's children ─────────────────────────────
-// entry = { name: childName, lines: ['הורה טלפון', ...] }
+// entry = { name: childName, lines: ['הורה טלפון', ...], photo?: dataURL }
 export function entriesFromChildren(children) {
   return [...children]
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
@@ -30,6 +30,49 @@ export function entriesFromChildren(children) {
         .filter(p => p.name || p.phone)
         .map(p => [p.name, formatILPhone(p.phone)].filter(Boolean).join('  ')),
     }))
+}
+
+// ── Child photos → embedded data URLs ──────────────────────────────────────────
+// Photos only appear on the sheet when a parent chose to upload one. They are
+// downscaled to a small square and embedded as data URIs, preserving the
+// module's invariant: the SVG stays self-contained, so canvas export never
+// taints. Fetch/decode failures degrade silently to a sheet without the photo.
+async function photoToDataUrl(url, size) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`photo fetch ${res.status}`)
+  const blob = await res.blob()
+  const objUrl = URL.createObjectURL(blob)
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error('photo decode failed'))
+      i.src = objUrl
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = size
+    const ctx = canvas.getContext('2d')
+    // cover-crop to a centered square
+    const s = Math.min(img.width, img.height)
+    ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size)
+    return canvas.toDataURL('image/jpeg', 0.8)
+  } finally {
+    URL.revokeObjectURL(objUrl)
+  }
+}
+
+// Resolve { childName → photo dataURL } for children whose parents uploaded a
+// photo. Browser-only (uses Image/canvas).
+export async function loadChildPhotoMap(children, size = 112) {
+  const withPhoto = children.filter(c => c.name && c.photoUrl)
+  const results = await Promise.allSettled(
+    withPhoto.map(c => photoToDataUrl(c.photoUrl, size))
+  )
+  const map = {}
+  withPhoto.forEach((c, i) => {
+    if (results[i].status === 'fulfilled') map[c.name] = results[i].value
+  })
+  return map
 }
 
 // ── Templates ──────────────────────────────────────────────────────────────────
@@ -68,19 +111,34 @@ function footer(w, h, p) {
 // No direction="rtl" on the root: it flips text-anchor semantics (end↔start)
 // and breaks right-aligned templates. Hebrew glyphs still shape correctly via
 // Unicode bidi within each <text>. Anchoring is done explicitly per template.
+// xmlns:xlink is declared because photo circles emit both href + xlink:href.
 function svgWrap(w, h, body, p) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
     <rect width="${w}" height="${h}" fill="#ffffff"/>
     <rect x="10" y="10" width="${w - 20}" height="${h - 20}" rx="24" fill="${p.panel}" stroke="${p.panelStroke}" stroke-width="2"/>
     ${body}
   </svg>`
 }
 
+// Circular child photo (clip-path) — or an initial-letter disc when the entry
+// has no uploaded photo but the sheet is in photo mode, so rows stay aligned.
+function photoCircle(id, cx, cy, r, entry, p) {
+  if (entry.photo) {
+    const href = esc(entry.photo)
+    return `<clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
+      <image href="${href}" xlink:href="${href}" x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${p.cardStroke}" stroke-width="2"/>`
+  }
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${p.cardStroke}" opacity="0.35"/>
+    <text x="${cx}" y="${cy + r * 0.36}" text-anchor="middle" font-family="${FONT}" font-size="${Math.round(r * 1.05)}" font-weight="700" fill="${p.name}">${esc((entry.name || '?')[0])}</text>`
+}
+
 function cardsTemplate(entries, title, subtitle, p) {
   const w = 1080, cols = 2, pad = 40, gap = 24
   const top = 140
   const cardW = (w - pad * 2 - gap * (cols - 1)) / cols
-  const cardH = 150
+  const hasPhotos = entries.some(e => e.photo)
+  const cardH = hasPhotos ? 208 : 150
   const rows = Math.ceil(entries.length / cols)
   const h = top + rows * (cardH + gap) + 80
   let body = header(w, title, subtitle, p)
@@ -89,26 +147,37 @@ function cardsTemplate(entries, title, subtitle, p) {
     const x = pad + col * (cardW + gap)
     const y = top + row * (cardH + gap)
     const cx = x + cardW / 2
-    const lines = e.lines.slice(0, 3)
-    body += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="20" fill="${p.card}" stroke="${p.cardStroke}" stroke-width="2" stroke-dasharray="6 5"/>
-      <text x="${cx}" y="${y + 42}" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 26))}</text>`
-    lines.forEach((ln, k) => {
-      body += `<text x="${cx}" y="${y + 78 + k * 28}" text-anchor="middle" font-family="${FONT}" font-size="21" fill="${p.text}">${esc(clip(ln, 32))}</text>`
-    })
+    body += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="20" fill="${p.card}" stroke="${p.cardStroke}" stroke-width="2" stroke-dasharray="6 5"/>`
+    if (hasPhotos) {
+      body += photoCircle(`cph${i}`, cx, y + 48, 32, e, p)
+      body += `<text x="${cx}" y="${y + 112}" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 26))}</text>`
+      e.lines.slice(0, 3).forEach((ln, k) => {
+        body += `<text x="${cx}" y="${y + 142 + k * 26}" text-anchor="middle" font-family="${FONT}" font-size="20" fill="${p.text}">${esc(clip(ln, 32))}</text>`
+      })
+    } else {
+      body += `<text x="${cx}" y="${y + 42}" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 26))}</text>`
+      e.lines.slice(0, 3).forEach((ln, k) => {
+        body += `<text x="${cx}" y="${y + 78 + k * 28}" text-anchor="middle" font-family="${FONT}" font-size="21" fill="${p.text}">${esc(clip(ln, 32))}</text>`
+      })
+    }
   })
   body += footer(w, h, p)
   return svgWrap(w, h, body, p)
 }
 
 function listTemplate(entries, title, subtitle, p) {
-  const w = 1080, pad = 48, top = 140, rowH = 76
+  const w = 1080, pad = 48, top = 140
+  const hasPhotos = entries.some(e => e.photo)
+  const rowH = hasPhotos ? 88 : 76
+  const textX = hasPhotos ? w - pad - 76 : w - pad
   const h = top + entries.length * rowH + 80
   let body = header(w, title, subtitle, p)
   entries.forEach((e, i) => {
     const y = top + i * rowH
     if (i % 2 === 0) body += `<rect x="${pad - 12}" y="${y - 4}" width="${w - (pad - 12) * 2}" height="${rowH - 8}" rx="12" fill="${p.row}"/>`
-    body += `<text x="${w - pad}" y="${y + 30}" text-anchor="end" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 30))}</text>
-      <text x="${w - pad}" y="${y + 58}" text-anchor="end" font-family="${FONT}" font-size="21" fill="${p.text}">${esc(clip(e.lines.join('   ·   '), 60))}</text>`
+    if (hasPhotos) body += photoCircle(`lph${i}`, w - pad - 32, y + rowH / 2 - 4, 30, e, p)
+    body += `<text x="${textX}" y="${y + 30}" text-anchor="end" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 30))}</text>
+      <text x="${textX}" y="${y + 58}" text-anchor="end" font-family="${FONT}" font-size="21" fill="${p.text}">${esc(clip(e.lines.join('   ·   '), 60))}</text>`
   })
   body += footer(w, h, p)
   return svgWrap(w, h, body, p)
@@ -117,7 +186,8 @@ function listTemplate(entries, title, subtitle, p) {
 function compactTemplate(entries, title, subtitle, p) {
   const w = 1080, cols = 3, pad = 32, gap = 16, top = 140
   const cardW = (w - pad * 2 - gap * (cols - 1)) / cols
-  const cardH = 118
+  const hasPhotos = entries.some(e => e.photo)
+  const cardH = hasPhotos ? 164 : 118
   const rows = Math.ceil(entries.length / cols)
   const h = top + rows * (cardH + gap) + 76
   let body = header(w, title, subtitle, p)
@@ -126,11 +196,19 @@ function compactTemplate(entries, title, subtitle, p) {
     const x = pad + col * (cardW + gap)
     const y = top + row * (cardH + gap)
     const cx = x + cardW / 2
-    body += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="16" fill="${p.card}"/>
-      <text x="${cx}" y="${y + 34}" text-anchor="middle" font-family="${FONT}" font-size="21" font-weight="700" fill="${p.name}">${esc(clip(e.name, 20))}</text>`
-    e.lines.slice(0, 2).forEach((ln, k) => {
-      body += `<text x="${cx}" y="${y + 62 + k * 24}" text-anchor="middle" font-family="${FONT}" font-size="17" fill="${p.text}">${esc(clip(ln, 24))}</text>`
-    })
+    body += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="16" fill="${p.card}"/>`
+    if (hasPhotos) {
+      body += photoCircle(`sph${i}`, cx, y + 36, 24, e, p)
+      body += `<text x="${cx}" y="${y + 84}" text-anchor="middle" font-family="${FONT}" font-size="21" font-weight="700" fill="${p.name}">${esc(clip(e.name, 20))}</text>`
+      e.lines.slice(0, 2).forEach((ln, k) => {
+        body += `<text x="${cx}" y="${y + 110 + k * 23}" text-anchor="middle" font-family="${FONT}" font-size="17" fill="${p.text}">${esc(clip(ln, 24))}</text>`
+      })
+    } else {
+      body += `<text x="${cx}" y="${y + 34}" text-anchor="middle" font-family="${FONT}" font-size="21" font-weight="700" fill="${p.name}">${esc(clip(e.name, 20))}</text>`
+      e.lines.slice(0, 2).forEach((ln, k) => {
+        body += `<text x="${cx}" y="${y + 62 + k * 24}" text-anchor="middle" font-family="${FONT}" font-size="17" fill="${p.text}">${esc(clip(ln, 24))}</text>`
+      })
+    }
   })
   body += footer(w, h, p)
   return svgWrap(w, h, body, p)

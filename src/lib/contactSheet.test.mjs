@@ -41,4 +41,19 @@ for (const t of TEMPLATES) {
 // empty entries → still valid svg, no crash
 assert.ok(buildSheetSvg({ template: 'cards', title: 't', entries: [] }).startsWith('<svg'))
 
+// child photos: entries with a photo dataURL render a clipped <image>; entries
+// without one get an initial-letter disc; photo-less sheets contain no <image>
+const photoEntries = [
+  { name: 'דנה', lines: ['אמא 050'], photo: 'data:image/jpeg;base64,AAAA' },
+  { name: 'יובל', lines: ['אבא 052'] },
+]
+for (const t of TEMPLATES) {
+  const svg = buildSheetSvg({ template: t.id, title: 't', entries: photoEntries })
+  assert.ok(svg.includes('<image'), `${t.id} embeds the uploaded photo`)
+  assert.ok(svg.includes('clipPath'), `${t.id} clips the photo to a circle`)
+  assert.ok(svg.includes('data:image/jpeg;base64,AAAA'), `${t.id} uses the data URL`)
+  const noPhotos = buildSheetSvg({ template: t.id, title: 't', entries: [{ name: 'יובל', lines: ['x'] }] })
+  assert.ok(!noPhotos.includes('<image'), `${t.id} photo-less sheet has no <image>`)
+}
+
 console.log('contactSheet: all checks passed')

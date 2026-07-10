@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
-import { getClasses } from '../../lib/db'
+import { getClasses, logAudit } from '../../lib/db'
 import { useAuth } from '../../context/AuthContext'
 import { Shield, Check, RefreshCw, Loader2, Eye, Home, Users, GraduationCap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -85,6 +85,7 @@ export default function SuperAdminPage() {
     setSaving(user.uid)
     try {
       await updateDoc(doc(db, 'users', user.uid), { role: newRole })
+      logAudit(me, 'role_change', { targetUid: user.uid, targetName: user.name || user.email, details: `${user.role} → ${newRole}` })
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, role: newRole } : u))
       setSaved(user.uid)
       setTimeout(() => setSaved(null), 2000)

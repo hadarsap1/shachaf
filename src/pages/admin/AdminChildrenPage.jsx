@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
   bulkImportChildren, bulkDeleteChildren, linkChildToParent, unlinkChildFromParent,
   enrichUserFromImport,
-  getAdminNote, saveAdminNote,
+  getAdminNote, saveAdminNote, logAudit,
 } from '../../lib/db'
 import {
   Baby, Plus, Trash2, X, Check, Search, Upload, Link2,
@@ -529,6 +530,7 @@ function ImportPanel({ classes, onImport, onClose }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function AdminChildrenPage() {
+  const { user: currentUser } = useAuth()
   const [children, setChildren]   = useState([])
   const [classes, setClasses]     = useState([])
   const [users, setUsers]         = useState([])
@@ -579,6 +581,7 @@ export default function AdminChildrenPage() {
         }
       }
     }
+    logAudit(currentUser, 'children_import', { details: `יובאו ${created.length} ילדים, קושרו ${linked} הורים` })
     toast(`יובאו ${created.length} ילדים${linked ? ` · קושרו ${linked} הורים` : ''}`)
     load()
   }
@@ -587,7 +590,9 @@ export default function AdminChildrenPage() {
     setConfirmId(null)
     setDeleting(id)
     try {
+      const child = children.find(c => c.id === id)
       await deleteChild(id)
+      logAudit(currentUser, 'child_delete', { targetName: child?.name || id })
       setChildren(prev => prev.filter(c => c.id !== id))
       toast('הילד נמחק')
     } catch (e) {
@@ -624,6 +629,7 @@ export default function AdminChildrenPage() {
     try {
       const n = checkedIds.size
       await bulkDeleteChildren([...checkedIds])
+      logAudit(currentUser, 'children_bulk_delete', { details: `${n} רשומות ילדים נמחקו` })
       setChildren(prev => prev.filter(c => !checkedIds.has(c.id)))
       setCheckedIds(new Set())
       toast(`${n} ילדים נמחקו`)

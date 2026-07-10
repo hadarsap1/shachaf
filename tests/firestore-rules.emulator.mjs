@@ -7,7 +7,7 @@ import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebas
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore'
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'firestore.rules')
 
@@ -125,6 +125,29 @@ await check('linked parent can update child hobbies/pet within caps',
   updateDoc(doc(parent, 'children', 'childA'), { hobbies: ['כדורגל', 'ציור'], pet: 'תוכי' }), 'allow')
 await check('linked parent CANNOT set an oversized pet field',
   updateDoc(doc(parent, 'children', 'childA'), { pet: 'א'.repeat(201) }), 'deny')
+
+console.log('\n— audit log (append-only) —')
+await check('admin can create an audit entry about their own action',
+  setDoc(doc(admin, 'auditLog', 'a1'), {
+    action: 'role_change', actorUid: 'admin1', actorName: 'Admin',
+    targetUid: 'stranger1', targetName: 'Stranger', details: 'community → admin', createdAt: new Date(),
+  }), 'allow')
+await check('admin CANNOT create an entry attributed to someone else',
+  setDoc(doc(admin, 'auditLog', 'a2'), {
+    action: 'role_change', actorUid: 'someoneelse', actorName: 'X', createdAt: new Date(),
+  }), 'deny')
+await check('admin CANNOT edit an existing audit entry',
+  updateDoc(doc(admin, 'auditLog', 'a1'), { details: 'doctored' }), 'deny')
+await check('admin CANNOT delete an audit entry',
+  deleteDoc(doc(admin, 'auditLog', 'a1')), 'deny')
+await check('non-privileged user CANNOT create audit entries',
+  setDoc(doc(stranger, 'auditLog', 'a3'), {
+    action: 'role_change', actorUid: 'stranger1', createdAt: new Date(),
+  }), 'deny')
+await check('non-admin CANNOT read the audit log',
+  getDoc(doc(parent, 'auditLog', 'a1')), 'deny')
+await check('admin CAN read the audit log',
+  getDoc(doc(admin, 'auditLog', 'a1')), 'allow')
 
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
