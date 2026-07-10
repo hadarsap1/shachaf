@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids, getChildren, linkChildToParent } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids, getChildren, linkChildToParent, logAudit } from '../../lib/db'
 import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -679,6 +679,7 @@ export default function AdminUsersPage() {
     setSaving(user.uid)
     try {
       await updateDoc(doc(db, 'users', user.uid), { role: newRole })
+      logAudit(currentUser, 'role_change', { targetUid: user.uid, targetName: user.name || user.email, details: `${user.role} → ${newRole}` })
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, role: newRole } : u))
       setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, role: newRole } : prev)
     } catch (err) {
@@ -695,6 +696,7 @@ export default function AdminUsersPage() {
     setSaving(user.uid)
     try {
       await updateDoc(doc(db, 'users', user.uid), { roles: newRoles })
+      logAudit(currentUser, 'roles_change', { targetUid: user.uid, targetName: user.name || user.email, details: newRoles.join(', ') || '(ללא תפקידי משנה)' })
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, roles: newRoles } : u))
       setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, roles: newRoles } : prev)
     } catch (err) {
@@ -720,6 +722,7 @@ export default function AdminUsersPage() {
         }
       }
       await updateDoc(doc(db, 'users', user.uid), updates)
+      logAudit(currentUser, 'status_change', { targetUid: user.uid, targetName: user.name || user.email, details: `${user.status || 'active'} → ${newStatus}` })
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, ...updates } : u))
       setSelectedUser(prev => prev?.uid === user.uid ? { ...prev, ...updates } : prev)
     } catch (err) {
@@ -896,6 +899,7 @@ export default function AdminUsersPage() {
         <AddMemberPanel
           onClose={() => setShowAddMember(false)}
           onCreated={(newUser) => {
+            logAudit(currentUser, 'member_create', { targetUid: newUser.uid, targetName: newUser.name || newUser.email, details: newUser.role })
             setUsers(prev => [newUser, ...prev])
             setShowAddMember(false)
           }}
@@ -913,6 +917,7 @@ export default function AdminUsersPage() {
           onDelete={isSuperAdmin && selectedUser.uid !== currentUser?.uid ? async (u) => {
             try {
               await deleteUserCompletely(u)
+              logAudit(currentUser, 'user_delete', { targetUid: u.uid, targetName: u.name || u.email })
               setUsers(prev => prev.filter(x => x.uid !== u.uid))
               setSelectedUser(null)
               toast(`${u.name || 'המשתמש'} נמחק`)

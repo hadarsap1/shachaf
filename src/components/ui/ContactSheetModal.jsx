@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Download, Share2, Plus, Trash2, Loader2, GripVertical } from 'lucide-react'
 import clsx from 'clsx'
-import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob } from '../../lib/contactSheet'
+import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob, loadChildPhotoMap } from '../../lib/contactSheet'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from './Toaster'
 
@@ -12,12 +12,27 @@ export default function ContactSheetModal({ className, children, onClose }) {
   const [subtitle, setSubtitle] = useState('')
   const [entries, setEntries] = useState(() => entriesFromChildren(children))
   const [busy, setBusy] = useState(false)
+  // childName → embedded data URL, only for photos parents chose to upload.
+  // Kept separate from the editable entries so photo loading never races edits.
+  const [photoMap, setPhotoMap] = useState({})
+  const [includePhotos, setIncludePhotos] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    loadChildPhotoMap(children).then(map => { if (active) setPhotoMap(map) })
+    return () => { active = false }
+  }, [children])
 
   useEscapeToClose(onClose, !busy)
 
   const svg = useMemo(
-    () => buildSheetSvg({ template, title, subtitle, entries, theme }),
-    [template, title, subtitle, entries, theme]
+    () => buildSheetSvg({
+      template, title, subtitle, theme,
+      entries: includePhotos
+        ? entries.map(e => ({ ...e, photo: photoMap[e.name] }))
+        : entries,
+    }),
+    [template, title, subtitle, entries, theme, photoMap, includePhotos]
   )
   const previewUrl = useMemo(
     () => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
@@ -125,6 +140,17 @@ export default function ContactSheetModal({ className, children, onClose }) {
                 ))}
               </div>
             </div>
+
+            {Object.keys(photoMap).length > 0 && (
+              <label className="flex items-center justify-end gap-2.5 cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+                <span className="text-sm text-gray-700 dark:text-gray-200 text-right">
+                  כלול תמונות ילדים
+                  <span className="block text-xs text-gray-400">רק תמונות שהועלו ע"י ההורים ({Object.keys(photoMap).length})</span>
+                </span>
+                <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)}
+                  className="w-4 h-4 accent-primary-600" />
+              </label>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-2">

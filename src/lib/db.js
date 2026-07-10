@@ -181,6 +181,29 @@ export async function recordConsent(uid, version) {
   })
 }
 
+// ── Audit log ─────────────────────────────────────────────────────────────────
+// Append-only record of privileged actions (role changes, approvals, deletes).
+// Required by the data-security regulations for the annual documented review
+// (docs/security-compliance-plan-2026-07.md §5.4) — rules forbid update/delete
+// for everyone, so entries can't be doctored after the fact.
+// Fire-and-forget: auditing must never block or fail the action itself.
+export function logAudit(actor, action, { targetUid = '', targetName = '', details = '' } = {}) {
+  return addDoc(collection(db, 'auditLog'), {
+    action,
+    actorUid: actor?.uid || '',
+    actorName: actor?.name || actor?.email || '',
+    targetUid, targetName, details,
+    createdAt: serverTimestamp(),
+  }).catch(e => console.error('audit log failed:', action, e))
+}
+
+export async function getAuditLog(max = 200) {
+  const snap = await getDocs(query(
+    collection(db, 'auditLog'), orderBy('createdAt', 'desc'), limit(max),
+  ))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
 // Backfill for pre-2026-07 imported families — lets them browse the
 // unlinked-children roster during onboarding (admin-only by rules)
 async function _markUsersImported(uids) {

@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react'
-import { getMessages, getTasks, getEvents } from '../../lib/db'
-import { Activity, MessageSquare, CheckSquare, Calendar, Loader2 } from 'lucide-react'
+import { getMessages, getTasks, getEvents, getAuditLog } from '../../lib/db'
+import { Activity, MessageSquare, CheckSquare, Calendar, Loader2, ShieldAlert } from 'lucide-react'
+
+// Hebrew labels for append-only audit-log actions (privileged admin actions)
+const AUDIT_LABELS = {
+  role_change:          'שינוי הרשאה',
+  roles_change:         'עדכון תפקידים',
+  status_change:        'שינוי סטטוס',
+  user_delete:          'מחיקת משתמש',
+  member_create:        'הוספת חבר',
+  child_delete:         'מחיקת רשומת ילד',
+  children_bulk_delete: 'מחיקת רשומות ילדים',
+  children_import:      'ייבוא ילדים',
+}
 
 function toDate(ts) {
   if (!ts) return null
@@ -8,8 +20,16 @@ function toDate(ts) {
   return new Date(ts)
 }
 
-function buildLogs(messages, tasks, events) {
+function buildLogs(messages, tasks, events, audit) {
   const logs = []
+
+  audit.forEach(a => {
+    const d = toDate(a.createdAt)
+    if (!d) return
+    const label = AUDIT_LABELS[a.action] || a.action
+    const detail = [a.targetName, a.details].filter(Boolean).join(' · ')
+    logs.push({ id: `audit-${a.id}`, type: 'audit', date: d, title: `${a.actorName || 'מנהל'} — ${label}`, detail: detail || label, icon: ShieldAlert, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/30' })
+  })
 
   messages.forEach(m => {
     const d = toDate(m.createdAt)
@@ -44,9 +64,10 @@ export default function AdminActivityPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([getMessages(), getTasks(), getEvents()])
-      .then(([m, t, e]) => {
-        setLogs(buildLogs(m, t, e))
+    // audit log read is admin-only by rules; tolerate denial for class admins
+    Promise.all([getMessages(), getTasks(), getEvents(), getAuditLog().catch(() => [])])
+      .then(([m, t, e, a]) => {
+        setLogs(buildLogs(m, t, e, a))
         setLoading(false)
       })
       .catch(() => setLoading(false))
