@@ -2,7 +2,10 @@
   "firestore": {
     "rules": "firestore.rules"
   },
-  "storage": {
-    "rules": "storage.rules"
-  }
+  "storage": [
+    {
+      "bucket": "sachaf-66ba1.firebasestorage.app",
+      "rules": "storage.rules"
+    }
+  ]
 }
