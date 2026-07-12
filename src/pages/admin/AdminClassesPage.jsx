@@ -5,6 +5,7 @@ import {
   getChildren, saveChild, deleteChild, bulkImportChildren,
 } from '../../lib/db'
 import { CLASS_COLORS, blankCenterHours } from '../../lib/classColors'
+import { currentSchoolYearLabel } from '../../lib/hebrewYear'
 import {
   GraduationCap, Plus, Edit2, Trash2, X, Check, Users,
   Loader2, Search, Upload, Baby, Cake,
@@ -30,7 +31,7 @@ const blankClass = () => ({
   id: 'class-' + Date.now(),
   name: '',
   grade: 'א',
-  year: 'תשפ״ה',
+  year: currentSchoolYearLabel(),
   color: CLASS_COLORS[0],
   teacherContact: { name: '', phone: '', email: '' },
   assistants: [],
@@ -566,7 +567,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
                 <div className="flex-1">
                   <label className="label">שנת לימודים</label>
                   <input value={draft.year || ''} onChange={e => set('year', e.target.value)}
-                    placeholder="תשפ״ה" className="input w-full" />
+                    placeholder={currentSchoolYearLabel()} className="input w-full" />
                 </div>
               </div>
               <div>
