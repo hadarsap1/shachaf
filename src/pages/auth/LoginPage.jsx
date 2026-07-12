@@ -392,7 +392,7 @@ export default function LoginPage() {
               <div className="mt-5 text-center space-y-3">
                 <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
                   className="text-sm text-primary-600 dark:text-primary-300 hover:underline">
-                  {mode === 'login' ? 'אין לך חשבון? הירשם' : 'יש לך חשבון? כנס'}
+                  {mode === 'login' ? 'אין לך חשבון? הירשם' : 'יש לך חשבון? היכנס'}
                 </button>
 
                 <div className="text-xs text-gray-300">—</div>

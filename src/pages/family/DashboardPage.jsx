@@ -344,7 +344,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex gap-2">
                     <Link to="/class" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5">
-                      <Users size={12} /> חברים.ות בכיתה
+                      <Users size={12} /> חברים/ות בכיתה
                     </Link>
                   </div>
                 </div>

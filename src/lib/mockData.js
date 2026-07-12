@@ -76,7 +76,7 @@ export const MOCK_FORMS = [
       { id: 'f2', type: 'tel',      label: 'טלפון',                  placeholder: '052-0000000',        required: true },
       { id: 'f3', type: 'email',    label: 'אימייל',                  placeholder: 'email@example.com', required: true },
       { id: 'f4', type: 'text',     label: 'כתובת',                  placeholder: 'רחוב, מספר, עיר',   required: true },
-      { id: 'f5', type: 'text',     label: 'שנות וותק בבית הספר',   placeholder: 'לדוגמה: 5',          required: false },
+      { id: 'f5', type: 'text',     label: 'שנות ותק בבית הספר',   placeholder: 'לדוגמה: 5',          required: false },
       { id: 'f6', type: 'textarea', label: 'ספרו קצת על המשפחה',    placeholder: '',                   required: false },
     ],
   },

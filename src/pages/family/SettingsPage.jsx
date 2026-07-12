@@ -50,7 +50,7 @@ const TUTORIALS = [
       'גללו למטה לקטע "הוסף הורה שני"',
       'הזינו את שם ההורה, מייל ומספר טלפון',
       'לחצו "צור חשבון לשותף/ה"',
-      'ישלח לינק לאיפוס סיסמה למייל שהוזן — ההורה השני מתחבר עם המייל שלו',
+      'יישלח לינק לאיפוס סיסמה למייל שהוזן — ההורה השני מתחבר עם המייל שלו',
     ],
   },
   {
@@ -272,7 +272,7 @@ function CoParentSection({ currentUser, onRegistered }) {
           {saving ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
           {saving ? 'יוצר חשבון...' : 'צור חשבון לשותף/ה'}
         </button>
-        <p className="text-xs text-gray-400 text-center">ישלח לינק לאיפוס סיסמה לכתובת המייל שהוזנה</p>
+        <p className="text-xs text-gray-400 text-center">יישלח לינק לאיפוס סיסמה לכתובת המייל שהוזנה</p>
       </form>
     </section>
   )
