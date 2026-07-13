@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getClasses, getChildren, getChildrenByParent, getUsersByUids } from '../../lib/db'
-import { GraduationCap, Phone, Users, Loader2, Mail } from 'lucide-react'
+import { hasConsented, childHasConsentedParent } from '../../lib/consent'
+import { GraduationCap, Phone, Users, Loader2, Mail, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 
@@ -104,16 +105,22 @@ export default function ClassRosterPage() {
     setLoadingRoster(true)
     const loadRoster = async () => {
       const kids = await getChildren(cls.id)
-      setClassChildren(kids)
 
       // Collect all unique parentUids across the class then fetch individually
       const allParentUids = [...new Set(kids.flatMap(k => k.parentUids || []))]
       const parentUsers = await getUsersByUids(allParentUids)
       const userMap = Object.fromEntries(parentUsers.map(u => [u.uid, u]))
 
+      // Privacy: a child appears only after a linked parent approved the
+      // current policy version, and each parent's contact appears only once
+      // THEY approved (covers unclaimed imports and pending co-parents).
+      const visibleKids = kids.filter(k => childHasConsentedParent(k, userMap))
+      setClassChildren(visibleKids)
       const parentMap = {}
-      for (const kid of kids) {
-        parentMap[kid.id] = (kid.parentUids || []).map(uid => userMap[uid]).filter(Boolean)
+      for (const kid of visibleKids) {
+        parentMap[kid.id] = (kid.parentUids || [])
+          .map(uid => userMap[uid])
+          .filter(u => hasConsented(u))
       }
       setParents(parentMap)
       setLoadingRoster(false)
@@ -181,12 +188,17 @@ export default function ClassRosterPage() {
         </div>
       )}
 
+      <p className="flex items-center gap-1.5 justify-end text-xs text-gray-400 mb-3">
+        מוצגות רק משפחות שאישרו את תקנון הפרטיות
+        <ShieldCheck size={13} className="flex-shrink-0" />
+      </p>
+
       {loadingRoster ? (
         <div className="flex justify-center py-10">
           <Loader2 size={28} className="animate-spin text-primary-400" />
         </div>
       ) : classChildren.length === 0 ? (
-        <div className="text-center py-10 text-gray-400 text-sm">אין ילדים רשומים בכיתה</div>
+        <div className="text-center py-10 text-gray-400 text-sm">אין ילדים להצגה — יוצגו רק ילדים שהוריהם אישרו את התקנון</div>
       ) : (
         <div className="space-y-3">
           {classChildren.map(child => (

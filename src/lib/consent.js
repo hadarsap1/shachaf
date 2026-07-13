@@ -7,7 +7,7 @@
 // consent on their next visit. users/{uid}.consentVersion + consentAt are
 // the stored evidence of consent.
 
-export const CONSENT_VERSION = '1.0'
+export const CONSENT_VERSION = '1.1'
 
 export const CONSENT_PURPOSES = [
   'הפקת דף קשר כיתתי וקהילתי לחברי הקהילה',
@@ -21,7 +21,19 @@ export const CONSENT_EXPOSURE =
   'ומשפחה מארחת שהוקצתה לך. שם ילדך וכיתתו יוצגו להורי הכיתה; ' +
   'תמונת ילד תוצג רק אם העלית אותה מרצונך.'
 
+// Where the data physically lives — required disclosure (transfer-of-data
+// regulations). Referenced by the consent dialog, the privacy policy and the
+// "My Privacy" page so the wording stays identical everywhere.
+export const CONSENT_DATA_LOCATION =
+  'המידע נשמר בתשתית הענן Google Firebase (Google Cloud Platform), בשרתי Google ' +
+  'הממוקמים מחוץ לישראל (באיחוד האירופי ובארה"ב), בכפוף להסכמי עיבוד נתונים ' +
+  'מחייבים העומדים בדרישות ה-GDPR ותקנות העברת מידע לחו"ל מכוח חוק הגנת הפרטיות.'
+
 export const CONSENT_POINTS = [
+  {
+    title: 'איפה המידע נשמר',
+    body: CONSENT_DATA_LOCATION,
+  },
   {
     title: 'המידע לא מועבר לצד שלישי',
     body: 'המידע לא יועבר לשום גורם חיצוני ולא ישמש לכל מטרה מסחרית. ' +
@@ -50,4 +62,19 @@ export const CONSENT_CHECKBOX_LABEL =
 // Does this user still need to confirm the current consent version?
 export function needsConsent(user) {
   return !!user && user.consentVersion !== CONSENT_VERSION
+}
+
+// Has this user (or any user doc, e.g. another parent) approved the CURRENT
+// consent version? Used to gate DISPLAY of a member's data to others: until a
+// parent joined and approved the policy, neither their details nor their
+// children's may be shown anywhere.
+export function hasConsented(user) {
+  return !!user && user.consentVersion === CONSENT_VERSION
+}
+
+// A child may be displayed (roster, contact sheet, birthdays…) only when at
+// least one of their LINKED parents approved the current policy version.
+// `parentsByUid` maps uid → user doc (missing docs count as not-consented).
+export function childHasConsentedParent(child, parentsByUid) {
+  return (child?.parentUids || []).some(uid => hasConsented(parentsByUid[uid]))
 }

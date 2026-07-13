@@ -24,6 +24,12 @@ import BusinessDirectoryPage from './pages/family/BusinessDirectoryPage'
 import ClassRosterPage from './pages/family/ClassRosterPage'
 import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
 import PendingApprovalPage from './pages/family/PendingApprovalPage'
+import MyPrivacyPage from './pages/family/MyPrivacyPage'
+
+// Legal pages — public (reachable before login/consent, e.g. from the consent dialog)
+const PrivacyPage       = lazy(() => import('./pages/legal/PrivacyPage'))
+const TermsPage         = lazy(() => import('./pages/legal/TermsPage'))
+const AccessibilityPage = lazy(() => import('./pages/legal/AccessibilityPage'))
 
 // Admin/super pages are lazy-loaded — families never download this code.
 const AdminDashboard        = lazy(() => import('./pages/admin/AdminDashboard'))
@@ -55,18 +61,16 @@ const Spinner = () => (
 
 // Routes alumni (graduated families) may still use — business directory,
 // their own settings, help, and contact. Everything else redirects.
-const ALUMNI_ROUTES = ['/businesses', '/settings', '/help', '/contact']
+const ALUMNI_ROUTES = ['/businesses', '/settings', '/help', '/contact', '/my-privacy']
 
 // Blocks every signed-in view behind the informed-consent dialog until the
 // user approves the current CONSENT_VERSION (new users, existing users after
 // a version bump, and co-parents on their first login).
+// The gated content is NOT rendered at all before approval — pages must not
+// mount (and fetch member/children data) until the user consented.
 function ConsentGate({ user, children }) {
-  return (
-    <>
-      {children}
-      {needsConsent(user) && <ConsentModal />}
-    </>
-  )
+  if (needsConsent(user)) return <ConsentModal />
+  return children
 }
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
@@ -130,6 +134,14 @@ export default function App() {
           <Route path="/onboarding" element={<ProtectedOnboarding />} />
           <Route path="/" element={<RootRedirect />} />
 
+          {/* Legal — public, no auth/consent required */}
+          <Route path="/legal/privacy" element={<PrivacyPage />} />
+          <Route path="/legal/terms" element={<TermsPage />} />
+          <Route path="/legal/accessibility" element={<AccessibilityPage />} />
+          <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
+          <Route path="/terms" element={<Navigate to="/legal/terms" replace />} />
+          <Route path="/accessibility" element={<Navigate to="/legal/accessibility" replace />} />
+
           <Route element={<ProtectedShell />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/tasks" element={<TasksPage />} />
@@ -137,6 +149,7 @@ export default function App() {
             <Route path="/resources" element={<ResourcesPage />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/my-privacy" element={<MyPrivacyPage />} />
             <Route path="/forms" element={<FormFillPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/help" element={<HelpPage />} />

@@ -32,6 +32,7 @@ export const NAV_EMOJI = {
   '/contact':         '💬',
   '/help':            '❓',
   '/settings':        '⚙️',
+  '/my-privacy':      '🔒',
   '/admin':           '🏛️',
   '/admin/users':     '👥',
   '/admin/classes':   '🎓',
@@ -70,6 +71,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/activity',   label: 'פעילות' },
     { heading: 'מערכת' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
+    { to: '/my-privacy',       label: 'הפרטיות שלי' },
     { to: '/help',             label: 'עזרה' },
   ],
   super_admin: [
@@ -92,6 +94,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/super/admins',     label: 'הרשאות מנהלים' },
     { to: '/super/health',     label: 'בקרת תקינות', healthBadge: true },
     { to: '/super/feedback',   label: 'משוב ובאגים', feedbackBadge: true },
+    { to: '/my-privacy',       label: 'הפרטיות שלי' },
     { to: '/help',             label: 'עזרה' },
   ],
 }
@@ -101,6 +104,7 @@ const ALUMNI_NAV = [
   { to: '/businesses', label: 'עסקים בקהילה' },
   { to: '/contact',    label: 'צור קשר' },
   { to: '/help',       label: 'עזרה' },
+  { to: '/my-privacy', label: 'הפרטיות שלי' },
   { to: '/settings',   label: 'הגדרות' },
 ]
 
@@ -128,6 +132,7 @@ function buildMemberNav(allRoles, classIds, className, status) {
   links.push({ to: '/resources', label: 'מידע שימושי' })
   links.push({ to: '/contact',   label: 'צור קשר', contactBadge: true })
   links.push({ to: '/help',      label: 'עזרה' })
+  links.push({ to: '/my-privacy', label: 'הפרטיות שלי' })
   links.push({ to: '/settings',  label: 'הגדרות' })
   return links
 }

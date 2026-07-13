@@ -415,6 +415,9 @@ export default function LoginPage() {
           <Link to="/legal/terms" className="underline hover:text-white">תנאי השימוש</Link>
         </p>
         <p className="text-center text-primary-200 text-xs mt-2">
+          <Link to="/legal/accessibility" className="underline hover:text-white">הצהרת נגישות</Link>
+        </p>
+        <p className="text-center text-primary-200 text-xs mt-2">
           קהילת שחף © {new Date().getFullYear()}
         </p>
       </div>

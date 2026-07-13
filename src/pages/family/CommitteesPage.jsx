@@ -4,8 +4,10 @@ import {
   getEventsByCommittee, joinCommittee, leaveCommittee,
   subscribeCommitteeChat, sendCommitteeChatMessage,
   getCommitteeSummaries, saveCommitteeSummary, deleteCommitteeSummary,
-  requestCommittee,
+  requestCommittee, logConsent,
 } from '../../lib/db'
+import { CONSENT_VERSION } from '../../lib/consent'
+import JoinConsentModal from '../../components/JoinConsentModal'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -273,27 +275,36 @@ function CommitteeCard({ committee }) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [selectedMember, setSelectedMember] = useState(null)
+  const [showJoinConsent, setShowJoinConsent] = useState(false)
 
   const isMember = memberUids.includes(user?.uid)
   const hasContacts = committee.members?.length > 0
 
   const toggle = (panel) => setActivePanel(p => p === panel ? null : panel)
 
-  const handleJoin = async () => {
+  // Leaving is immediate; joining requires the explicit consent checkbox
+  // (JoinConsentModal) — membership exposes the member's name to others.
+  const handleJoinClick = async () => {
     if (!user) return
+    if (!isMember) { setShowJoinConsent(true); return }
     setJoinLoading(true)
     try {
-      if (isMember) {
-        await leaveCommittee(committee.id, user.uid)
-        setMemberUids(u => u.filter(id => id !== user.uid))
-        if (activePanel === 'chat') setActivePanel(null)
-      } else {
-        await joinCommittee(committee.id, user.uid)
-        setMemberUids(u => [...u, user.uid])
-      }
+      await leaveCommittee(committee.id, user.uid)
+      setMemberUids(u => u.filter(id => id !== user.uid))
+      if (activePanel === 'chat') setActivePanel(null)
     } finally {
       setJoinLoading(false)
     }
+  }
+
+  const handleJoinConfirmed = async () => {
+    await joinCommittee(committee.id, user.uid)
+    logConsent(user.uid, 'join_committee', {
+      label: 'אישור הצטרפות לוועדה והצגת שמי לחבריה',
+      version: CONSENT_VERSION,
+      context: committee.name || committee.id,
+    })
+    setMemberUids(u => [...u, user.uid])
   }
 
   const handleShowEvents = async () => {
@@ -328,7 +339,7 @@ function CommitteeCard({ committee }) {
               <h3 className="font-bold text-gray-800 dark:text-gray-100">{committee.name}</h3>
               {/* Join/Leave badge */}
               <button
-                onClick={handleJoin}
+                onClick={handleJoinClick}
                 disabled={joinLoading}
                 className={clsx(
                   'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full transition-[background-color,color] duration-150',
@@ -463,6 +474,15 @@ function CommitteeCard({ committee }) {
       {selectedMember && (
         <ContactModal person={selectedMember} onClose={() => setSelectedMember(null)} />
       )}
+
+      {showJoinConsent && (
+        <JoinConsentModal
+          kind="committee"
+          name={committee.name}
+          onConfirm={handleJoinConfirmed}
+          onClose={() => setShowJoinConsent(false)}
+        />
+      )}
     </div>
   )
 }
@@ -472,15 +492,21 @@ function RequestCommitteePanel({ onClose, onRequested }) {
   const { user } = useAuth()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [consent, setConsent] = useState(false)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !consent) return
     setSaving(true)
     try {
       await requestCommittee({ name: name.trim(), description: description.trim(), requestedBy: user.uid, requestedByName: user.name || '' })
+      logConsent(user.uid, 'join_committee', {
+        label: 'אישור הצטרפות לוועדה שביקשתי והצגת שמי לחבריה',
+        version: CONSENT_VERSION,
+        context: name.trim(),
+      })
       setDone(true)
       onRequested?.()
     } finally {
@@ -516,7 +542,14 @@ function RequestCommitteePanel({ onClose, onRequested }) {
               <textarea value={description} onChange={e => setDescription(e.target.value)}
                 rows={4} className="input w-full text-right text-sm resize-none leading-relaxed" placeholder="תארו את מטרת הוועדה..." />
             </div>
-            <button type="submit" disabled={saving || !name.trim()}
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0" />
+              <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-right">
+                אני מאשר/ת ששמי יוצג כמבקש/ת הוועדה וכחבר/ה בה לאחר האישור, בהתאם לתקנון
+              </span>
+            </label>
+            <button type="submit" disabled={saving || !name.trim() || !consent}
               className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
               {saving ? 'שולח...' : 'שליחת בקשה'}
