@@ -543,7 +543,9 @@ export default function ClassPage() {
                 return (
                   <div key={child.id} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-base leading-none" aria-hidden="true">🧒</span>
+                      {child.photoUrl
+                        ? <img src={child.photoUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                        : <span className="text-base leading-none" aria-hidden="true">🧒</span>}
                       <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{child.name}</span>
                     </div>
                     {parents.length > 0 && (
