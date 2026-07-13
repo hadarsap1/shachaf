@@ -5,12 +5,14 @@ import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob, l
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from './Toaster'
 
-export default function ContactSheetModal({ className, children, onClose }) {
+// consentedParentsByUid — parents who approved the policy (uid → user doc);
+// when provided, only their details appear on the generated sheet.
+export default function ContactSheetModal({ className, children, consentedParentsByUid = null, onClose }) {
   const [template, setTemplate] = useState('cards')
   const [theme, setTheme] = useState('pink')
   const [title, setTitle] = useState(`דף קשר — כיתה ${className}`)
   const [subtitle, setSubtitle] = useState('')
-  const [entries, setEntries] = useState(() => entriesFromChildren(children))
+  const [entries, setEntries] = useState(() => entriesFromChildren(children, consentedParentsByUid))
   const [busy, setBusy] = useState(false)
   // childName → embedded data URL, only for photos parents chose to upload.
   // Kept separate from the editable entries so photo loading never races edits.

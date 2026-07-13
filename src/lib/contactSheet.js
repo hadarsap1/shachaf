@@ -21,14 +21,25 @@ export function formatILPhone(raw) {
 
 // ── Build editable entries from a class's children ─────────────────────────────
 // entry = { name: childName, lines: ['הורה טלפון', ...], photo?: dataURL }
-export function entriesFromChildren(children) {
+//
+// consentedParentsByUid (uid → user doc) — when provided, parent lines are
+// built ONLY from the child's linked users present in the map (parents who
+// registered and approved the current policy version). The raw imported
+// phone-book data (c.parents) also lists parents who never registered or
+// consented, so it must not reach the printed sheet.
+export function entriesFromChildren(children, consentedParentsByUid = null) {
   return [...children]
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
     .map(c => ({
       name: c.name || '',
-      lines: (c.parents || [])
-        .filter(p => p.name || p.phone)
-        .map(p => [p.name, formatILPhone(p.phone)].filter(Boolean).join('  ')),
+      lines: consentedParentsByUid
+        ? (c.parentUids || [])
+            .map(uid => consentedParentsByUid[uid])
+            .filter(u => u && (u.name || u.phone))
+            .map(u => [u.name, formatILPhone(u.phone)].filter(Boolean).join('  '))
+        : (c.parents || [])
+            .filter(p => p.name || p.phone)
+            .map(p => [p.name, formatILPhone(p.phone)].filter(Boolean).join('  ')),
     }))
 }
 
