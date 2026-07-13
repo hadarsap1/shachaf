@@ -5,6 +5,7 @@ import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
+import { hasConsented } from '../../lib/consent'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
@@ -298,6 +299,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [kids, setKids] = useState(null)
   const [classes, setClasses] = useState([])
   const [coParents, setCoParents] = useState([])
+  const [pendingCoParents, setPendingCoParents] = useState(0)
   const [childSearch, setChildSearch] = useState('')
   const [allChildren, setAllChildren] = useState(null)   // lazy-loaded on first search
   const [linkingChild, setLinkingChild] = useState(false)
@@ -308,22 +310,29 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
     Promise.all([getChildrenByParent(user.uid), getClasses()])
       .then(async ([ch, cl]) => {
         setKids(ch); setClasses(cl)
-        // Co-parents from the imported phone-book data on each child (always
-        // includes the second parent, even if they never registered), plus any
-        // registered users linked to the same children. Deduped by email.
+        // Privacy: a co-parent's details are shown ONLY after they registered
+        // AND approved the current policy version. Parents that exist only in
+        // the imported phone-book data (never registered) or registered users
+        // who haven't consented yet appear as an anonymous pending count.
         const myEmail = (user.email || '').toLowerCase()
         const linkedUids = [...new Set(ch.flatMap(k => k.parentUids || []).filter(u => u !== user.uid))]
         const linkedUsers = linkedUids.length ? await getUsersByUids(linkedUids) : []
         const byEmail = new Map()
-        for (const u of linkedUsers) byEmail.set((u.email || '').toLowerCase(), { name: u.name, phone: u.phone, email: u.email, registered: true })
+        for (const u of linkedUsers) {
+          byEmail.set((u.email || '').toLowerCase(), {
+            name: u.name, phone: u.phone, email: u.email, consented: hasConsented(u),
+          })
+        }
         for (const k of ch) {
           for (const p of k.parents || []) {
             const e = (p.email || '').toLowerCase()
             if (!e || e === myEmail || byEmail.has(e)) continue
-            byEmail.set(e, { name: p.name, phone: p.phone, email: p.email, registered: false })
+            byEmail.set(e, { consented: false })  // imported only — no details kept
           }
         }
-        setCoParents([...byEmail.values()])
+        const all = [...byEmail.values()]
+        setCoParents(all.filter(p => p.consented))
+        setPendingCoParents(all.filter(p => !p.consented).length)
       })
       .catch(() => setKids([]))
   }, [user.uid])
@@ -564,8 +573,8 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
             </div>
           </div>
 
-          {/* Co-parents — other parents linked to the same children */}
-          {coParents.length > 0 && (
+          {/* Co-parents — shown only after they registered AND approved the policy */}
+          {(coParents.length > 0 || pendingCoParents > 0) && (
             <div>
               <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">הורה נוסף</label>
               <div className="space-y-1.5">
@@ -578,11 +587,15 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
                       <div className="text-sm font-medium text-gray-700 truncate dark:text-gray-200">{p.name || p.email}</div>
                       {p.phone && <div className="text-xs text-gray-400" dir="ltr">{p.phone}</div>}
                     </div>
-                    {p.registered
-                      ? <span className="text-[10px] text-secondary-600 flex items-center gap-0.5"><Check size={11} /> רשום</span>
-                      : <span className="text-[10px] text-gray-400">לא רשום</span>}
+                    <span className="text-[10px] text-secondary-600 flex items-center gap-0.5"><Check size={11} /> אישר/ה תקנון</span>
                   </div>
                 ))}
+                {pendingCoParents > 0 && (
+                  <p className="text-xs text-gray-400 text-right bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
+                    {pendingCoParents === 1 ? 'הורה נוסף אחד' : `${pendingCoParents} הורים נוספים`} ממתין/ים
+                    להרשמה ולאישור התקנון — פרטיו/הם לא יוצגו עד אז
+                  </p>
+                )}
               </div>
             </div>
           )}

@@ -421,6 +421,7 @@ export default function ClassPage() {
         <ContactSheetModal
           className={cls.name}
           children={classChildren}
+          consentedParentsByUid={Object.fromEntries(classParents.map(u => [u.uid, u]))}
           onClose={() => setShowContactSheet(false)}
         />
       )}
