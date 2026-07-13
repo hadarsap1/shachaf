@@ -38,6 +38,84 @@ h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
 }
 
+/* ── Accessibility (ת"י 5568 / WCAG 2.0 AA) ─────────────────────────────────
+   Global keyboard-focus indicator (WCAG 2.4.7) — visible on every
+   interactive element when navigating with a keyboard, without flashing
+   outlines on mouse clicks. */
+:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+html.dark :focus-visible {
+  outline-color: #93c5fd;
+}
+
+/* Skip-to-content link (WCAG 2.4.1) — first tabbable element, visually
+   hidden until it receives keyboard focus. */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  right: 16px;
+  z-index: 100;
+  background: #1d4ed8;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: top 150ms;
+}
+.skip-link:focus-visible {
+  top: 12px;
+}
+
+/* Reduced motion — honors the OS setting AND the in-app toggle
+   (WCAG 2.2.2, 2.3.3). Animations collapse to a single instant frame. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html.a11y-no-motion *,
+html.a11y-no-motion *::before,
+html.a11y-no-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Underlined links — links identifiable without relying on color alone
+   (WCAG 1.4.1). Applies to real links only, not button-styled elements. */
+html.a11y-links a {
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+/* High contrast — darkens the low-contrast gray text utilities that fall
+   below the 4.5:1 AA ratio on white, and brightens them in dark mode
+   (WCAG 1.4.3/1.4.6). */
+html.a11y-contrast body { color: #000; }
+html.a11y-contrast .text-gray-300,
+html.a11y-contrast .text-gray-400 { color: #374151 !important; }
+html.a11y-contrast .text-gray-500,
+html.a11y-contrast .text-gray-600 { color: #1f2937 !important; }
+html.a11y-contrast .text-gray-700,
+html.a11y-contrast .text-gray-800 { color: #000 !important; }
+html.a11y-contrast .placeholder-gray-400::placeholder { color: #4b5563 !important; }
+html.a11y-contrast [class*="text-white/"] { color: #fff !important; }
+html.a11y-contrast .text-primary-200 { color: #fff !important; }
+html.a11y-contrast.dark body { color: #fff; }
+html.a11y-contrast.dark .dark\:text-gray-400,
+html.a11y-contrast.dark .dark\:text-gray-500 { color: #e5e7eb !important; }
+html.a11y-contrast.dark .dark\:text-gray-300 { color: #f3f4f6 !important; }
+html.a11y-contrast.dark .dark\:text-gray-100,
+html.a11y-contrast.dark .dark\:text-gray-200 { color: #fff !important; }
+
 p, li, figcaption {
   text-wrap: pretty;
 }

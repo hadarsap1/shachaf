@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 
@@ -26,6 +27,11 @@ export { Section, P, Ul }
 
 export default function LegalLayout({ title, children }) {
   const navigate = useNavigate()
+  // Descriptive per-page document title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = `${title} — קהילת שחף`
+    return () => { document.title = 'קהילת שחף' }
+  }, [title])
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       <div className="max-w-2xl mx-auto px-4 py-8">

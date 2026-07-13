@@ -41,6 +41,12 @@ export default function LoginPage() {
   const { user, loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword } = useAuth()
   const navigate = useNavigate()
 
+  // Descriptive page title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = 'התחברות — קהילת שחף'
+    return () => { document.title = 'קהילת שחף' }
+  }, [])
+
   // Redirect when user becomes authenticated (handles iOS redirect return)
   useEffect(() => {
     if (user) {

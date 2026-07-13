@@ -2,7 +2,9 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { AccessibilityProvider } from './context/AccessibilityContext'
 import AppShell from './components/layout/AppShell'
+import AccessibilityWidget from './components/AccessibilityWidget'
 import ConsentModal from './components/ConsentModal'
 import { needsConsent } from './lib/consent'
 
@@ -127,7 +129,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
+      <AccessibilityProvider>
       <AuthProvider>
+        {/* Accessibility menu — present on every page, including login and legal */}
+        <AccessibilityWidget />
         <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -200,6 +205,7 @@ export default function App() {
         </Routes>
         </Suspense>
       </AuthProvider>
+      </AccessibilityProvider>
       </ThemeProvider>
     </BrowserRouter>
   )
