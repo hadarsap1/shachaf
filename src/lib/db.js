@@ -30,6 +30,12 @@ function invalidate(...prefixes) {
   }
 }
 
+// Drop cached entries so the next read refetches — needed by retry flows:
+// a fetch that HANGS (e.g. severed Firestore channel) stays in the cache as
+// a forever-pending promise for the whole TTL, so retrying without eviction
+// would just await the same stuck promise again.
+export function invalidateCache(...prefixes) { invalidate(...prefixes) }
+
 import { db, storage, firebaseConfig } from './firebase'
 
 // ── Storage helpers ───────────────────────────────────────────────────────────

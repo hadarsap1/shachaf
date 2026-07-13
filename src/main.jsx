@@ -4,6 +4,20 @@ import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.jsx'
 
+// PWA: the service worker updates with skipWaiting+clientsClaim, so a new
+// deploy takes over a RUNNING page mid-session. That silently breaks the
+// Firestore WebChannel — in-flight queries hang forever (endless spinners)
+// and lazy chunks with old hashes 404. Reload once when a NEW worker takes
+// control so the app restarts cleanly on the new bundle. The hadController
+// guard skips the very first install (no takeover → no reload loop).
+if ('serviceWorker' in navigator) {
+  let hadController = !!navigator.serviceWorker.controller
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) window.location.reload()
+    hadController = true
+  })
+}
+
 // Error monitoring — no-op unless a DSN is configured
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
