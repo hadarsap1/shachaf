@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids, getChildren, linkChildToParent, logAudit } from '../../lib/db'
+import { getUsers, updateUserProfile, createMember, getClasses, deleteUserCompletely, removeClassAdmin, getChildrenByParent, getUsersByUids, getChildren, linkChildToParent, logAudit, invalidateCache } from '../../lib/db'
 import { toast } from '../../components/ui/Toaster'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
@@ -303,11 +303,21 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [childSearch, setChildSearch] = useState('')
   const [allChildren, setAllChildren] = useState(null)   // lazy-loaded on first search
   const [linkingChild, setLinkingChild] = useState(false)
+  const [kidsError, setKidsError] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEscapeToClose(onClose, !profileSaving)
 
   useEffect(() => {
-    Promise.all([getChildrenByParent(user.uid), getClasses()])
+    setKids(null)
+    setKidsError(false)
+    // Failsafe: a Firestore query can hang indefinitely when the connection
+    // breaks mid-session (e.g. a service-worker update severed the WebChannel).
+    // Cap the wait so the panel shows a retry action instead of an endless
+    // spinner — retrying re-runs this effect via retryKey.
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 12000))
+    Promise.race([Promise.all([getChildrenByParent(user.uid), getClasses()]), timeout])
       .then(async ([ch, cl]) => {
         setKids(ch); setClasses(cl)
         // Privacy: a co-parent's details are shown ONLY after they registered
@@ -334,8 +344,13 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
         setCoParents(all.filter(p => p.consented))
         setPendingCoParents(all.filter(p => !p.consented).length)
       })
-      .catch(() => setKids([]))
-  }, [user.uid])
+      .catch(err => {
+        // Timeout / connection failure → offer retry; a definitive empty
+        // result still renders as "אין ילדים מקושרים" via the then-branch.
+        if (err?.message === 'timeout') setKidsError(true)
+        else setKids([])
+      })
+  }, [user.uid, retryKey])
 
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
   const rawDigits = (user.phone || '').replace(/\D/g, '')
@@ -523,7 +538,17 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
           {/* Linked children */}
           <div>
             <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">ילדים</label>
-            {kids === null ? (
+            {kidsError ? (
+              <div className="text-center py-2">
+                <p className="text-xs text-gray-400 mb-2">הטעינה נמשכת יותר מדי — ייתכן שהחיבור נותק</p>
+                <button
+                  onClick={() => { invalidateCache('childrenBy', 'classes'); setRetryKey(k => k + 1) }}
+                  className="text-xs font-medium text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 rounded-lg px-3 py-1.5 hover:bg-primary-50 dark:hover:bg-primary-900/30"
+                >
+                  נסה שוב
+                </button>
+              </div>
+            ) : kids === null ? (
               <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-gray-300" /></div>
             ) : kids.length === 0 ? (
               <p className="text-sm text-gray-400 text-right">אין ילדים מקושרים</p>
