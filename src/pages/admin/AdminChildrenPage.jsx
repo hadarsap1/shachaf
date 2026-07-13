@@ -752,6 +752,9 @@ export default function AdminChildrenPage() {
                 >
                   {cls?.name || '?'}
                 </div>
+                {child.photoUrl && (
+                  <img src={child.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-800 text-sm dark:text-gray-100">{child.name}</div>
                   <div className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">

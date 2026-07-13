@@ -143,7 +143,7 @@ export default function ContactSheetModal({ className, children, consentedParent
               </div>
             </div>
 
-            {Object.keys(photoMap).length > 0 && (
+            {Object.keys(photoMap).length > 0 ? (
               <label className="flex items-center justify-end gap-2.5 cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
                 <span className="text-sm text-gray-700 dark:text-gray-200 text-right">
                   כלול תמונות ילדים
@@ -152,6 +152,11 @@ export default function ContactSheetModal({ className, children, consentedParent
                 <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)}
                   className="w-4 h-4 accent-primary-600" />
               </label>
+            ) : (
+              <p className="text-xs text-gray-400 text-right bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+                לא נמצאו תמונות ילדים לדף זה — תמונה נכללת רק כשההורה העלה ואישר אותה בהגדרות,
+                ורק לילדים שהוריהם אישרו את התקנון
+              </p>
             )}
 
             <div>
