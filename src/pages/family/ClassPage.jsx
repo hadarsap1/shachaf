@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids } from '../../lib/db'
+import { hasConsented, childHasConsentedParent } from '../../lib/consent'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
@@ -325,11 +326,14 @@ export default function ClassPage() {
       getUsersByUids(cls.adminUids).then(setClassAdmins).catch(() => {})
     }
     getChildren(cls.id).then(async allKids => {
-      setClassChildren(allKids)
       const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
-      if (parentUids.length > 0) {
-        setClassParents(await getUsersByUids(parentUids))
-      }
+      const parents = parentUids.length > 0 ? await getUsersByUids(parentUids) : []
+      const byUid = Object.fromEntries(parents.map(u => [u.uid, u]))
+      // Privacy: a child (roster, birthdays, contact sheet) appears only after
+      // a linked parent approved the current policy; parent contact details
+      // appear only once that parent approved it themselves.
+      setClassChildren(allKids.filter(k => childHasConsentedParent(k, byUid)))
+      setClassParents(parents.filter(u => hasConsented(u)))
     }).catch(() => {})
   }, [cls?.id])
 

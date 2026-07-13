@@ -5,8 +5,10 @@ import {
   getGroupLinks, addGroupLink, deleteGroupLink,
   getGroupFiles, uploadGroupFile, deleteGroupFile,
   getGroupEvents, createGroupEvent, deleteGroupEvent,
-  requestHobbyGroup,
+  requestHobbyGroup, logConsent,
 } from '../../lib/db'
+import { CONSENT_VERSION } from '../../lib/consent'
+import JoinConsentModal from '../../components/JoinConsentModal'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -242,20 +244,29 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
   const [events, setEvents] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [publishAck, setPublishAck] = useState(false)
   const [form, setForm] = useState({ title: '', date: '', time: '', location: '', description: '' })
 
   useEffect(() => {
     getGroupEvents(groupId).then(setEvents).catch(() => setEvents([]))
   }, [groupId])
 
+  // Saving is conditioned on the creator acknowledging that the event details
+  // are uploaded and displayed to the community per the policy (publishAck).
   const handleCreate = async () => {
-    if (!form.title.trim() || !form.date) return
+    if (!form.title.trim() || !form.date || !publishAck) return
     setSaving(true)
     try {
       await createGroupEvent(groupId, uid, form)
+      logConsent(uid, 'event_publish', {
+        label: 'אישור פרסום פרטי אירוע לחברי הקהילה בהתאם לתקנון',
+        version: CONSENT_VERSION,
+        context: form.title.trim(),
+      })
       const updated = await getGroupEvents(groupId)
       setEvents(updated)
       setForm({ title: '', date: '', time: '', location: '', description: '' })
+      setPublishAck(false)
       setShowForm(false)
     } finally { setSaving(false) }
   }
@@ -288,9 +299,16 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
           <input value={form.location} onChange={set('location')} placeholder="מיקום (אופציונלי)" className="w-full input text-sm text-right" />
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" checked={publishAck} onChange={e => setPublishAck(e.target.checked)}
+              className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
+            <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-right">
+              ידוע לי שפרטי האירוע יעלו למערכת ויוצגו לחברי הקהילה בהתאם למפורט בתקנון
+            </span>
+          </label>
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowForm(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">ביטול</button>
-            <button onClick={handleCreate} disabled={saving || !form.title.trim() || !form.date}
+            <button onClick={handleCreate} disabled={saving || !form.title.trim() || !form.date || !publishAck}
               className="text-xs text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-[background-color] duration-150">
               {saving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}שמור
             </button>
@@ -414,6 +432,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
   const [members, setMembers] = useState(null)
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState(null)
+  const [showJoinConsent, setShowJoinConsent] = useState(false)
   const Icon = ICON_MAP[group.icon] || Users
 
   const isMember = memberUids.includes(uid)
@@ -421,20 +440,29 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
 
   const toggle = (panel) => setActivePanel(p => p === panel ? null : panel)
 
-  const handleJoin = async () => {
+  // Leaving is immediate; joining requires the explicit consent checkbox
+  // (JoinConsentModal) — membership exposes the member's name to others.
+  const handleJoinClick = async () => {
+    if (!isMember) { setShowJoinConsent(true); return }
     setJoining(true)
     try {
-      if (isMember) {
-        await leaveHobbyGroup(group.id, uid)
-        setMemberUids(m => m.filter(u => u !== uid))
-        if (activePanel === 'chat') setActivePanel(null)
-      } else {
-        await joinHobbyGroup(group.id, uid)
-        setMemberUids(m => [...m, uid])
-      }
+      await leaveHobbyGroup(group.id, uid)
+      setMemberUids(m => m.filter(u => u !== uid))
+      if (activePanel === 'chat') setActivePanel(null)
     } finally {
       setJoining(false)
     }
+  }
+
+  const handleJoinConfirmed = async () => {
+    await joinHobbyGroup(group.id, uid)
+    logConsent(uid, 'join_group', {
+      label: 'אישור הצטרפות לקבוצה והצגת שמי לחבריה',
+      version: CONSENT_VERSION,
+      context: group.name || group.id,
+    })
+    setMemberUids(m => [...m, uid])
+    setMembers(null) // refetch member list next open — it now includes me
   }
 
   const handleShowMembers = async () => {
@@ -459,7 +487,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-bold text-gray-800 dark:text-gray-100">{group.name}</h3>
               <button
-                onClick={handleJoin}
+                onClick={handleJoinClick}
                 disabled={joining}
                 className={clsx(
                   'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full transition-[background-color,color] duration-150',
@@ -563,6 +591,15 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
       {selectedPerson && (
         <ContactModal person={selectedPerson} onClose={() => setSelectedPerson(null)} />
       )}
+
+      {showJoinConsent && (
+        <JoinConsentModal
+          kind="group"
+          name={group.name}
+          onConfirm={handleJoinConfirmed}
+          onClose={() => setShowJoinConsent(false)}
+        />
+      )}
     </div>
   )
 }
@@ -572,15 +609,21 @@ function RequestGroupPanel({ onClose, onRequested }) {
   const { user } = useAuth()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [consent, setConsent] = useState(false)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !consent) return
     setSaving(true)
     try {
       await requestHobbyGroup({ name: name.trim(), description: description.trim(), requestedBy: user.uid, requestedByName: user.name || '' })
+      logConsent(user.uid, 'join_group', {
+        label: 'אישור הצטרפות לקבוצה שביקשתי והצגת שמי לחבריה',
+        version: CONSENT_VERSION,
+        context: name.trim(),
+      })
       setDone(true)
       onRequested?.()
     } finally {
@@ -616,7 +659,14 @@ function RequestGroupPanel({ onClose, onRequested }) {
               <textarea value={description} onChange={e => setDescription(e.target.value)}
                 rows={4} className="input w-full text-right text-sm resize-none leading-relaxed" placeholder="תארו את מטרת הקבוצה..." />
             </div>
-            <button type="submit" disabled={saving || !name.trim()}
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0" />
+              <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-right">
+                אני מאשר/ת ששמי יוצג כמבקש/ת הקבוצה וכחבר/ה בה לאחר האישור, בהתאם לתקנון
+              </span>
+            </label>
+            <button type="submit" disabled={saving || !name.trim() || !consent}
               className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
               {saving ? 'שולח...' : 'שליחת בקשה'}

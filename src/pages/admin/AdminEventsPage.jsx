@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getEvents, saveEvent, deleteEvent, getClasses, getCommittees, uploadEventImage, deleteEventImage } from '../../lib/db'
+import { getEvents, saveEvent, deleteEvent, getClasses, getCommittees, uploadEventImage, deleteEventImage, logConsent } from '../../lib/db'
+import { CONSENT_VERSION } from '../../lib/consent'
 import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import CalendarGrid from '../../components/ui/CalendarGrid'
@@ -145,6 +146,10 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(event.imageUrl || null)
   const [saving, setSaving] = useState(false)
+  // Publication acknowledgment — a NEW event can't be saved until its creator
+  // confirms the details will be displayed per the policy (existing events
+  // were already acknowledged at creation).
+  const [publishAck, setPublishAck] = useState(!isNew)
   const fileInputRef = useRef(null)
 
   useEscapeToClose(onClose, !saving)
@@ -160,6 +165,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
     if (!draft.date) e.date = 'שדה חובה'
     const groups = draft.targetGroups || []
     if (groups.length === 0) e.targetGroups = 'יש לבחור לפחות קהל יעד אחד'
+    if (!publishAck) e.publishAck = 'יש לאשר את פרסום פרטי האירוע כתנאי לשמירה'
     return e
   }
 
@@ -398,7 +404,20 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
 
         </div>
 
-        <div className="px-4 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
+        <div className="px-4 py-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={publishAck}
+              onChange={e => { setPublishAck(e.target.checked); setErrors(er => ({ ...er, publishAck: '' })) }}
+              className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+            />
+            <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-right">
+              ידוע לי שפרטי האירוע יעלו למערכת ויוצגו לחברי הקהילה בהתאם למפורט בתקנון ובמדיניות הפרטיות
+            </span>
+          </label>
+          {errors.publishAck && <p className="text-xs text-red-500 text-right">{errors.publishAck}</p>}
+          <div className="flex gap-2">
           <button onClick={handleSave} disabled={saving} className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2">
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
             {saving ? 'שומר...' : 'שמור'}
@@ -406,6 +425,7 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
           <button onClick={onClose} disabled={saving} className="px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm dark:border-gray-700 dark:hover:bg-gray-700/50">
             ביטול
           </button>
+          </div>
         </div>
       </div>
     </>
@@ -469,8 +489,18 @@ export default function AdminEventsPage() {
   const handleSave = async (saved, newImageFile, shouldRemoveImage) => {
     setEditing(null)
     try {
-      if (saved.id?.startsWith('event-') && user?.uid) saved.createdBy = user.uid
+      const isNewEvent = saved.id?.startsWith('event-')
+      if (isNewEvent && user?.uid) saved.createdBy = user.uid
       let persisted = await saveEvent(saved)
+      // The panel blocks saving a new event until the creator ticked the
+      // publication acknowledgment — record that consent as evidence.
+      if (isNewEvent && user?.uid) {
+        logConsent(user.uid, 'event_publish', {
+          label: 'אישור פרסום פרטי אירוע לחברי הקהילה בהתאם לתקנון',
+          version: CONSENT_VERSION,
+          context: saved.title || '',
+        })
+      }
 
       if (newImageFile) {
         const { url, path } = await uploadEventImage(persisted.id, newImageFile)

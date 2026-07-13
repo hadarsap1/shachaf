@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getNewFamilies, getTasks } from '../../lib/db'
+import { hasConsented } from '../../lib/consent'
 import { Users, MessageCircle, Loader2, X, Phone, MapPin, Mail } from 'lucide-react'
 
 function FamilyDetailPanel({ family, onClose }) {
@@ -125,7 +126,10 @@ export default function FamiliesPage() {
 
   useEffect(() => {
     Promise.all([getNewFamilies(), getTasks()])
-      .then(([newFamilies, allTasks]) => {
+      .then(([allNewFamilies, allTasks]) => {
+        // Privacy: a family's details appear to hosts only after that family
+        // approved the current policy version.
+        const newFamilies = allNewFamilies.filter(f => hasConsented(f))
         setFamilies(newFamilies)
         const counts = {}
         newFamilies.forEach(f => {

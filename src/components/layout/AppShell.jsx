@@ -32,6 +32,7 @@ export const NAV_EMOJI = {
   '/contact':         '💬',
   '/help':            '❓',
   '/settings':        '⚙️',
+  '/my-privacy':      '🔒',
   '/admin':           '🏛️',
   '/admin/users':     '👥',
   '/admin/classes':   '🎓',
@@ -70,6 +71,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/activity',   label: 'פעילות' },
     { heading: 'מערכת' },
     { to: '/admin/emergency',  label: 'מצב חירום' },
+    { to: '/my-privacy',       label: 'הפרטיות שלי' },
     { to: '/help',             label: 'עזרה' },
   ],
   super_admin: [
@@ -92,6 +94,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/super/admins',     label: 'הרשאות מנהלים' },
     { to: '/super/health',     label: 'בקרת תקינות', healthBadge: true },
     { to: '/super/feedback',   label: 'משוב ובאגים', feedbackBadge: true },
+    { to: '/my-privacy',       label: 'הפרטיות שלי' },
     { to: '/help',             label: 'עזרה' },
   ],
 }
@@ -101,6 +104,7 @@ const ALUMNI_NAV = [
   { to: '/businesses', label: 'עסקים בקהילה' },
   { to: '/contact',    label: 'צור קשר' },
   { to: '/help',       label: 'עזרה' },
+  { to: '/my-privacy', label: 'הפרטיות שלי' },
   { to: '/settings',   label: 'הגדרות' },
 ]
 
@@ -128,6 +132,7 @@ function buildMemberNav(allRoles, classIds, className, status) {
   links.push({ to: '/resources', label: 'מידע שימושי' })
   links.push({ to: '/contact',   label: 'צור קשר', contactBadge: true })
   links.push({ to: '/help',      label: 'עזרה' })
+  links.push({ to: '/my-privacy', label: 'הפרטיות שלי' })
   links.push({ to: '/settings',  label: 'הגדרות' })
   return links
 }
@@ -153,6 +158,7 @@ function NavLink({ to, label, onClick, unread = 0, count = 0, sub = false }) {
     <Link
       to={to}
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
       className={clsx(
         'flex items-center gap-3 rounded-2xl font-medium transition-all duration-150 select-none',
         sub ? 'px-3 py-2 text-sm ms-3' : 'px-4 py-3 text-base',
@@ -257,7 +263,7 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
+      <nav aria-label="ניווט ראשי" className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
         {links.map((link, i) => (
           link.heading ? (
             <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold text-white/35 uppercase tracking-wide">
@@ -424,10 +430,17 @@ export default function AppShell() {
     }
   }
 
+  // Descriptive per-page document title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = pageTitle ? `${pageTitle} — קהילת שחף` : 'קהילת שחף'
+  }, [pageTitle])
+
   const sidebarBg = 'bg-[#0d1b35]'
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+      {/* Skip to main content (WCAG 2.4.1) — first tabbable element */}
+      <a href="#main-content" className="skip-link">דילוג לתוכן הראשי</a>
       {showTutorial && <WelcomeTutorial onDone={handleTutorialDone} />}
       {/* Desktop sidebar */}
       <aside className={clsx('hidden md:flex flex-col flex-shrink-0 relative', sidebarBg)} style={{ width: sidebarWidth }} dir="rtl">
@@ -470,7 +483,7 @@ export default function AppShell() {
                 <img src="/logo.png" alt="קהילת שחף" className="h-12 w-auto object-contain" />
               </div>
             </div>
-            <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
+            <nav aria-label="ניווט ראשי" className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
               {links.map((link, i) => (
                 link.heading ? (
                   <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold text-white/35 tracking-wide">{link.heading}</div>
@@ -533,7 +546,7 @@ export default function AppShell() {
           </button>
         </header>
 
-        <main key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in">
+        <main id="main-content" tabIndex={-1} key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in focus:outline-none">
           <RouteErrorBoundary resetKey={pathname} uid={user?.uid} userName={user?.name}>
             <Outlet />
           </RouteErrorBoundary>
@@ -545,17 +558,17 @@ export default function AppShell() {
 
         {/* Mobile bottom nav */}
         {bottomLinks.length > 0 && (
-          <nav className="md:hidden flex items-center justify-around border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 pb-[env(safe-area-inset-bottom)] flex-shrink-0">
+          <nav aria-label="ניווט תחתון" className="md:hidden flex items-center justify-around border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 pb-[env(safe-area-inset-bottom)] flex-shrink-0">
             {bottomLinks.map(link => {
               const active = pathname === link.to || (link.to !== '/dashboard' && link.to !== '/admin' && pathname.startsWith(link.to))
               const emoji = NAV_EMOJI[link.to] || '•'
               return (
-                <Link key={link.to} to={link.to}
+                <Link key={link.to} to={link.to} aria-current={active ? 'page' : undefined}
                   className={clsx(
                     'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 relative',
                     active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                   )}>
-                  <span className={clsx('text-2xl leading-none', active ? 'scale-110' : '')} style={{ filter: active ? 'none' : 'grayscale(0.3)' }}>
+                  <span aria-hidden className={clsx('text-2xl leading-none', active ? 'scale-110' : '')} style={{ filter: active ? 'none' : 'grayscale(0.3)' }}>
                     {emoji}
                   </span>
                   <span className="text-[11px] font-medium mt-0.5">{link.label}</span>

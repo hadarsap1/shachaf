@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent } from '../../lib/db'
+import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent, getUsersByUids, logConsent } from '../../lib/db'
+import { CONSENT_VERSION, hasConsented } from '../../lib/consent'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X, Calendar } from 'lucide-react'
@@ -152,6 +153,15 @@ function CoParentSection({ currentUser, onRegistered }) {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
+  // null = unknown (doc unreadable until their first login) → treated as pending
+  const [coParentConsented, setCoParentConsented] = useState(null)
+
+  useEffect(() => {
+    if (!existing?.uid) return
+    getUsersByUids([existing.uid])
+      .then(([u]) => setCoParentConsented(hasConsented(u)))
+      .catch(() => setCoParentConsented(null))
+  }, [existing?.uid])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -180,7 +190,12 @@ function CoParentSection({ currentUser, onRegistered }) {
           <UserPlus size={16} className="text-primary-600" />
           הורה שני
         </h2>
-        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl dark:bg-green-900/20">
+        <div className={clsx(
+          'flex items-center gap-3 p-3 border rounded-xl',
+          coParentConsented
+            ? 'bg-green-50 border-green-200 dark:bg-green-900/20'
+            : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20'
+        )}>
           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 font-bold text-primary-700 dark:text-primary-300 dark:bg-primary-900/40">
             {existing.name?.[0] || '?'}
           </div>
@@ -189,9 +204,15 @@ function CoParentSection({ currentUser, onRegistered }) {
             <div className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{existing.email}</div>
             {existing.phone && <div className="text-xs text-gray-500 dark:text-gray-400">{existing.phone}</div>}
           </div>
-          <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" />
+          {coParentConsented
+            ? <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" />
+            : <Clock size={18} className="text-amber-500 flex-shrink-0" />}
         </div>
-        <p className="text-xs text-gray-400 mt-2 text-right">ההורה השני מקושר לחשבון ויש לו גישה מלאה</p>
+        <p className="text-xs text-gray-400 mt-2 text-right">
+          {coParentConsented
+            ? 'ההורה השני מקושר לחשבון ויש לו גישה מלאה'
+            : 'ממתין לאישור התקנון — פרטי ההורה השני לא יוצגו לחברי הקהילה עד שיתחבר ויאשר את תקנון הפרטיות'}
+        </p>
       </section>
     )
   }
@@ -273,16 +294,20 @@ function CoParentSection({ currentUser, onRegistered }) {
           {saving ? 'יוצר חשבון...' : 'צור חשבון לשותף/ה'}
         </button>
         <p className="text-xs text-gray-400 text-center">יישלח לינק לאיפוס סיסמה לכתובת המייל שהוזנה</p>
+        <p className="text-xs text-gray-400 text-center">
+          פרטי ההורה השני יוצגו לחברי הקהילה רק לאחר שיתחבר ויאשר את תקנון הפרטיות בעצמו
+        </p>
       </form>
     </section>
   )
 }
 
-function ChildProfileCard({ child }) {
+function ChildProfileCard({ child, user }) {
   const [form, setForm] = useState({ pet: child.pet || '', birthDate: child.birthDate || '' })
   const [hobbiesInput, setHobbiesInput] = useState((child.hobbies || []).join(', '))
   const [photoPreview, setPhotoPreview] = useState(child.photoUrl || null)
   const [photoFile, setPhotoFile] = useState(null)
+  const [photoConsent, setPhotoConsent] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [photoError, setPhotoError] = useState('')
@@ -292,10 +317,17 @@ function ChildProfileCard({ child }) {
     const file = e.target.files?.[0]
     if (!file || !file.type.startsWith('image/')) return
     setPhotoFile(file)
+    setPhotoConsent(false)
     setPhotoPreview(URL.createObjectURL(file))
   }
 
   const handleSave = async () => {
+    // Uploading a child photo requires explicit parental consent to its
+    // display — the photo appears in the app and on the class contact sheet.
+    if (photoFile && !photoConsent) {
+      setPhotoError('כדי לשמור את התמונה יש לאשר את הצגתה באפליקציה ובדף הקשר')
+      return
+    }
     setSaving(true)
     setPhotoError('')
     let photoFailed = false
@@ -306,7 +338,15 @@ function ChildProfileCard({ child }) {
         try {
           if (currentPhotoPath) await deleteChildPhoto(currentPhotoPath)
           const { url, path } = await uploadChildPhoto(child.id, photoFile)
-          await updateChildProfile(child.id, { photoUrl: url, photoPath: path })
+          await updateChildProfile(child.id, {
+            photoUrl: url, photoPath: path,
+            photoConsentAt: new Date().toISOString(),
+          })
+          logConsent(user.uid, 'child_photo', {
+            label: 'אישור הצגת תמונת ילד/ה באפליקציה ובדף הקשר',
+            version: CONSENT_VERSION,
+            context: child.name || child.id,
+          })
           setCurrentPhotoPath(path)
           setPhotoPreview(url)
           setPhotoFile(null)
@@ -384,10 +424,24 @@ function ChildProfileCard({ child }) {
           placeholder="כלב, חתול..."
         />
       </div>
+      {photoFile && (
+        <label className="flex items-start gap-2 cursor-pointer bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 dark:bg-amber-900/20 dark:border-amber-800">
+          <input
+            type="checkbox"
+            checked={photoConsent}
+            onChange={e => { setPhotoConsent(e.target.checked); setPhotoError('') }}
+            className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0"
+          />
+          <span className="text-xs text-amber-800 leading-relaxed text-right dark:text-amber-200">
+            אני מאשר/ת שתמונת ילדי תוצג באפליקציה ובדף הקשר הכיתתי, בהתאם לתקנון.
+            ניתן להסיר את התמונה בכל עת.
+          </span>
+        </label>
+      )}
       {photoError && <p className="text-xs text-red-600 text-right bg-red-50 rounded-lg px-2.5 py-1.5 dark:bg-red-900/20 dark:text-red-400">{photoError}</p>}
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || (photoFile && !photoConsent)}
         className={clsx(
           'w-full py-2 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2',
           saved ? 'bg-green-500 text-white' : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-70'
@@ -666,7 +720,7 @@ export default function SettingsPage() {
           </h2>
           <div className="space-y-3">
             {children.map(child => (
-              <ChildProfileCard key={child.id} child={child} />
+              <ChildProfileCard key={child.id} child={child} user={user} />
             ))}
           </div>
         </section>

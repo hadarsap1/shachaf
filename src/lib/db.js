@@ -174,11 +174,36 @@ const ALLOWED_PROFILE_FIELDS = [
 
 // Record the user's informed consent — consentVersion + consentAt on the
 // user doc are the stored evidence required by the privacy regulations.
+// Also appended to the immutable consentLog (see logConsent).
 export async function recordConsent(uid, version) {
   await updateDoc(doc(db, 'users', uid), {
     consentVersion: version,
     consentAt: serverTimestamp(),
   })
+  logConsent(uid, 'initial_consent', { label: 'אישור תקנון ומדיניות פרטיות', version })
+}
+
+// ── Consent log ───────────────────────────────────────────────────────────────
+// Append-only evidence of every consent checkbox the user ticked: the initial
+// policy approval, child-photo publication, committee/group joins, event
+// publication acknowledgments. Rules forbid update/delete so entries can't be
+// doctored. Fire-and-forget: logging must never block or fail the action.
+export function logConsent(uid, type, { label = '', version = '', context = '' } = {}) {
+  return addDoc(collection(db, 'consentLog'), {
+    uid, type,
+    label: String(label).slice(0, 200),
+    version: String(version).slice(0, 20),
+    context: String(context).slice(0, 500),
+    ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '').slice(0, 300),
+    createdAt: serverTimestamp(),
+  }).catch(e => console.error('consent log failed:', type, e))
+}
+
+// The user's own consent history — shown on the "My Privacy" page.
+export async function getMyConsentLog(uid) {
+  const snap = await getDocs(query(collection(db, 'consentLog'), where('uid', '==', uid)))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
 }
 
 // ── Audit log ─────────────────────────────────────────────────────────────────
@@ -244,7 +269,7 @@ async function _updateUserProfile(uid, data) {
 
 async function _updateChildProfile(childId, data) {
   const safe = Object.fromEntries(
-    Object.entries(data).filter(([k]) => ['hobbies', 'pet', 'photoUrl', 'photoPath', 'birthDate'].includes(k))
+    Object.entries(data).filter(([k]) => ['hobbies', 'pet', 'photoUrl', 'photoPath', 'photoConsentAt', 'birthDate'].includes(k))
   )
   if (Object.keys(safe).length === 0) return
   await updateDoc(doc(db, 'children', childId), safe)

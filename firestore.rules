@@ -283,7 +283,7 @@ service cloud.firestore {
                       || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []).size() > 0);
       allow update: if request.auth != null
                     && request.auth.uid in resource.data.parentUids
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath', 'birthDate'])
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentUids', 'hobbies', 'pet', 'photoUrl', 'photoPath', 'photoConsentAt', 'birthDate'])
                     && request.resource.data.get('hobbies', []).size() <= 30
                     && request.resource.data.get('pet', '').size() <= 200;
       // Onboarding: an imported family can claim an unlinked child by setting parentUids to [themselves]
@@ -320,6 +320,27 @@ service cloud.firestore {
         && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
               in ['admin', 'super_admin']
             || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []).size() > 0);
+      // no update/delete — append-only by design
+    }
+
+    // Consent log — append-only evidence of every consent checkbox a user
+    // ticked (initial policy approval, child-photo publication, group joins,
+    // event-publication acknowledgments). Each user may create entries about
+    // themselves and read their own history; admins may read everything;
+    // nobody may update or delete, so consent evidence can't be doctored.
+    match /consentLog/{entryId} {
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.get('type', '').size() > 0
+        && request.resource.data.get('type', '').size() <= 60
+        && request.resource.data.get('label', '').size() <= 200
+        && request.resource.data.get('version', '').size() <= 20
+        && request.resource.data.get('context', '').size() <= 500
+        && request.resource.data.get('ua', '').size() <= 300;
+      allow read: if request.auth != null
+        && (resource.data.uid == request.auth.uid
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+               in ['admin', 'super_admin']);
       // no update/delete — append-only by design
     }
 

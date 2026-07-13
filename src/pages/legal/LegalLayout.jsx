@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 
@@ -26,6 +27,11 @@ export { Section, P, Ul }
 
 export default function LegalLayout({ title, children }) {
   const navigate = useNavigate()
+  // Descriptive per-page document title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = `${title} — קהילת שחף`
+    return () => { document.title = 'קהילת שחף' }
+  }, [title])
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -48,11 +54,11 @@ export default function LegalLayout({ title, children }) {
         </div>
 
         <div className="flex justify-center gap-4 mt-6 text-xs text-gray-400">
-          <Link to="/terms" className="hover:text-gray-600 dark:text-gray-300">תנאי שימוש</Link>
+          <Link to="/legal/terms" className="hover:text-gray-600 dark:text-gray-300">תנאי שימוש</Link>
           <span>·</span>
-          <Link to="/privacy" className="hover:text-gray-600 dark:text-gray-300">מדיניות פרטיות</Link>
+          <Link to="/legal/privacy" className="hover:text-gray-600 dark:text-gray-300">מדיניות פרטיות</Link>
           <span>·</span>
-          <Link to="/accessibility" className="hover:text-gray-600 dark:text-gray-300">נגישות</Link>
+          <Link to="/legal/accessibility" className="hover:text-gray-600 dark:text-gray-300">הצהרת נגישות</Link>
         </div>
         <p className="text-center text-gray-400 text-xs mt-2">
           קהילת שחף © {new Date().getFullYear()}

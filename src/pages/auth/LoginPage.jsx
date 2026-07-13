@@ -41,6 +41,12 @@ export default function LoginPage() {
   const { user, loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword } = useAuth()
   const navigate = useNavigate()
 
+  // Descriptive page title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = 'התחברות — קהילת שחף'
+    return () => { document.title = 'קהילת שחף' }
+  }, [])
+
   // Redirect when user becomes authenticated (handles iOS redirect return)
   useEffect(() => {
     if (user) {
@@ -413,6 +419,9 @@ export default function LoginPage() {
           <Link to="/legal/privacy" className="underline hover:text-white">מדיניות הפרטיות</Link>
           {' ואת '}
           <Link to="/legal/terms" className="underline hover:text-white">תנאי השימוש</Link>
+        </p>
+        <p className="text-center text-primary-200 text-xs mt-2">
+          <Link to="/legal/accessibility" className="underline hover:text-white">הצהרת נגישות</Link>
         </p>
         <p className="text-center text-primary-200 text-xs mt-2">
           קהילת שחף © {new Date().getFullYear()}
