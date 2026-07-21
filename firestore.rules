@@ -153,7 +153,10 @@ service cloud.firestore {
                           && resource.data.attendeeUids.removeAll(request.resource.data.attendeeUids) == [request.auth.uid])
                        );
 
-      // Group members can create and delete events scoped to their group
+      // Group members can create and delete events scoped to their group.
+      // targetGroups/classIds are display-audience only (events are readable by
+      // every authenticated user), so they are not a security boundary — the
+      // group membership + createdBy are what gate creation.
       allow create: if request.auth != null
                     && validEventContent()
                     && request.resource.data.groupId is string
@@ -161,6 +164,17 @@ service cloud.firestore {
                     && request.auth.uid in get(/databases/$(database)/documents/hobbyGroups/$(request.resource.data.groupId)).data.get('memberUids', []);
       allow delete: if request.auth != null
                     && resource.data.groupId is string
+                    && resource.data.createdBy == request.auth.uid;
+
+      // Committee members can likewise create and delete events scoped to a
+      // committee they belong to. Same reasoning as the group rule above.
+      allow create: if request.auth != null
+                    && validEventContent()
+                    && request.resource.data.committeeId is string
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.auth.uid in get(/databases/$(database)/documents/committees/$(request.resource.data.committeeId)).data.get('memberUids', []);
+      allow delete: if request.auth != null
+                    && resource.data.committeeId is string
                     && resource.data.createdBy == request.auth.uid;
     }
 

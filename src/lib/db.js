@@ -997,7 +997,7 @@ export async function getGroupEvents(groupId) {
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 }
 
-async function _createGroupEvent(groupId, uid, { title, date, time, location, description }) {
+async function _createGroupEvent(groupId, uid, { title, date, time, location, description, targetGroups, classIds }) {
   await addDoc(collection(db, 'events'), {
     groupId,
     createdBy: uid,
@@ -1007,12 +1007,39 @@ async function _createGroupEvent(groupId, uid, { title, date, time, location, de
     location: String(location || '').slice(0, 300),
     description: String(description || '').slice(0, 2000),
     type: 'community',
+    // Display audience chosen by the creator (see EventAudienceFields). The
+    // event is anchored to the group via groupId regardless, so it always
+    // shows in the group's own events tab.
+    targetGroups: targetGroups?.length ? targetGroups : ['all'],
+    classIds: classIds || [],
     attendeeUids: [],
     createdAt: serverTimestamp(),
   })
 }
 
 async function _deleteGroupEvent(id) {
+  await deleteDoc(doc(db, 'events', id))
+}
+
+// ── Committee-scoped events (created by a committee member) ────────────────────
+async function _createCommitteeEvent(committeeId, uid, { title, date, time, location, description, targetGroups, classIds }) {
+  await addDoc(collection(db, 'events'), {
+    committeeId,
+    createdBy: uid,
+    title: String(title).slice(0, 200),
+    date,
+    time: time || '',
+    location: String(location || '').slice(0, 300),
+    description: String(description || '').slice(0, 2000),
+    type: 'community',
+    targetGroups: targetGroups?.length ? targetGroups : ['all'],
+    classIds: classIds || [],
+    attendeeUids: [],
+    createdAt: serverTimestamp(),
+  })
+}
+
+async function _deleteCommitteeEvent(id) {
   await deleteDoc(doc(db, 'events', id))
 }
 
@@ -1229,6 +1256,8 @@ export async function deleteEvent(...args) { const r = await _deleteEvent(...arg
 export async function rsvpEvent(...args) { const r = await _rsvpEvent(...args); invalidate('events'); return r }
 export async function createGroupEvent(...args) { const r = await _createGroupEvent(...args); invalidate('events'); return r }
 export async function deleteGroupEvent(...args) { const r = await _deleteGroupEvent(...args); invalidate('events'); return r }
+export async function createCommitteeEvent(...args) { const r = await _createCommitteeEvent(...args); invalidate('events'); return r }
+export async function deleteCommitteeEvent(...args) { const r = await _deleteCommitteeEvent(...args); invalidate('events'); return r }
 export async function saveCommittee(...args) { const r = await _saveCommittee(...args); invalidate('committees'); return r }
 export async function deleteCommittee(...args) { const r = await _deleteCommittee(...args); invalidate('committees'); return r }
 export async function joinCommittee(...args) { const r = await _joinCommittee(...args); invalidate('committees'); return r }
