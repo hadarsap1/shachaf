@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids } from '../../lib/db'
-import { hasConsented, childHasConsentedParent } from '../../lib/consent'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent } from '../../lib/db'
+import { hasConsented, childHasConsentedParent, CONSENT_VERSION } from '../../lib/consent'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
-  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact,
+  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact, Plus,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
@@ -278,6 +278,85 @@ function ChildNoteCard({ child, parentId, color }) {
   )
 }
 
+// ── Class-admin event creation (from within the class) ────────────────────────
+// A class admin (or global admin) can create an event scoped to THIS class,
+// straight from the class page. The event is class-scoped by the Firestore
+// rule (classIds must be within the creator's classAdminFor), so the audience
+// is the class itself — broader broadcasts go through a global admin.
+function ClassEventCreate({ cls, uid, onCreated }) {
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [publishAck, setPublishAck] = useState(false)
+  const [form, setForm] = useState({ title: '', date: '', time: '', location: '', description: '' })
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleCreate = async () => {
+    if (!form.title.trim() || !form.date || !publishAck) return
+    setSaving(true)
+    try {
+      await saveEvent({
+        id: 'event-' + Date.now(),
+        title: form.title.trim(),
+        description: form.description.trim(),
+        date: form.date,
+        time: form.time || '',
+        location: form.location.trim(),
+        type: 'social',
+        targetGroups: ['class'],
+        classIds: [cls.id],
+        createdBy: uid,
+        attendeeUids: [],
+      })
+      logConsent(uid, 'event_publish', {
+        label: 'אישור פרסום פרטי אירוע לחברי הקהילה בהתאם לתקנון',
+        version: CONSENT_VERSION,
+        context: form.title.trim(),
+      })
+      setForm({ title: '', date: '', time: '', location: '', description: '' })
+      setPublishAck(false)
+      setOpen(false)
+      onCreated?.()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="mb-4">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors">
+        <Plus size={15} />
+        צור אירוע לכיתה {cls.name}
+      </button>
+      {open && (
+        <div className="mt-3 bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100 dark:bg-gray-900 dark:border-gray-700">
+          <input value={form.title} onChange={set('title')} placeholder="שם האירוע *" className="w-full input text-sm text-right" />
+          <div className="flex gap-2">
+            <input value={form.date} onChange={set('date')} type="date" className="flex-1 input text-sm" />
+            <input value={form.time} onChange={set('time')} type="time" className="w-28 input text-sm" />
+          </div>
+          <input value={form.location} onChange={set('location')} placeholder="מיקום (אופציונלי)" className="w-full input text-sm text-right" />
+          <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
+            className="w-full input text-sm text-right resize-none" />
+          <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי כיתה {cls.name}</p>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" checked={publishAck} onChange={e => setPublishAck(e.target.checked)}
+              className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
+            <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-right">
+              ידוע לי שפרטי האירוע יעלו למערכת ויוצגו לחברי הכיתה בהתאם למפורט בתקנון
+            </span>
+          </label>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setOpen(false)} className="text-xs text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">ביטול</button>
+            <button onClick={handleCreate} disabled={saving || !form.title.trim() || !form.date || !publishAck}
+              className="text-xs text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-40 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-[background-color] duration-150">
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}שמור
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ClassPage() {
@@ -473,6 +552,15 @@ export default function ClassPage() {
               ))}
             </div>
           </Section>
+        )}
+
+        {/* Class admins can create an event for this class, from within it */}
+        {cls && (isAdmin || (user?.classAdminFor || []).includes(cls.id)) && (
+          <ClassEventCreate
+            cls={cls}
+            uid={user.uid}
+            onCreated={() => getEvents().then(setEvents).catch(() => {})}
+          />
         )}
 
         {/* Upcoming events for this class */}

@@ -38,6 +38,8 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   })
   // hobby group with parent1 as a member — for groupLinks URL-scheme tests
   await setDoc(doc(db, 'hobbyGroups', 'groupX'), { name: 'Group X', memberUids: ['parent1'] })
+  // committee with parent1 as a member — for committee-event create tests
+  await setDoc(doc(db, 'committees', 'commX'), { name: 'Committee X', memberUids: ['parent1'] })
 })
 
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
@@ -116,6 +118,21 @@ await check('group member can create a group event within caps',
 await check('group member CANNOT create a group event with oversized description',
   setDoc(doc(parent, 'events', 'ev4'), {
     title: 'מפגש', description: 'א'.repeat(5001), groupId: 'groupX', createdBy: 'parent1', date: '2030-06-01',
+  }), 'deny')
+await check('committee member can create a committee event (any targetGroups)',
+  setDoc(doc(parent, 'events', 'ev5'), {
+    title: 'ישיבת ועדה', committeeId: 'commX', createdBy: 'parent1', date: '2030-07-01',
+    targetGroups: ['all'], classIds: [],
+  }), 'allow')
+await check('committee member can delete their own committee event',
+  deleteDoc(doc(parent, 'events', 'ev5')), 'allow')
+await check('non-member CANNOT create an event for a committee they are not in',
+  setDoc(doc(stranger, 'events', 'ev6'), {
+    title: 'ישיבה', committeeId: 'commX', createdBy: 'stranger1', date: '2030-07-01',
+  }), 'deny')
+await check('member CANNOT create a committee event attributed to someone else',
+  setDoc(doc(parent, 'events', 'ev7'), {
+    title: 'ישיבה', committeeId: 'commX', createdBy: 'someoneelse', date: '2030-07-01',
   }), 'deny')
 await check('business create with oversized website is denied',
   setDoc(doc(parent, 'communityBusinesses', 'biz1'), {

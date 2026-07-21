@@ -5,10 +5,11 @@ import {
   getGroupLinks, addGroupLink, deleteGroupLink,
   getGroupFiles, uploadGroupFile, deleteGroupFile,
   getGroupEvents, createGroupEvent, deleteGroupEvent,
-  requestHobbyGroup, logConsent,
+  requestHobbyGroup, logConsent, getClasses,
 } from '../../lib/db'
 import { CONSENT_VERSION } from '../../lib/consent'
 import JoinConsentModal from '../../components/JoinConsentModal'
+import EventAudienceFields from '../../components/EventAudienceFields'
 import { useAuth } from '../../context/AuthContext'
 import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
@@ -240,12 +241,13 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
 }
 
 // ── Group events ──────────────────────────────────────────────────────────────
-function GroupEvents({ groupId, uid, isMember, isAdmin }) {
+function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
   const [events, setEvents] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [publishAck, setPublishAck] = useState(false)
   const [form, setForm] = useState({ title: '', date: '', time: '', location: '', description: '' })
+  const [audience, setAudience] = useState({ targetGroups: ['all'], classIds: [] })
 
   useEffect(() => {
     getGroupEvents(groupId).then(setEvents).catch(() => setEvents([]))
@@ -257,7 +259,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
     if (!form.title.trim() || !form.date || !publishAck) return
     setSaving(true)
     try {
-      await createGroupEvent(groupId, uid, form)
+      await createGroupEvent(groupId, uid, { ...form, ...audience })
       logConsent(uid, 'event_publish', {
         label: 'אישור פרסום פרטי אירוע לחברי הקהילה בהתאם לתקנון',
         version: CONSENT_VERSION,
@@ -266,6 +268,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
       const updated = await getGroupEvents(groupId)
       setEvents(updated)
       setForm({ title: '', date: '', time: '', location: '', description: '' })
+      setAudience({ targetGroups: ['all'], classIds: [] })
       setPublishAck(false)
       setShowForm(false)
     } finally { setSaving(false) }
@@ -299,6 +302,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin }) {
           <input value={form.location} onChange={set('location')} placeholder="מיקום (אופציונלי)" className="w-full input text-sm text-right" />
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
+          <EventAudienceFields value={audience} onChange={setAudience} classes={classes} />
           <label className="flex items-start gap-2 cursor-pointer">
             <input type="checkbox" checked={publishAck} onChange={e => setPublishAck(e.target.checked)}
               className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
@@ -425,7 +429,7 @@ function GroupChat({ group, user }) {
 }
 
 // ── Group card ────────────────────────────────────────────────────────────────
-function HobbyGroupCard({ group, uid, user, isAdmin }) {
+function HobbyGroupCard({ group, uid, user, isAdmin, classes = [] }) {
   const [memberUids, setMemberUids] = useState(group.memberUids || [])
   const [joining, setJoining] = useState(false)
   const [activePanel, setActivePanel] = useState(null)
@@ -557,7 +561,7 @@ function HobbyGroupCard({ group, uid, user, isAdmin }) {
 
       {activePanel === 'events' && (
         <div className="px-5 pb-5 border-t border-gray-50 pt-4">
-          <GroupEvents groupId={group.id} uid={uid} isMember={isMember} isAdmin={isAdmin} />
+          <GroupEvents groupId={group.id} uid={uid} isMember={isMember} isAdmin={isAdmin} classes={classes} />
         </div>
       )}
 
@@ -682,11 +686,13 @@ function RequestGroupPanel({ onClose, onRequested }) {
 export default function CommunityGroupsPage() {
   const { user, isAdmin } = useAuth()
   const [groups, setGroups]   = useState([])
+  const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [showRequest, setShowRequest] = useState(false)
 
   useEffect(() => {
     getHobbyGroups().then(setGroups).finally(() => setLoading(false))
+    getClasses().then(setClasses).catch(() => {})
   }, [])
 
   const activeGroups = groups.filter(g => g.status !== 'pending')
@@ -730,7 +736,7 @@ export default function CommunityGroupsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {activeGroups.map(g => <HobbyGroupCard key={g.id} group={g} uid={user.uid} user={user} isAdmin={isAdmin} />)}
+          {activeGroups.map(g => <HobbyGroupCard key={g.id} group={g} uid={user.uid} user={user} isAdmin={isAdmin} classes={classes} />)}
         </div>
       )}
 
