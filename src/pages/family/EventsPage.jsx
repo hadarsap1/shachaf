@@ -90,10 +90,13 @@ export default function EventsPage() {
     load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
   }, [user, effectiveAdmin])
 
-  // A members-only event is visible to admins and to members of its group/committee
+  // A members-only event appears in the community feed ONLY for current members
+  // of its group/committee — no admin-by-role bypass here, so it truly stays
+  // members-only and disappears the moment you leave the group/committee.
+  // (Admins still manage all events in the admin events page, and see them in
+  // the group/committee's own events tab.)
   const canSeeMembersEvent = (ev) =>
-    effectiveAdmin
-    || (ev.groupId && myEntityIds.has(ev.groupId))
+    (ev.groupId && myEntityIds.has(ev.groupId))
     || (ev.committeeId && myEntityIds.has(ev.committeeId))
   const filteredEvents = events.filter(ev => matchesFilter(ev, filterValue, canSeeMembersEvent(ev)))
 
