@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   getCommittees, sendCommitteeMessage,
-  getEventsByCommittee, joinCommittee, leaveCommittee,
+  getEventsByCommittee, leaveCommittee,
+  requestJoinCommittee, cancelJoinCommittee, approveCommitteeMember, denyCommitteeMember,
   subscribeCommitteeChat, sendCommitteeChatMessage,
   getCommitteeSummaries, saveCommitteeSummary, deleteCommitteeSummary,
-  requestCommittee, logConsent, getClasses,
+  requestCommittee, logConsent, getClasses, getUsersByUids,
   createCommitteeEvent, deleteCommitteeEvent,
 } from '../../lib/db'
 import { CONSENT_VERSION } from '../../lib/consent'
@@ -135,7 +136,9 @@ function CommitteeChat({ committee, user }) {
 }
 
 // ── Summaries panel ───────────────────────────────────────────────────────────
-function CommitteeSummaries({ committee, isAdmin }) {
+function CommitteeSummaries({ committee, isAdmin, isManager }) {
+  // Admins and the committee's managers may add/delete documents
+  const canEdit = isAdmin || isManager
   const [summaries, setSummaries] = useState(null)
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
@@ -175,7 +178,7 @@ function CommitteeSummaries({ committee, isAdmin }) {
 
   return (
     <div className="space-y-3">
-      {isAdmin && (
+      {canEdit && (
         <button
           onClick={() => setAdding(a => !a)}
           className="flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-[color] duration-150"
@@ -237,7 +240,7 @@ function CommitteeSummaries({ committee, isAdmin }) {
                 {new Date(s.date).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
-            {isAdmin && (
+            {canEdit && (
               <button
                 onClick={() => handleDelete(s.id)}
                 className="text-gray-300 hover:text-red-400 transition-[color] duration-150 flex-shrink-0"
@@ -389,42 +392,74 @@ function CommitteeEvents({ committeeId, uid, isMember, isAdmin, classes = [] }) 
 function CommitteeCard({ committee, classes = [] }) {
   const { user, isAdmin } = useAuth()
   const [memberUids, setMemberUids] = useState(committee.memberUids || [])
+  const [pendingUids, setPendingUids] = useState(committee.pendingUids || [])
   const [joinLoading, setJoinLoading] = useState(false)
-  const [activePanel, setActivePanel] = useState(null) // 'members' | 'events' | 'chat' | 'summaries' | 'message'
+  const [activePanel, setActivePanel] = useState(null) // 'members'|'events'|'chat'|'summaries'|'message'|'pending'
   const [msgBody, setMsgBody] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [selectedMember, setSelectedMember] = useState(null)
   const [showJoinConsent, setShowJoinConsent] = useState(false)
+  const [pendingUsers, setPendingUsers] = useState(null)
 
   const isMember = memberUids.includes(user?.uid)
+  const isPending = pendingUids.includes(user?.uid)
+  const isManager = isAdmin || (committee.managerUids || []).includes(user?.uid)
   const hasContacts = committee.members?.length > 0
 
   const toggle = (panel) => setActivePanel(p => p === panel ? null : panel)
 
-  // Leaving is immediate; joining requires the explicit consent checkbox
-  // (JoinConsentModal) — membership exposes the member's name to others.
+  // Leaving/cancelling a request is immediate; a NEW join is a request that a
+  // committee manager must approve — gated behind the consent checkbox first.
   const handleJoinClick = async () => {
     if (!user) return
-    if (!isMember) { setShowJoinConsent(true); return }
-    setJoinLoading(true)
-    try {
-      await leaveCommittee(committee.id, user.uid)
-      setMemberUids(u => u.filter(id => id !== user.uid))
-      if (activePanel === 'chat') setActivePanel(null)
-    } finally {
-      setJoinLoading(false)
+    if (isMember) {
+      setJoinLoading(true)
+      try {
+        await leaveCommittee(committee.id, user.uid)
+        setMemberUids(u => u.filter(id => id !== user.uid))
+        if (activePanel === 'chat') setActivePanel(null)
+      } finally { setJoinLoading(false) }
+      return
     }
+    if (isPending) {
+      setJoinLoading(true)
+      try {
+        await cancelJoinCommittee(committee.id, user.uid)
+        setPendingUids(u => u.filter(id => id !== user.uid))
+      } finally { setJoinLoading(false) }
+      return
+    }
+    setShowJoinConsent(true)
   }
 
   const handleJoinConfirmed = async () => {
-    await joinCommittee(committee.id, user.uid)
+    await requestJoinCommittee(committee.id, user.uid)
     logConsent(user.uid, 'join_committee', {
-      label: 'אישור הצטרפות לוועדה והצגת שמי לחבריה',
+      label: 'בקשת הצטרפות לוועדה והצגת שמי לחבריה (בכפוף לאישור מנהל הוועדה)',
       version: CONSENT_VERSION,
       context: committee.name || committee.id,
     })
-    setMemberUids(u => [...u, user.uid])
+    setPendingUids(u => [...u, user.uid])
+  }
+
+  // Manager opens the approvals panel → resolve pending uids to names
+  const openPending = async () => {
+    toggle('pending')
+    if (pendingUsers === null && pendingUids.length) {
+      try { setPendingUsers(await getUsersByUids(pendingUids)) } catch { setPendingUsers([]) }
+    }
+  }
+  const handleApprove = async (uid) => {
+    await approveCommitteeMember(committee.id, uid)
+    setPendingUids(u => u.filter(id => id !== uid))
+    setMemberUids(u => [...new Set([...u, uid])])
+    setPendingUsers(us => (us || []).filter(u => u.uid !== uid))
+  }
+  const handleDeny = async (uid) => {
+    await denyCommitteeMember(committee.id, uid)
+    setPendingUids(u => u.filter(id => id !== uid))
+    setPendingUsers(us => (us || []).filter(u => u.uid !== uid))
   }
 
   const handleSendMsg = async () => {
@@ -457,10 +492,13 @@ function CommitteeCard({ committee, classes = [] }) {
                   'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full transition-[background-color,color] duration-150',
                   isMember
                     ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary-900/30 dark:hover:text-primary-300'
+                    : isPending
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-primary-900/30 dark:hover:text-primary-300'
                 )}
               >
-                {joinLoading ? <Loader2 size={11} className="animate-spin inline" /> : isMember ? '✓ חבר' : '+ הצטרף'}
+                {joinLoading ? <Loader2 size={11} className="animate-spin inline" />
+                  : isMember ? '✓ חבר' : isPending ? 'ממתין לאישור' : '+ בקש להצטרף'}
               </button>
             </div>
             {committee.description && (
@@ -490,13 +528,24 @@ function CommitteeCard({ committee, classes = [] }) {
             <Calendar size={12} />
             אירועים
           </button>
-          <button onClick={() => toggle('summaries')}
-            className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
-              activePanel === 'summaries' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-            )}>
-            <FileText size={12} />
-            סיכומים
-          </button>
+          {(isMember || isAdmin) && (
+            <button onClick={() => toggle('summaries')}
+              className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
+                activePanel === 'summaries' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+              )}>
+              <FileText size={12} />
+              מסמכים
+            </button>
+          )}
+          {isManager && pendingUids.length > 0 && (
+            <button onClick={openPending}
+              className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
+                activePanel === 'pending' ? 'bg-primary-600 text-white' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-200'
+              )}>
+              <Clock3 size={12} />
+              בקשות הצטרפות ({pendingUids.length})
+            </button>
+          )}
           {isMember && (
             <button onClick={() => toggle('chat')}
               className={clsx('text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-[background-color,color] duration-150',
@@ -540,9 +589,39 @@ function CommitteeCard({ committee, classes = [] }) {
         </div>
       )}
 
-      {activePanel === 'summaries' && (
+      {activePanel === 'summaries' && (isMember || isAdmin) && (
         <div className="px-5 pb-5 border-t border-gray-50 pt-4">
-          <CommitteeSummaries committee={committee} isAdmin={isAdmin} />
+          <CommitteeSummaries committee={committee} isAdmin={isAdmin} isManager={isManager} />
+        </div>
+      )}
+
+      {activePanel === 'pending' && isManager && (
+        <div className="px-5 pb-5 border-t border-gray-50 pt-4">
+          <p className="text-xs text-gray-400 mb-2 text-right">אשר/י או דחה/י בקשות הצטרפות לוועדה</p>
+          {pendingUsers === null ? (
+            <div className="flex justify-center py-3"><Loader2 size={16} className="animate-spin text-gray-300" /></div>
+          ) : pendingUsers.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-2">אין בקשות ממתינות</p>
+          ) : (
+            <div className="space-y-2">
+              {pendingUsers.map(p => (
+                <div key={p.uid} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2">
+                  <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300 flex-shrink-0">
+                    {p.name?.[0] || '?'}
+                  </div>
+                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate text-right">{p.name || p.email}</span>
+                  <button onClick={() => handleApprove(p.uid)}
+                    className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <CheckCircle2 size={12} /> אשר
+                  </button>
+                  <button onClick={() => handleDeny(p.uid)}
+                    className="text-xs font-medium text-gray-500 hover:text-red-600 border border-gray-200 dark:border-gray-600 px-2.5 py-1 rounded-lg">
+                    דחה
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

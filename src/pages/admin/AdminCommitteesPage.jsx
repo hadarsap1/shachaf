@@ -107,6 +107,20 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
     setDraft(d => ({ ...d, members: [...d.members, member] }))
   const addBlankMember = () =>
     setDraft(d => ({ ...d, members: [...d.members, blankMember()] }))
+  const addManager = (uid) =>
+    setDraft(d => ({ ...d, managerUids: [...new Set([...(d.managerUids || []), uid])] }))
+  const removeManager = (uid) =>
+    setDraft(d => ({ ...d, managerUids: (d.managerUids || []).filter(u => u !== uid) }))
+  const [managerQuery, setManagerQuery] = useState('')
+  const managerMatches = managerQuery.trim().length >= 1
+    ? communityUsers
+        .filter(u => !(draft.managerUids || []).includes(u.uid))
+        .filter(u => u.name?.toLowerCase().includes(managerQuery.toLowerCase()) || u.email?.toLowerCase().includes(managerQuery.toLowerCase()))
+        .slice(0, 6)
+    : []
+  const managerUsers = (draft.managerUids || [])
+    .map(uid => communityUsers.find(u => u.uid === uid))
+    .filter(Boolean)
 
   const handleSave = async () => {
     if (!draft.name?.trim()) { setError('שם הוועדה הוא שדה חובה'); return }
@@ -188,9 +202,50 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
             </div>
           </div>
 
+          {/* Committee managers — approve joiners + post documents */}
+          <div>
+            <label className="label mb-1">מנהלי הוועדה</label>
+            <p className="text-xs text-gray-400 mb-2 text-right">מנהל ועדה מאשר בקשות הצטרפות ומעלה מסמכים לוועדה</p>
+            {managerUsers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {managerUsers.map(u => (
+                  <span key={u.uid} className="inline-flex items-center gap-1 bg-primary-50 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-primary-900/40 dark:text-primary-300">
+                    {u.name}
+                    <button onClick={() => removeManager(u.uid)} className="hover:text-red-600"><X size={11} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="relative">
+              <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 dark:bg-gray-900 dark:border-gray-700">
+                <Search size={14} className="text-gray-400 flex-shrink-0" />
+                <input value={managerQuery} onChange={e => setManagerQuery(e.target.value)}
+                  placeholder="חפש מנהל/ת מהחברים הרשומים..."
+                  className="flex-1 text-sm bg-transparent outline-none text-right placeholder:text-gray-400" dir="rtl" />
+              </div>
+              {managerMatches.length > 0 && (
+                <div className="absolute top-full mt-1 right-0 left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
+                  {managerMatches.map(u => (
+                    <button key={u.uid} type="button"
+                      onMouseDown={() => { addManager(u.uid); setManagerQuery('') }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 text-right dark:hover:bg-primary-900/30">
+                      <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600 flex-shrink-0 dark:bg-primary-900/40 dark:text-primary-400">
+                        {u.name?.[0] || '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate dark:text-gray-100">{u.name}</p>
+                        {u.email && <p className="text-xs text-gray-400 truncate" dir="ltr">{u.email}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Members section */}
           <div>
-            <label className="label mb-3">חברי הוועדה</label>
+            <label className="label mb-3">אנשי קשר של הוועדה</label>
 
             {/* Search from registered community members */}
             <div className="mb-3">
