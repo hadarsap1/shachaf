@@ -27,6 +27,12 @@ describe('classLabel', () => {
     expect(classLabel('גן שחף')).toBe('גן שחף')
     expect(classLabel('גן חובה / גן ט״ח')).toBe('גן חובה / גן ט״ח')
   })
+  it('labels a class with a garden GRADE as גן even when the name lacks it', () => {
+    expect(classLabel('חופית', 'גן חובה')).toBe('גן חופית')
+    expect(classLabel('חופית', 'גן חובה / גן ט״ח')).toBe('גן חופית')
+    expect(classLabel('א1', 'א')).toBe('כיתה א1')
+    expect(classLabel('גן שחף', 'גן חובה')).toBe('גן שחף')
+  })
   it('returns empty string for missing input', () => {
     expect(classLabel('')).toBe('')
     expect(classLabel(undefined)).toBe('')
