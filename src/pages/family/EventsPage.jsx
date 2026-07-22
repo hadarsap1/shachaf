@@ -14,6 +14,9 @@ const BASE_FILTERS = [
 ]
 
 function matchesFilter(ev, filterValue) {
+  // Members-only events (created from within a group/committee for its members)
+  // never appear in the community-wide feed — only inside their entity's tab.
+  if ((ev.targetGroups || []).includes('members')) return false
   if (filterValue === 'all') return true
   if (filterValue === 'new_family' || filterValue === 'host_family') {
     const groups = ev.targetGroups || ['all']

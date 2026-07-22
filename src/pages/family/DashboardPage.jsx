@@ -261,6 +261,8 @@ export default function DashboardPage() {
       }
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
+        // Members-only events show only inside their group/committee, never here
+        if ((ev.targetGroups || []).includes('members')) return false
         if (isAdmin) return true
         const tg = ev.targetGroups || []
         if (!tg.length || tg.includes('all') || tg.includes(user.role)) return true

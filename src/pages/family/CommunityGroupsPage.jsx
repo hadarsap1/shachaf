@@ -247,11 +247,17 @@ function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
   const [saving, setSaving] = useState(false)
   const [publishAck, setPublishAck] = useState(false)
   const [form, setForm] = useState({ title: '', date: '', time: '', location: '', description: '' })
-  const [audience, setAudience] = useState({ targetGroups: ['all'], classIds: [] })
+  // Default to members-only so a group event doesn't broadcast to the whole
+  // community unless the creator deliberately widens the audience.
+  const [audience, setAudience] = useState({ targetGroups: ['members'], classIds: [] })
 
   useEffect(() => {
     getGroupEvents(groupId).then(setEvents).catch(() => setEvents([]))
   }, [groupId])
+
+  // Non-members don't see members-only events in the tab
+  const visibleEvents = (events || []).filter(ev =>
+    isMember || isAdmin || !(ev.targetGroups || []).includes('members'))
 
   // Saving is conditioned on the creator acknowledging that the event details
   // are uploaded and displayed to the community per the policy (publishAck).
@@ -268,7 +274,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
       const updated = await getGroupEvents(groupId)
       setEvents(updated)
       setForm({ title: '', date: '', time: '', location: '', description: '' })
-      setAudience({ targetGroups: ['all'], classIds: [] })
+      setAudience({ targetGroups: ['members'], classIds: [] })
       setPublishAck(false)
       setShowForm(false)
     } finally { setSaving(false) }
@@ -302,7 +308,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
           <input value={form.location} onChange={set('location')} placeholder="מיקום (אופציונלי)" className="w-full input text-sm text-right" />
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
-          <EventAudienceFields value={audience} onChange={setAudience} classes={classes} />
+          <EventAudienceFields value={audience} onChange={setAudience} classes={classes} entityLabel="הקבוצה" />
           <label className="flex items-start gap-2 cursor-pointer">
             <input type="checkbox" checked={publishAck} onChange={e => setPublishAck(e.target.checked)}
               className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
@@ -322,9 +328,9 @@ function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
 
       {events === null
         ? <p className="text-xs text-gray-400 text-center py-4"><Loader2 size={16} className="animate-spin inline" /></p>
-        : events.length === 0
+        : visibleEvents.length === 0
           ? <p className="text-xs text-gray-400 text-center py-3">{isMember ? 'אין אירועים עדיין — צרו ראשונים!' : 'אין אירועים עדיין'}</p>
-          : events.map(ev => {
+          : visibleEvents.map(ev => {
             const d = new Date(ev.date)
             const canDel = isAdmin || ev.createdBy === uid
             return (
