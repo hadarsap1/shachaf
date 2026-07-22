@@ -259,10 +259,20 @@ export default function DashboardPage() {
       if (effectiveClassIds.length > 0) {
         setMyClasses(allClasses.filter(c => effectiveClassIds.includes(c.id)))
       }
+      // group/committee ids the user belongs to — members-only events surface
+      // on the dashboard for their own entities' members (and for admins)
+      const myEntityIds = new Set([
+        ...groupData.filter(g => (g.memberUids || []).includes(user.uid)).map(g => g.id),
+        ...committeeData.filter(c => (c.memberUids || []).includes(user.uid)).map(c => c.id),
+      ])
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
-        // Members-only events show only inside their group/committee, never here
-        if ((ev.targetGroups || []).includes('members')) return false
+        // Members-only events show only to members of their group/committee
+        if ((ev.targetGroups || []).includes('members')) {
+          return isAdmin
+            || (ev.groupId && myEntityIds.has(ev.groupId))
+            || (ev.committeeId && myEntityIds.has(ev.committeeId))
+        }
         if (isAdmin) return true
         const tg = ev.targetGroups || []
         if (!tg.length || tg.includes('all') || tg.includes(user.role)) return true
