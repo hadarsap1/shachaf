@@ -3,8 +3,9 @@ import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
+import QuickEventModal from '../../components/QuickEventModal'
 import { useAuth } from '../../context/AuthContext'
-import { Calendar, List, Loader2 } from 'lucide-react'
+import { Calendar, List, Loader2, Plus } from 'lucide-react'
 import clsx from 'clsx'
 
 const BASE_FILTERS = [
@@ -49,6 +50,14 @@ export default function EventsPage() {
   const [birthdays, setBirthdays] = useState([])
   // group/committee ids the user belongs to — used to show members-only events
   const [myEntityIds, setMyEntityIds] = useState(() => new Set())
+  // The user's "hats" — entities they may open an event on behalf of:
+  // committees/groups they're a member of + classes they administer
+  // (all classes for a global admin). An event MUST be attributed to a hat.
+  const [hats, setHats] = useState([])
+  const [allClasses, setAllClasses] = useState([])
+  const [showCreate, setShowCreate] = useState(false)
+
+  const refreshEvents = () => getEvents().then(setEvents).catch(() => {})
 
   useEffect(() => {
     if (!user) return
@@ -60,12 +69,26 @@ export default function EventsPage() {
         getHobbyGroups(),
         getCommittees(),
       ])
+      setAllClasses(classes)
 
       const entityIds = new Set([
         ...groups.filter(g => (g.memberUids || []).includes(user.uid)).map(g => g.id),
         ...committees.filter(c => (c.memberUids || []).includes(user.uid)).map(c => c.id),
       ])
       setMyEntityIds(entityIds)
+
+      const adminClassIds = effectiveAdmin ? classes.map(c => c.id) : (user.classAdminFor || [])
+      setHats([
+        ...committees
+          .filter(c => c.status !== 'pending' && (c.memberUids || []).includes(user.uid))
+          .map(c => ({ type: 'committee', id: c.id, name: c.name })),
+        ...groups
+          .filter(g => g.status !== 'pending' && (g.memberUids || []).includes(user.uid))
+          .map(g => ({ type: 'group', id: g.id, name: g.name })),
+        ...classes
+          .filter(c => adminClassIds.includes(c.id))
+          .map(c => ({ type: 'class', id: c.id, name: c.name })),
+      ])
 
       const colorMap = {}
       classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
@@ -104,6 +127,17 @@ export default function EventsPage() {
     <div className="page-container rtl" dir="rtl">
       {/* ── Page header ── */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+        {/* Create from the calendar — only for hat-holders (committee/group member, class admin) */}
+        {hats.length > 0 && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+          >
+            <Plus size={14} />
+            צור אירוע
+          </button>
+        )}
         <div className="flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-700">
           <button
             onClick={() => setDisplayMode('calendar')}
@@ -129,6 +163,7 @@ export default function EventsPage() {
             <List size={14} />
             רשימה
           </button>
+        </div>
         </div>
 
         <div className="text-right">
@@ -229,6 +264,17 @@ export default function EventsPage() {
         <EventDetailPanel
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
+        />
+      )}
+
+      {/* ── Create event from the calendar (hat-holders only) ── */}
+      {showCreate && (
+        <QuickEventModal
+          hats={hats}
+          classes={allClasses}
+          uid={user.uid}
+          onClose={() => setShowCreate(false)}
+          onCreated={refreshEvents}
         />
       )}
     </div>
