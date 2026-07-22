@@ -11,8 +11,7 @@ import {
   Loader2, Search, Upload, Baby, Cake,
 } from 'lucide-react'
 import clsx from 'clsx'
-
-const GRADES = ['גן טט״ח', 'גן ט״ח', 'גן חובה', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב']
+import { GRADES, GRADE_SEP, gradeList, classLabel } from '../../lib/grades'
 
 const SCHEDULE_DAYS  = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
 const SCHEDULE_PERIODS = [
@@ -557,18 +556,41 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
                 <input value={draft.name || ''} onChange={e => set('name', e.target.value)}
                   placeholder="לדוגמה: א1" className="input w-full" />
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="label">שכבה</label>
-                  <select value={draft.grade || 'א'} onChange={e => set('grade', e.target.value)} className="input w-full">
-                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
+              <div>
+                <label className="label">
+                  שכבה <span className="text-xs font-normal text-gray-400">— ניתן לבחור יותר מאחת (למשל גן חובה + גן ט״ח)</span>
+                </label>
+                {/* Multi-select — stored as one string joined with GRADE_SEP so
+                    every existing cls.grade reader keeps working unchanged */}
+                <div className="flex flex-wrap gap-1.5">
+                  {GRADES.map(g => {
+                    const selected = gradeList(draft.grade).includes(g)
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => {
+                          const cur = gradeList(draft.grade)
+                          const next = selected ? cur.filter(x => x !== g) : [...cur, g]
+                          set('grade', GRADES.filter(x => next.includes(x)).join(GRADE_SEP))
+                        }}
+                        className={clsx(
+                          'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                          selected
+                            ? 'bg-primary-600 text-white border-primary-600'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
+                        )}
+                      >
+                        {g}
+                      </button>
+                    )
+                  })}
                 </div>
-                <div className="flex-1">
-                  <label className="label">שנת לימודים</label>
-                  <input value={draft.year || ''} onChange={e => set('year', e.target.value)}
-                    placeholder={currentSchoolYearLabel()} className="input w-full" />
-                </div>
+              </div>
+              <div>
+                <label className="label">שנת לימודים</label>
+                <input value={draft.year || ''} onChange={e => set('year', e.target.value)}
+                  placeholder={currentSchoolYearLabel()} className="input w-full" />
               </div>
               <div>
                 <label className="label">צבע כיתה</label>
@@ -728,7 +750,7 @@ export default function AdminClassesPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-gray-800 dark:text-gray-100">
-                  כיתה {cls.name}
+                  {classLabel(cls.name)}
                   <span className="text-xs font-normal text-gray-400 ms-2">שכבה {cls.grade}</span>
                 </div>
                 {cls.needsUpdate && (
