@@ -17,9 +17,13 @@ export function isKindergarten(s) {
   return typeof s === 'string' && s.trim().startsWith('גן')
 }
 
-// "כיתה X" everywhere EXCEPT kindergartens — "כיתה גן חובה" reads wrong, so
-// garden names/grades are shown as-is. Works for both class names and grades.
-export function classLabel(nameOrGrade) {
+// "כיתה X" everywhere EXCEPT kindergartens. A class counts as a kindergarten
+// when its NAME starts with גן ("גן שחף") OR its GRADE is a garden grade —
+// e.g. name "חופית" with grade "גן חובה" is labeled "גן חופית", not
+// "כיתה חופית". Also accepts a bare grade as the first argument.
+export function classLabel(nameOrGrade, grade = '') {
   if (!nameOrGrade) return ''
-  return isKindergarten(nameOrGrade) ? nameOrGrade : `כיתה ${nameOrGrade}`
+  if (isKindergarten(nameOrGrade)) return nameOrGrade
+  if (isKindergarten(grade)) return `גן ${nameOrGrade}`
+  return `כיתה ${nameOrGrade}`
 }

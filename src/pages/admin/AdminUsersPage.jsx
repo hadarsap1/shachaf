@@ -562,7 +562,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
                         {cls?.name || <Baby size={12} />}
                       </div>
                       <span className="flex-1 text-sm font-medium text-gray-700 text-right dark:text-gray-200">{k.name}</span>
-                      {cls && <span className="text-xs text-gray-400">{classLabel(cls.name)}</span>}
+                      {cls && <span className="text-xs text-gray-400">{classLabel(cls.name, cls.grade)}</span>}
                     </div>
                   )
                 })}

@@ -87,7 +87,7 @@ export default function EventsPage() {
           .map(g => ({ type: 'group', id: g.id, name: g.name })),
         ...classes
           .filter(c => adminClassIds.includes(c.id))
-          .map(c => ({ type: 'class', id: c.id, name: c.name })),
+          .map(c => ({ type: 'class', id: c.id, name: c.name, grade: c.grade })),
       ])
 
       const colorMap = {}

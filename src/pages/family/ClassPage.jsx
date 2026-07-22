@@ -325,7 +325,7 @@ function ClassEventCreate({ cls, uid, onCreated }) {
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors">
         <Plus size={15} />
-        צור אירוע ל{classLabel(cls.name)}
+        צור אירוע ל{classLabel(cls.name, cls.grade)}
       </button>
       {open && (
         <div className="mt-3 bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100 dark:bg-gray-900 dark:border-gray-700">
@@ -337,7 +337,7 @@ function ClassEventCreate({ cls, uid, onCreated }) {
           <input value={form.location} onChange={set('location')} placeholder="מיקום (אופציונלי)" className="w-full input text-sm text-right" />
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
-          <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי {classLabel(cls.name)}</p>
+          <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי {classLabel(cls.name, cls.grade)}</p>
           <label className="flex items-start gap-2 cursor-pointer">
             <input type="checkbox" checked={publishAck} onChange={e => setPublishAck(e.target.checked)}
               className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />

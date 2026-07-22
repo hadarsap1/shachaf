@@ -179,7 +179,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
             <select value={draft.classId || ''} onChange={e => set('classId', e.target.value)} className="input w-full">
               <option value="">בחר כיתה</option>
               {classes.map(c => (
-                <option key={c.id} value={c.id}>{classLabel(c.name)} (שכבה {c.grade})</option>
+                <option key={c.id} value={c.id}>{classLabel(c.name, c.grade)} (שכבה {c.grade})</option>
               ))}
             </select>
           </div>
@@ -693,7 +693,7 @@ export default function AdminChildrenPage() {
         </div>
         <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="input w-36">
           <option value="">כל הכיתות</option>
-          {classes.map(c => <option key={c.id} value={c.id}>{classLabel(c.name)}</option>)}
+          {classes.map(c => <option key={c.id} value={c.id}>{classLabel(c.name, c.grade)}</option>)}
         </select>
         <button onClick={() => setOnlyUnlinked(v => !v)}
           className={clsx('px-3 py-2 rounded-xl text-sm font-medium border whitespace-nowrap transition-colors',

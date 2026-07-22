@@ -3,7 +3,7 @@ import { X, Plus, Loader2, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { createCommitteeEvent, createGroupEvent, saveEvent, logConsent } from '../lib/db'
 import { CONSENT_VERSION } from '../lib/consent'
-import { classLabel } from '../lib/grades'
+import { classLabel, isKindergarten } from '../lib/grades'
 import EventAudienceFields from './EventAudienceFields'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 
@@ -116,7 +116,7 @@ export default function QuickEventModal({ hats, classes = [], uid, onClose, onCr
                       : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
                   )}
                 >
-                  {HAT_TYPE_LABEL[h.type]} · {h.name}
+                  {h.type === 'class' && (isKindergarten(h.name) || isKindergarten(h.grade)) ? 'גן' : HAT_TYPE_LABEL[h.type]} · {h.name}
                 </button>
               ))}
             </div>
@@ -136,7 +136,7 @@ export default function QuickEventModal({ hats, classes = [], uid, onClose, onCr
             <EventAudienceFields value={audience} onChange={setAudience} classes={classes} entityLabel={entityLabel} />
           )}
           {hat?.type === 'class' && (
-            <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי {classLabel(hat.name)}</p>
+            <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי {classLabel(hat.name, hat.grade)}</p>
           )}
 
           <label className="flex items-start gap-2 cursor-pointer">

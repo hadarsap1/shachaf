@@ -750,7 +750,7 @@ export default function AdminClassesPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-gray-800 dark:text-gray-100">
-                  {classLabel(cls.name)}
+                  {classLabel(cls.name, cls.grade)}
                   <span className="text-xs font-normal text-gray-400 ms-2">שכבה {cls.grade}</span>
                 </div>
                 {cls.needsUpdate && (
