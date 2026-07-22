@@ -399,20 +399,46 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                        in ['admin', 'super_admin'];
+
+      // Self: request to join (add own uid to pendingUids) or cancel the
+      // request (remove own uid). Joining is NOT immediate — a committee
+      // manager or admin must approve.
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingUids'])
+                    && (
+                         (request.resource.data.get('pendingUids', []).hasAll(resource.data.get('pendingUids', []))
+                          && request.resource.data.get('pendingUids', []).removeAll(resource.data.get('pendingUids', [])) == [request.auth.uid])
+                         ||
+                         (resource.data.get('pendingUids', []).hasAll(request.resource.data.get('pendingUids', []))
+                          && resource.data.get('pendingUids', []).removeAll(request.resource.data.get('pendingUids', [])) == [request.auth.uid])
+                       );
+
+      // Self: leave the committee (remove own uid from memberUids only — a
+      // member cannot self-add, that path goes through pendingUids + approval).
       allow update: if request.auth != null
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
+                    && resource.data.get('memberUids', []).hasAll(request.resource.data.get('memberUids', []))
+                    && resource.data.get('memberUids', []).removeAll(request.resource.data.get('memberUids', [])) == [request.auth.uid];
+
+      // Committee manager (or admin): approve/deny joiners — may modify
+      // memberUids and pendingUids freely (managing their own committee).
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'pendingUids'])
                     && (
-                         (request.resource.data.memberUids.hasAll(resource.data.memberUids)
-                          && request.resource.data.memberUids.removeAll(resource.data.memberUids) == [request.auth.uid])
-                         ||
-                         (resource.data.memberUids.hasAll(request.resource.data.memberUids)
-                          && resource.data.memberUids.removeAll(request.resource.data.memberUids) == [request.auth.uid])
+                         request.auth.uid in resource.data.get('managerUids', [])
+                         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                            in ['admin', 'super_admin']
                        );
     }
 
-    // Committee chat — all authenticated can read; members can create (size-limited); admins delete
+    // Committee chat — readable ONLY by committee members (or admins); members
+    // create (size-limited); admins delete. A committee's internal discussion
+    // must not be exposed to non-members.
     match /committeeChat/{msgId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null
+                  && (request.auth.uid in get(/databases/$(database)/documents/committees/$(resource.data.committeeId)).data.get('memberUids', [])
+                      || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                         in ['admin', 'super_admin']);
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.get('text', '').size() <= 2000
@@ -423,12 +449,24 @@ service cloud.firestore {
                        in ['admin', 'super_admin'];
     }
 
-    // Committee summaries — all authenticated can read; only admins write
+    // Committee summaries (documents) — readable ONLY by committee members (or
+    // admins). Writable by admins and by the committee's managers.
     match /committeeSummaries/{summaryId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null
-                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-                      in ['admin', 'super_admin'];
+      function isCommitteeManager(committeeId) {
+        return request.auth.uid in
+          get(/databases/$(database)/documents/committees/$(committeeId)).data.get('managerUids', []);
+      }
+      function isPrivileged() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                 in ['admin', 'super_admin'];
+      }
+      allow read: if request.auth != null
+                  && (request.auth.uid in get(/databases/$(database)/documents/committees/$(resource.data.committeeId)).data.get('memberUids', [])
+                      || isPrivileged());
+      allow create, update: if request.auth != null
+                   && (isPrivileged() || isCommitteeManager(request.resource.data.committeeId));
+      allow delete: if request.auth != null
+                   && (isPrivileged() || isCommitteeManager(resource.data.committeeId));
     }
 
     // Community group chat — all authenticated can read; members can create (size-limited); admins delete

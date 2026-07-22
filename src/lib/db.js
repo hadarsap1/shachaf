@@ -735,6 +735,8 @@ export async function requestCommittee({ name, description, requestedBy, request
   const ref = await addDoc(collection(db, 'committees'), {
     name, description: description || '', icon: 'Users', color: '#1B3B70',
     members: [], memberUids: [requestedBy],
+    // The requester manages their committee by default — approves joiners + docs.
+    managerUids: [requestedBy], pendingUids: [],
     order: 999, status: 'pending', requestedBy, requestedByName,
     createdAt: serverTimestamp(),
   })
@@ -1096,12 +1098,30 @@ export async function getUnlinkedChildren() {
 }
 
 // ── Committee membership (UID-based join/leave) ───────────────────────────────
-async function _joinCommittee(committeeId, uid) {
-  await updateDoc(doc(db, 'committees', committeeId), { memberUids: arrayUnion(uid) })
-}
-
 async function _leaveCommittee(committeeId, uid) {
   await updateDoc(doc(db, 'committees', committeeId), { memberUids: arrayRemove(uid) })
+}
+
+// Join is not immediate — a member requests, a committee manager/admin approves.
+async function _requestJoinCommittee(committeeId, uid) {
+  await updateDoc(doc(db, 'committees', committeeId), { pendingUids: arrayUnion(uid) })
+}
+async function _cancelJoinCommittee(committeeId, uid) {
+  await updateDoc(doc(db, 'committees', committeeId), { pendingUids: arrayRemove(uid) })
+}
+// Manager/admin: approve a pending joiner (move pending → member) in one write.
+async function _approveCommitteeMember(committeeId, uid) {
+  await updateDoc(doc(db, 'committees', committeeId), {
+    memberUids: arrayUnion(uid),
+    pendingUids: arrayRemove(uid),
+  })
+}
+async function _denyCommitteeMember(committeeId, uid) {
+  await updateDoc(doc(db, 'committees', committeeId), { pendingUids: arrayRemove(uid) })
+}
+// Admin: set the committee's managers (who may approve joiners + post documents).
+async function _setCommitteeManagers(committeeId, managerUids) {
+  await updateDoc(doc(db, 'committees', committeeId), { managerUids })
 }
 
 // ── Committee chat ────────────────────────────────────────────────────────────
@@ -1260,8 +1280,12 @@ export async function createCommitteeEvent(...args) { const r = await _createCom
 export async function deleteCommitteeEvent(...args) { const r = await _deleteCommitteeEvent(...args); invalidate('events'); return r }
 export async function saveCommittee(...args) { const r = await _saveCommittee(...args); invalidate('committees'); return r }
 export async function deleteCommittee(...args) { const r = await _deleteCommittee(...args); invalidate('committees'); return r }
-export async function joinCommittee(...args) { const r = await _joinCommittee(...args); invalidate('committees'); return r }
 export async function leaveCommittee(...args) { const r = await _leaveCommittee(...args); invalidate('committees'); return r }
+export async function requestJoinCommittee(...args) { const r = await _requestJoinCommittee(...args); invalidate('committees'); return r }
+export async function cancelJoinCommittee(...args) { const r = await _cancelJoinCommittee(...args); invalidate('committees'); return r }
+export async function approveCommitteeMember(...args) { const r = await _approveCommitteeMember(...args); invalidate('committees'); return r }
+export async function denyCommitteeMember(...args) { const r = await _denyCommitteeMember(...args); invalidate('committees'); return r }
+export async function setCommitteeManagers(...args) { const r = await _setCommitteeManagers(...args); invalidate('committees'); return r }
 export async function saveHobbyGroup(...args) { const r = await _saveHobbyGroup(...args); invalidate('groups'); return r }
 export async function deleteHobbyGroup(...args) { const r = await _deleteHobbyGroup(...args); invalidate('groups'); return r }
 export async function joinHobbyGroup(...args) { const r = await _joinHobbyGroup(...args); invalidate('groups'); return r }

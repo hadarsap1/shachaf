@@ -40,6 +40,14 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'hobbyGroups', 'groupX'), { name: 'Group X', memberUids: ['parent1'] })
   // committee with parent1 as a member — for committee-event create tests
   await setDoc(doc(db, 'committees', 'commX'), { name: 'Committee X', memberUids: ['parent1'] })
+  // committee managed by parent1 — for join-approval + summaries-read tests.
+  // stranger1 is a member; someuid is a pending joiner.
+  await setDoc(doc(db, 'committees', 'commMgr'), {
+    name: 'Managed', memberUids: ['stranger1'], managerUids: ['parent1'], pendingUids: ['someuid'],
+  })
+  await setDoc(doc(db, 'committeeSummaries', 'sumMgr'), {
+    committeeId: 'commMgr', title: 'ישיבה', content: 'סיכום', date: '2030-01-01',
+  })
 })
 
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
@@ -134,6 +142,31 @@ await check('member CANNOT create a committee event attributed to someone else',
   setDoc(doc(parent, 'events', 'ev7'), {
     title: 'ישיבה', committeeId: 'commX', createdBy: 'someoneelse', date: '2030-07-01',
   }), 'deny')
+
+console.log('\n— committee document privacy (summaries) —')
+// Read tests first — before any membership mutation. stranger1 is a member of commMgr per setup.
+await check('committee member can read a committee summary',
+  getDoc(doc(stranger, 'committeeSummaries', 'sumMgr')), 'allow')
+await check('non-member CANNOT read a committee summary',
+  getDoc(doc(env.authenticatedContext('outsider', { email: 'out@x.com' }).firestore(), 'committeeSummaries', 'sumMgr')), 'deny')
+// managers can post documents; non-managers cannot
+await check('committee manager can create a summary',
+  setDoc(doc(parent, 'committeeSummaries', 'sumNew'), { committeeId: 'commMgr', title: 'חדש', content: 'x', date: '2030-02-02' }), 'allow')
+await check('non-manager CANNOT create a summary',
+  setDoc(doc(stranger, 'committeeSummaries', 'sumBad'), { committeeId: 'commMgr', title: 'x', content: 'x', date: '2030-02-02' }), 'deny')
+
+console.log('\n— committee join approval flow —')
+await check('user can request to join (add own uid to pendingUids)',
+  updateDoc(doc(parent, 'committees', 'commX'), { pendingUids: ['parent1'] }), 'allow')
+await check('user CANNOT self-add to memberUids (must be approved)',
+  updateDoc(doc(stranger, 'committees', 'commX'), { memberUids: ['parent1', 'stranger1'] }), 'deny')
+await check('non-manager CANNOT approve (move into memberUids)',
+  updateDoc(doc(stranger, 'committees', 'commMgr'), { memberUids: ['stranger1', 'someuid'], pendingUids: [] }), 'deny')
+await check('manager can approve a joiner (pending→member)',
+  updateDoc(doc(parent, 'committees', 'commMgr'), { memberUids: ['stranger1', 'someuid'], pendingUids: [] }), 'allow')
+// after approval members are [stranger1, someuid]; a member removes ONLY own uid
+await check('member can leave (remove own uid from memberUids)',
+  updateDoc(doc(stranger, 'committees', 'commMgr'), { memberUids: ['someuid'] }), 'allow')
 await check('business create with oversized website is denied',
   setDoc(doc(parent, 'communityBusinesses', 'biz1'), {
     uid: 'parent1', businessName: 'עסק', description: 'תיאור', website: 'x'.repeat(301),
