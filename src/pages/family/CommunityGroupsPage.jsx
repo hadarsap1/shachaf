@@ -255,9 +255,10 @@ function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
     getGroupEvents(groupId).then(setEvents).catch(() => setEvents([]))
   }, [groupId])
 
-  // Non-members don't see members-only events in the tab
+  // Members-only events show ONLY to actual group members — not even to a
+  // non-member admin. Admins manage all events from the admin events page.
   const visibleEvents = (events || []).filter(ev =>
-    isMember || isAdmin || !(ev.targetGroups || []).includes('members'))
+    isMember || !(ev.targetGroups || []).includes('members'))
 
   // Saving is conditioned on the creator acknowledging that the event details
   // are uploaded and displayed to the community per the policy (publishAck).

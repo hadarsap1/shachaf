@@ -16,7 +16,7 @@ import {
   Users, Heart, Star, Music, Book, Globe, Zap, Gift,
   Coffee, Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield,
   Loader2, MessageSquare, Send, CheckCircle2, Calendar,
-  ChevronLeft, MessageCircle, FileText, Plus, Trash2, X, Clock3,
+  ChevronLeft, MessageCircle, FileText, Plus, Trash2, X, Clock3, Lock,
 } from 'lucide-react'
 import clsx from 'clsx'
 import ContactModal from '../../components/ui/ContactModal'
@@ -178,6 +178,10 @@ function CommitteeSummaries({ committee, isAdmin, isManager }) {
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1.5 justify-end text-[11px] text-gray-400">
+        מסמכים אלה גלויים לחברי הוועדה בלבד
+        <Lock size={11} className="flex-shrink-0" />
+      </div>
       {canEdit && (
         <button
           onClick={() => setAdding(a => !a)}
@@ -288,9 +292,10 @@ function CommitteeEvents({ committeeId, uid, isMember, isAdmin, classes = [] }) 
     getEventsByCommittee(committeeId).then(setEvents).catch(() => setEvents([]))
   }, [committeeId])
 
-  // Non-members don't see members-only events in the tab
+  // Members-only events show ONLY to actual committee members — not even to a
+  // non-member admin. Admins manage all events from the admin events page.
   const visibleEvents = (events || []).filter(ev =>
-    isMember || isAdmin || !(ev.targetGroups || []).includes('members'))
+    isMember || !(ev.targetGroups || []).includes('members'))
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
