@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getEvents, getClasses, getChildrenByParent, getChildren } from '../../lib/db'
+import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees } from '../../lib/db'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -13,10 +13,14 @@ const BASE_FILTERS = [
   { value: 'host_family',label: 'משפחות מארחות' },
 ]
 
-function matchesFilter(ev, filterValue) {
+function matchesFilter(ev, filterValue, canSeeMembersEvent) {
   // Members-only events (created from within a group/committee for its members)
-  // never appear in the community-wide feed — only inside their entity's tab.
-  if ((ev.targetGroups || []).includes('members')) return false
+  // stay out of the community-wide feed EXCEPT for that entity's members, who
+  // see them in their own calendar/feed. Shown under the "all" filter only —
+  // they aren't targeted to a family type or class.
+  if ((ev.targetGroups || []).includes('members')) {
+    return canSeeMembersEvent && filterValue === 'all'
+  }
   if (filterValue === 'all') return true
   if (filterValue === 'new_family' || filterValue === 'host_family') {
     const groups = ev.targetGroups || ['all']
@@ -43,15 +47,25 @@ export default function EventsPage() {
   const [filterValue, setFilterValue] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [birthdays, setBirthdays] = useState([])
+  // group/committee ids the user belongs to — used to show members-only events
+  const [myEntityIds, setMyEntityIds] = useState(() => new Set())
 
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const [allEvents, classes, myChildren] = await Promise.all([
+      const [allEvents, classes, myChildren, groups, committees] = await Promise.all([
         getEvents(),
         getClasses(),
         getChildrenByParent(user.uid),
+        getHobbyGroups(),
+        getCommittees(),
       ])
+
+      const entityIds = new Set([
+        ...groups.filter(g => (g.memberUids || []).includes(user.uid)).map(g => g.id),
+        ...committees.filter(c => (c.memberUids || []).includes(user.uid)).map(c => c.id),
+      ])
+      setMyEntityIds(entityIds)
 
       const colorMap = {}
       classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
@@ -76,7 +90,12 @@ export default function EventsPage() {
     load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
   }, [user, effectiveAdmin])
 
-  const filteredEvents = events.filter(ev => matchesFilter(ev, filterValue))
+  // A members-only event is visible to admins and to members of its group/committee
+  const canSeeMembersEvent = (ev) =>
+    effectiveAdmin
+    || (ev.groupId && myEntityIds.has(ev.groupId))
+    || (ev.committeeId && myEntityIds.has(ev.committeeId))
+  const filteredEvents = events.filter(ev => matchesFilter(ev, filterValue, canSeeMembersEvent(ev)))
 
   return (
     <div className="page-container rtl" dir="rtl">

@@ -30,8 +30,6 @@ function todayKey() {
 }
 
 function isVisible(event, filterRole) {
-  // Members-only events stay out of the community-wide calendar
-  if ((event.targetGroups || []).includes('members')) return false
   if (!filterRole || filterRole === 'all') return true
   const groups = event.targetGroups || ['all']
   return groups.includes('all') || groups.includes(filterRole)
