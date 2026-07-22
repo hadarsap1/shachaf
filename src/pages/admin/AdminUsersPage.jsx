@@ -6,6 +6,7 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 import { hasConsented } from '../../lib/consent'
+import { classLabel } from '../../lib/grades'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import {
   Users, UserPlus, MessageCircle, Search, X, Check,
@@ -321,28 +322,26 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
       .then(async ([ch, cl]) => {
         setKids(ch); setClasses(cl)
         // Privacy: a co-parent's details are shown ONLY after they registered
-        // AND approved the current policy version. Parents that exist only in
-        // the imported phone-book data (never registered) or registered users
-        // who haven't consented yet appear as an anonymous pending count.
-        const myEmail = (user.email || '').toLowerCase()
+        // AND approved the current policy version. Pending count =
+        //   registered-but-not-consented linked co-parents
+        // + imported phone-book parents nobody has claimed yet.
+        // The imported side is matched per CHILD by HEADCOUNT (imported entries
+        // vs linked accounts incl. this user), NOT by email — a parent who
+        // registered with a different email than the imported one must not be
+        // counted as a missing parent (it produced a false "ממתין לאישור" for
+        // fully-registered couples).
         const linkedUids = [...new Set(ch.flatMap(k => k.parentUids || []).filter(u => u !== user.uid))]
         const linkedUsers = linkedUids.length ? await getUsersByUids(linkedUids) : []
-        const byEmail = new Map()
-        for (const u of linkedUsers) {
-          byEmail.set((u.email || '').toLowerCase(), {
-            name: u.name, phone: u.phone, email: u.email, consented: hasConsented(u),
-          })
-        }
+        const consented = linkedUsers.filter(u => hasConsented(u))
+        setCoParents(consented.map(u => ({ name: u.name, phone: u.phone, email: u.email })))
+        const notConsentedRegistered = linkedUsers.length - consented.length
+        let importedMissing = 0
         for (const k of ch) {
-          for (const p of k.parents || []) {
-            const e = (p.email || '').toLowerCase()
-            if (!e || e === myEmail || byEmail.has(e)) continue
-            byEmail.set(e, { consented: false })  // imported only — no details kept
-          }
+          const importedCount = (k.parents || []).filter(p => p.name || p.email || p.phone).length
+          const linkedCount = (k.parentUids || []).length
+          importedMissing = Math.max(importedMissing, importedCount - linkedCount)
         }
-        const all = [...byEmail.values()]
-        setCoParents(all.filter(p => p.consented))
-        setPendingCoParents(all.filter(p => !p.consented).length)
+        setPendingCoParents(notConsentedRegistered + Math.max(0, importedMissing))
       })
       .catch(err => {
         // Timeout / connection failure → offer retry; a definitive empty
@@ -563,7 +562,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
                         {cls?.name || <Baby size={12} />}
                       </div>
                       <span className="flex-1 text-sm font-medium text-gray-700 text-right dark:text-gray-200">{k.name}</span>
-                      {cls && <span className="text-xs text-gray-400">כיתה {cls.name}</span>}
+                      {cls && <span className="text-xs text-gray-400">{classLabel(cls.name)}</span>}
                     </div>
                   )
                 })}

@@ -3,6 +3,7 @@ import { X, Plus, Loader2, Calendar } from 'lucide-react'
 import clsx from 'clsx'
 import { createCommitteeEvent, createGroupEvent, saveEvent, logConsent } from '../lib/db'
 import { CONSENT_VERSION } from '../lib/consent'
+import { classLabel } from '../lib/grades'
 import EventAudienceFields from './EventAudienceFields'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 
@@ -135,7 +136,7 @@ export default function QuickEventModal({ hats, classes = [], uid, onClose, onCr
             <EventAudienceFields value={audience} onChange={setAudience} classes={classes} entityLabel={entityLabel} />
           )}
           {hat?.type === 'class' && (
-            <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי כיתה {hat.name}</p>
+            <p className="text-xs text-gray-400 text-right">האירוע יוצג לחברי {classLabel(hat.name)}</p>
           )}
 
           <label className="flex items-start gap-2 cursor-pointer">

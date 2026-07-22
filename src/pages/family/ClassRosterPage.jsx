@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getClasses, getChildren, getChildrenByParent, getUsersByUids } from '../../lib/db'
 import { hasConsented, childHasConsentedParent } from '../../lib/consent'
+import { classLabel } from '../../lib/grades'
 import { GraduationCap, Phone, Users, Loader2, Mail, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import clsx from 'clsx'
@@ -183,7 +184,7 @@ export default function ClassRosterPage() {
           <span className="text-sm opacity-80">{classChildren.length} ילדים</span>
           <div>
             <h2 className="text-lg font-black">{cls.name}</h2>
-            {cls.grade && <p className="text-xs opacity-70">כיתה {cls.grade}</p>}
+            {cls.grade && <p className="text-xs opacity-70">{classLabel(cls.grade)}</p>}
           </div>
         </div>
       )}
@@ -218,7 +219,7 @@ export default function ClassRosterPage() {
                 <div key={cls.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-3 dark:bg-gray-800 dark:border-gray-700">
                   <div className="text-right flex-1">
                     <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{cls.name}</p>
-                    {cls.grade && <p className="text-xs text-gray-400">כיתה {cls.grade}</p>}
+                    {cls.grade && <p className="text-xs text-gray-400">{classLabel(cls.grade)}</p>}
                     {admins.length === 0 && <p className="text-xs text-gray-400 mt-1">אין רכז/ת כיתה</p>}
                     {admins.map(a => (
                       <div key={a.uid} className="flex flex-wrap gap-3 mt-1 justify-end">
