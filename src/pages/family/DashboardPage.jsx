@@ -267,10 +267,10 @@ export default function DashboardPage() {
       ])
       setEvents(eventData.filter(ev => {
         if (ev.date && ev.date < today) return false
-        // Members-only events show only to members of their group/committee
+        // Members-only events show only to CURRENT members of their group/
+        // committee — no admin-by-role bypass, so they disappear on leave.
         if ((ev.targetGroups || []).includes('members')) {
-          return isAdmin
-            || (ev.groupId && myEntityIds.has(ev.groupId))
+          return (ev.groupId && myEntityIds.has(ev.groupId))
             || (ev.committeeId && myEntityIds.has(ev.committeeId))
         }
         if (isAdmin) return true
