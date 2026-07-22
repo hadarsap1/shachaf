@@ -68,7 +68,7 @@ const TUTORIALS = [
   },
   {
     id: 'whatsapp',
-    title: 'איך שולחים WhatsApp למשפחה המארחת',
+    title: 'איך שולחים WhatsApp למשפחה הקולטת',
     icon: '💬',
     steps: [
       'עברו לדף "משימות"',

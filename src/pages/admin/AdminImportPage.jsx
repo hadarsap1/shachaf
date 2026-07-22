@@ -27,7 +27,7 @@ const CLASS_LIST_COLS = {
 
 const TABS = [
   { key: 'new_family', label: 'משפחות חדשות' },
-  { key: 'host_family', label: 'משפחות מארחות' },
+  { key: 'host_family', label: 'משפחות קולטות' },
   { key: 'community', label: 'קהילה' },
 ]
 

@@ -21,7 +21,7 @@ function googleCalendarUrl(event) {
 
 const FAMILY_CARDS = [
   { value: 'new_family',  label: 'משפחות חדשות', color: '#1B3B70', bg: '#EBF1FA' },
-  { value: 'host_family', label: 'משפחות מארחות', color: '#065f46', bg: '#d1fae5' },
+  { value: 'host_family', label: 'משפחות קולטות', color: '#065f46', bg: '#d1fae5' },
 ]
 
 const TYPE_OPTIONS = [
@@ -47,7 +47,7 @@ const formatDate = (str) => {
 const TARGET_GROUPS = [
   { value: 'all',        label: 'כולם' },
   { value: 'new_family', label: 'משפחות חדשות' },
-  { value: 'host_family',label: 'משפחות מארחות' },
+  { value: 'host_family',label: 'משפחות קולטות' },
   { value: 'class',      label: 'כיתה ספציפית' },
 ]
 

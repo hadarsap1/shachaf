@@ -55,7 +55,7 @@ function FamilyDetailPanel({ family, onClose }) {
         {phone && (
           <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
             <a
-              href={`https://wa.me/${phone}?text=${encodeURIComponent('שלום! אני המשפחה המארחת שלכם 👋 אשמח לעזור בכל שאלה')}`}
+              href={`https://wa.me/${phone}?text=${encodeURIComponent('שלום! אני המשפחה הקולטת שלכם 👋 אשמח לעזור בכל שאלה')}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium hover:bg-green-100 transition-colors border border-green-200 dark:bg-green-900/20 dark:text-green-300">
               <MessageCircle size={15} />
@@ -104,7 +104,7 @@ function FamilyCard({ family, taskCounts, onClick }) {
 
       {phone && (
         <a
-          href={`https://wa.me/${phone}?text=${encodeURIComponent(`שלום! אני המשפחה המארחת שלכם 👋 אשמח לעזור בכל שאלה`)}`}
+          href={`https://wa.me/${phone}?text=${encodeURIComponent(`שלום! אני המשפחה הקולטת שלכם 👋 אשמח לעזור בכל שאלה`)}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}

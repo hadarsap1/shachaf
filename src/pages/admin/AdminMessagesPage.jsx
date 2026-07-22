@@ -24,7 +24,7 @@ function Thread({ replies }) {
 
 const ROLE_LABELS = {
   new_family:  'משפחה חדשה',
-  host_family: 'משפחה מארחת',
+  host_family: 'משפחה קולטת',
   admin:       'מנהל',
   super_admin: 'מנהל ראשי',
 }

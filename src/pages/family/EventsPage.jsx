@@ -11,7 +11,7 @@ import clsx from 'clsx'
 const BASE_FILTERS = [
   { value: 'all',        label: 'הכל' },
   { value: 'new_family', label: 'משפחות חדשות' },
-  { value: 'host_family',label: 'משפחות מארחות' },
+  { value: 'host_family',label: 'משפחות קולטות' },
 ]
 
 function matchesFilter(ev, filterValue, canSeeMembersEvent) {
