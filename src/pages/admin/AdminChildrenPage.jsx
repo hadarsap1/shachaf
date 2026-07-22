@@ -98,6 +98,14 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
   useEscapeToClose(onClose, !saving)
 
   const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
+  // Editable imported-parent entries (child.parents[]) — for fixing typos in
+  // names/phones/emails. Persisted by saveChild (normalizeParents + parentEmails).
+  const setParent = (i, field, val) =>
+    setDraft(d => ({ ...d, parents: (d.parents || []).map((p, idx) => idx === i ? { ...p, [field]: val } : p) }))
+  const addParent = () =>
+    setDraft(d => ({ ...d, parents: [...(d.parents || []), { name: '', phone: '', email: '' }] }))
+  const removeParent = (i) =>
+    setDraft(d => ({ ...d, parents: (d.parents || []).filter((_, idx) => idx !== i) }))
 
   const parentSuggestions = parentSearch.length > 1
     ? allUsers.filter(u =>
@@ -175,6 +183,18 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
           </div>
 
           <div>
+            <label className="label">שם משפחה (אופציונלי)</label>
+            <input value={draft.familyName || ''} onChange={e => set('familyName', e.target.value)}
+              placeholder="שם משפחה" className="input w-full" />
+          </div>
+
+          <div>
+            <label className="label">כתובת (אופציונלי)</label>
+            <input value={draft.address || ''} onChange={e => set('address', e.target.value)}
+              placeholder="רחוב, עיר" className="input w-full text-right" />
+          </div>
+
+          <div>
             <label className="label">כיתה</label>
             <select value={draft.classId || ''} onChange={e => set('classId', e.target.value)} className="input w-full">
               <option value="">בחר כיתה</option>
@@ -192,52 +212,65 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
 
           <AdminNotesSection childId={draft.id} isNew={isNew} />
 
-          {(draft.address || (draft.parents || []).length > 0) && (
-            <div className="bg-gray-50 rounded-xl p-3 space-y-2 dark:bg-gray-900">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטים מהייבוא</div>
-                {(() => {
-                  const matchable = (draft.parents || [])
-                    .map(p => ({ p, u: p.email && allUsers.find(u => u.email?.toLowerCase() === p.email) }))
-                    .filter(({ u }) => u && !(draft.parentUids || []).includes(u.uid))
-                  return matchable.length > 1 ? (
-                    <button
-                      onClick={async () => { for (const { p, u } of matchable) await handleLink(u.uid, p) }}
-                      disabled={linking}
-                      className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
-                      <Link2 size={11} /> קשר את כולם ({matchable.length})
-                    </button>
-                  ) : null
-                })()}
-              </div>
-              {draft.address && (
-                <div className="text-sm text-gray-700 dark:text-gray-200">📍 {draft.address}</div>
-              )}
-              {(draft.parents || []).map((p, i) => {
-                const match = p.email && allUsers.find(u => u.email?.toLowerCase() === p.email)
-                const alreadyLinked = match && (draft.parentUids || []).includes(match.uid)
-                return (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-800 dark:text-gray-100">{p.name || '—'}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400" dir="ltr">
-                        {[p.phone, p.email].filter(Boolean).join(' · ')}
-                      </div>
-                    </div>
-                    {match && !alreadyLinked && (
-                      <button onClick={() => handleLink(match.uid, p)} disabled={linking}
-                        className="text-xs text-primary-600 dark:text-primary-400 bg-primary-50 border border-primary-200 rounded-full px-2.5 py-1 hover:bg-primary-100 dark:hover:bg-primary-900/40 flex items-center gap-1 dark:bg-primary-900/30">
-                        <Link2 size={11} /> קשר למשתמש
-                      </button>
-                    )}
-                    {alreadyLinked && (
-                      <span className="text-xs text-secondary-600 dark:text-secondary-400 flex items-center gap-1"><Check size={11} /> מקושר</span>
-                    )}
-                  </div>
-                )
-              })}
+          <div className="bg-gray-50 rounded-xl p-3 space-y-3 dark:bg-gray-900">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטי הורים</div>
+              {(() => {
+                const matchable = (draft.parents || [])
+                  .map(p => ({ p, u: p.email && allUsers.find(u => u.email?.toLowerCase() === p.email) }))
+                  .filter(({ u }) => u && !(draft.parentUids || []).includes(u.uid))
+                return matchable.length > 1 ? (
+                  <button
+                    onClick={async () => { for (const { p, u } of matchable) await handleLink(u.uid, p) }}
+                    disabled={linking}
+                    className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                    <Link2 size={11} /> קשר את כולם ({matchable.length})
+                  </button>
+                ) : null
+              })()}
             </div>
-          )}
+
+            {(draft.parents || []).map((p, i) => {
+              const match = p.email && allUsers.find(u => u.email?.toLowerCase() === p.email)
+              const alreadyLinked = match && (draft.parentUids || []).includes(match.uid)
+              return (
+                <div key={i} className="rounded-lg border border-gray-100 bg-white p-2.5 space-y-2 dark:bg-gray-800 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <input value={p.name || ''} onChange={e => setParent(i, 'name', e.target.value)}
+                      placeholder="שם ההורה" className="input flex-1 text-sm text-right py-1.5" />
+                    <button onClick={() => removeParent(i)} title="הסר הורה"
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg flex-shrink-0 dark:hover:bg-red-900/20">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <input value={p.phone || ''} onChange={e => setParent(i, 'phone', e.target.value)}
+                      placeholder="טלפון" dir="ltr" className="input flex-1 text-sm py-1.5" />
+                    <input value={p.email || ''} onChange={e => setParent(i, 'email', e.target.value)}
+                      placeholder="אימייל" dir="ltr" className="input flex-1 text-sm py-1.5" />
+                  </div>
+                  {match && !alreadyLinked && (
+                    <button onClick={() => handleLink(match.uid, p)} disabled={linking}
+                      className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                      <Link2 size={11} /> קשר למשתמש רשום ({match.name})
+                    </button>
+                  )}
+                  {alreadyLinked && (
+                    <span className="text-xs text-secondary-600 dark:text-secondary-400 flex items-center gap-1"><Check size={11} /> מקושר לחשבון רשום</span>
+                  )}
+                </div>
+              )
+            })}
+
+            <button onClick={addParent}
+              className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+              <Plus size={12} /> הוסף הורה
+            </button>
+            <p className="text-[11px] text-gray-400 leading-relaxed">
+              עריכת שם/טלפון כאן מתקנת את פרטי ההורה בדף הקשר ובנתוני הכיתה. פרטים של הורה
+              שכבר נרשם לאפליקציה נערכים גם דרך "חברים".
+            </p>
+          </div>
 
           <div>
             <label className="label mb-3">קישור הורים</label>
