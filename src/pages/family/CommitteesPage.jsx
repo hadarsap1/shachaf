@@ -277,11 +277,17 @@ function CommitteeEvents({ committeeId, uid, isMember, isAdmin, classes = [] }) 
   const [saving, setSaving] = useState(false)
   const [publishAck, setPublishAck] = useState(false)
   const [form, setForm] = useState({ title: '', date: '', time: '', location: '', description: '' })
-  const [audience, setAudience] = useState({ targetGroups: ['all'], classIds: [] })
+  // Default to members-only so a committee event doesn't broadcast to the whole
+  // community unless the creator deliberately widens the audience.
+  const [audience, setAudience] = useState({ targetGroups: ['members'], classIds: [] })
 
   useEffect(() => {
     getEventsByCommittee(committeeId).then(setEvents).catch(() => setEvents([]))
   }, [committeeId])
+
+  // Non-members don't see members-only events in the tab
+  const visibleEvents = (events || []).filter(ev =>
+    isMember || isAdmin || !(ev.targetGroups || []).includes('members'))
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -297,7 +303,7 @@ function CommitteeEvents({ committeeId, uid, isMember, isAdmin, classes = [] }) 
       })
       setEvents(await getEventsByCommittee(committeeId))
       setForm({ title: '', date: '', time: '', location: '', description: '' })
-      setAudience({ targetGroups: ['all'], classIds: [] })
+      setAudience({ targetGroups: ['members'], classIds: [] })
       setPublishAck(false)
       setShowForm(false)
     } finally { setSaving(false) }
@@ -329,7 +335,7 @@ function CommitteeEvents({ committeeId, uid, isMember, isAdmin, classes = [] }) 
           <input value={form.location} onChange={set('location')} placeholder="מיקום (אופציונלי)" className="w-full input text-sm text-right" />
           <textarea value={form.description} onChange={set('description')} placeholder="תיאור (אופציונלי)" rows={2}
             className="w-full input text-sm text-right resize-none" />
-          <EventAudienceFields value={audience} onChange={setAudience} classes={classes} />
+          <EventAudienceFields value={audience} onChange={setAudience} classes={classes} entityLabel="הוועדה" />
           <label className="flex items-start gap-2 cursor-pointer">
             <input type="checkbox" checked={publishAck} onChange={e => setPublishAck(e.target.checked)}
               className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
@@ -349,11 +355,11 @@ function CommitteeEvents({ committeeId, uid, isMember, isAdmin, classes = [] }) 
 
       {events === null
         ? <p className="text-xs text-gray-400 text-center py-2"><Loader2 size={14} className="animate-spin inline" /></p>
-        : events.length === 0
+        : visibleEvents.length === 0
           ? <p className="text-xs text-gray-400 text-right">אין אירועים מתוכננים לוועדה זו</p>
           : (
             <div className="space-y-2">
-              {events.map(ev => {
+              {visibleEvents.map(ev => {
                 const canDel = isAdmin || ev.createdBy === uid
                 return (
                   <div key={ev.id} className="flex items-center justify-between text-sm group">

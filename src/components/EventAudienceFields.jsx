@@ -9,6 +9,10 @@ import clsx from 'clsx'
 //
 // value: { targetGroups: string[], classIds: string[] }
 // onChange: (nextValue) => void
+// entityLabel: when set (e.g. "הקבוצה" / "הוועדה"), a first option
+//   "רק חברי <entityLabel>" (targetGroups=['members']) is offered — such events
+//   stay out of the community-wide feed and show only inside the entity, to
+//   members. Used by group/committee forms; omitted for class/admin events.
 export const AUDIENCE_OPTIONS = [
   { value: 'all',         label: 'כל הקהילה' },
   { value: 'new_family',  label: 'משפחות חדשות' },
@@ -16,7 +20,10 @@ export const AUDIENCE_OPTIONS = [
   { value: 'class',       label: 'כיתות מסוימות' },
 ]
 
-export default function EventAudienceFields({ value, onChange, classes = [] }) {
+export default function EventAudienceFields({ value, onChange, classes = [], entityLabel = '' }) {
+  const options = entityLabel
+    ? [{ value: 'members', label: `רק חברי ${entityLabel}` }, ...AUDIENCE_OPTIONS]
+    : AUDIENCE_OPTIONS
   const targetGroups = value?.targetGroups?.length ? value.targetGroups : ['all']
   const classIds = value?.classIds || []
   const active = targetGroups[0] || 'all'
@@ -34,7 +41,7 @@ export default function EventAudienceFields({ value, onChange, classes = [] }) {
     <div className="space-y-2">
       <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block text-right">קהל יעד</label>
       <div className="flex flex-wrap gap-1.5 justify-end">
-        {AUDIENCE_OPTIONS.map(o => (
+        {options.map(o => (
           <button
             key={o.value}
             type="button"
