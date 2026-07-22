@@ -7,7 +7,7 @@ import clsx from 'clsx'
 const FAMILY_CHIPS = [
   { value: 'all',         label: 'הכל' },
   { value: 'new_family',  label: 'משפחות חדשות' },
-  { value: 'host_family', label: 'משפחות מארחות' },
+  { value: 'host_family', label: 'משפחות קולטות' },
 ]
 
 const STATUS_OPTIONS = [
@@ -25,14 +25,14 @@ const PRIORITY_OPTIONS = [
 const AUDIENCE_OPTIONS = [
   { value: 'all',         label: 'כולם' },
   { value: 'new_family',  label: 'משפחות חדשות' },
-  { value: 'host_family', label: 'משפחות מארחות' },
+  { value: 'host_family', label: 'משפחות קולטות' },
   { value: 'class',       label: 'כיתה ספציפית' },
 ]
 
 const AUDIENCE_LABEL = {
   all:         'כולם',
   new_family:  'משפחות חדשות',
-  host_family: 'משפחות מארחות',
+  host_family: 'משפחות קולטות',
   class:       'כיתה',
 }
 

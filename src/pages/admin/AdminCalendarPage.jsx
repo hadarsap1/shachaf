@@ -10,7 +10,7 @@ import clsx from 'clsx'
 const ROLE_FILTERS = [
   { value: 'all',        label: 'הכל' },
   { value: 'new_family', label: 'משפחות חדשות' },
-  { value: 'host_family',label: 'משפחות מארחות' },
+  { value: 'host_family',label: 'משפחות קולטות' },
   { value: 'admin',      label: 'מנהלים' },
 ]
 
@@ -102,7 +102,7 @@ function EventDetailPanel({ event, onClose }) {
     if (groups.includes('all')) return 'כולם'
     return groups.map(g => {
       if (g === 'new_family')  return 'משפחות חדשות'
-      if (g === 'host_family') return 'משפחות מארחות'
+      if (g === 'host_family') return 'משפחות קולטות'
       return g
     }).join(', ')
   }

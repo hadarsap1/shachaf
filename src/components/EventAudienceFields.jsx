@@ -16,7 +16,7 @@ import clsx from 'clsx'
 export const AUDIENCE_OPTIONS = [
   { value: 'all',         label: 'כל הקהילה' },
   { value: 'new_family',  label: 'משפחות חדשות' },
-  { value: 'host_family', label: 'משפחות מארחות' },
+  { value: 'host_family', label: 'משפחות קולטות' },
   { value: 'class',       label: 'כיתות מסוימות' },
 ]
 

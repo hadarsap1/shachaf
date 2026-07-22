@@ -6,7 +6,7 @@ import clsx from 'clsx'
 const AUDIENCE_OPTIONS = [
   { value: 'all',         label: 'כולם' },
   { value: 'new_family',  label: 'משפחות חדשות' },
-  { value: 'host_family', label: 'משפחות מארחות' },
+  { value: 'host_family', label: 'משפחות קולטות' },
   { value: 'class',       label: 'כיתה ספציפית' },
 ]
 
@@ -222,7 +222,7 @@ export default function AdminAnnouncementsPage({ embedded = false }) {
                             </span>
                           ))
                         }
-                        const audienceLabels = { all: 'כולם', new_family: 'משפחות חדשות', host_family: 'משפחות מארחות' }
+                        const audienceLabels = { all: 'כולם', new_family: 'משפחות חדשות', host_family: 'משפחות קולטות' }
                         return (
                           <span className="badge-primary text-xs">
                             {audienceLabels[audience] || 'כולם'}

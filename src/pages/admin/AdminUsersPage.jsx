@@ -24,7 +24,7 @@ const DEFAULT_MESSAGES = {
 להרשמה:
 ${INVITE_URL}`,
   host_family: `היי, קהילת שחף 👋
-קהילת שחף מזמינה אתכם להצטרף לפלטפורמה הקהילתית כמשפחה מארחת.
+קהילת שחף מזמינה אתכם להצטרף לפלטפורמה הקהילתית כמשפחה קולטת.
 דרכה תוכלו לעקוב אחר המשפחות שבאחריותכם ולהישאר מעודכנים.
 
 להרשמה:
@@ -40,7 +40,7 @@ ${INVITE_URL}`,
 const ROLES = [
   { value: 'community',   label: 'חבר קהילה' },
   { value: 'new_family',  label: 'משפחה חדשה' },
-  { value: 'host_family', label: 'משפחה מארחת' },
+  { value: 'host_family', label: 'משפחה קולטת' },
   { value: 'admin',       label: 'מנהל' },
   { value: 'super_admin', label: 'מנהל ראשי' },
 ]
@@ -48,7 +48,7 @@ const ROLES = [
 // Additional roles that can be stacked on top of the primary role
 const EXTRA_ROLES = [
   { value: 'new_family',  label: 'משפחה חדשה' },
-  { value: 'host_family', label: 'משפחה מארחת' },
+  { value: 'host_family', label: 'משפחה קולטת' },
 ]
 
 const ROLE_STYLE = {
@@ -108,7 +108,7 @@ function InvitePanel({ onClose }) {
         </div>
 
         <div className="flex border-b border-gray-100 dark:border-gray-700">
-          {[{ key: 'new_family', label: 'משפחה חדשה' }, { key: 'host_family', label: 'משפחה מארחת' }, { key: 'community', label: 'קהילה' }].map(t => (
+          {[{ key: 'new_family', label: 'משפחה חדשה' }, { key: 'host_family', label: 'משפחה קולטת' }, { key: 'community', label: 'קהילה' }].map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); setCopied(false); setMsgCopied(false) }}
               className={clsx('flex-1 py-3 text-sm font-medium transition-all border-b-2',
                 tab === t.key ? 'border-primary-600 text-primary-700 dark:text-primary-300' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200')}>
@@ -168,7 +168,7 @@ function deriveRoles(selected) {
 // Checkboxes shown in the add/edit forms (community is the implicit default, not shown)
 const ROLE_CHIPS = [
   { value: 'new_family',  label: 'משפחה חדשה' },
-  { value: 'host_family', label: 'משפחה מארחת' },
+  { value: 'host_family', label: 'משפחה קולטת' },
   { value: 'admin',       label: 'מנהל' },
   { value: 'super_admin', label: 'מנהל ראשי' },
 ]

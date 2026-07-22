@@ -6,7 +6,7 @@ import clsx from 'clsx'
 
 const DEMO_ROLES = [
   { key: 'newFamily',  label: 'משפחה חדשה',  sub: 'צפייה במשימות, אירועים ועזר', icon: Home,   iconBg: 'bg-primary-100',   iconColor: 'text-primary-600' },
-  { key: 'hostFamily', label: 'משפחה מארחת', sub: 'ניהול משפחות מוקצות',         icon: Users,  iconBg: 'bg-secondary-100', iconColor: 'text-secondary-600' },
+  { key: 'hostFamily', label: 'משפחה קולטת', sub: 'ניהול משפחות מוקצות',         icon: Users,  iconBg: 'bg-secondary-100', iconColor: 'text-secondary-600' },
   { key: 'admin',      label: 'מנהל / ועד',  sub: 'ניהול משימות, טפסים ואירועים', icon: Shield, iconBg: 'bg-accent-100',    iconColor: 'text-accent-600' },
   { key: 'superAdmin', label: 'מנהל ראשי',   sub: 'הרשאות מלאות כולל ניהול מנהלים', icon: Shield, iconBg: 'bg-red-100', iconColor: 'text-red-600', subtle: true },
 ]
@@ -327,7 +327,7 @@ export default function LoginPage() {
                         מה הקשר שלך לקהילה? <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span>
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {[{ value: 'new_family', label: 'משפחה חדשה' }, { value: 'host_family', label: 'משפחה מארחת' }].map(r => {
+                        {[{ value: 'new_family', label: 'משפחה חדשה' }, { value: 'host_family', label: 'משפחה קולטת' }].map(r => {
                           const on = regRoles.has(r.value)
                           return (
                             <button key={r.value} type="button"

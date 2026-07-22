@@ -66,8 +66,8 @@ export const MOCK_FORMS = [
   },
   {
     id: 'form-2',
-    title: 'טופס פרטי משפחה מארחת',
-    description: 'פרטי קשר ומידע על המשפחה המארחת',
+    title: 'טופס פרטי משפחה קולטת',
+    description: 'פרטי קשר ומידע על המשפחה הקולטת',
     targetRole: 'host_family',
     status: 'published',
     createdAt: '2024-01-10',
@@ -114,8 +114,8 @@ export const MOCK_TASKS = [
   },
   {
     id: 't2',
-    title: 'פגישת היכרות עם המשפחה המארחת',
-    description: 'תאמו פגישת היכרות ראשונה עם המשפחה המארחת שלכם.',
+    title: 'פגישת היכרות עם המשפחה הקולטת',
+    description: 'תאמו פגישת היכרות ראשונה עם המשפחה הקולטת שלכם.',
     milestone: 'היכרות עם הקהילה',
     milestoneOrder: 2,
     status: 'in_progress',

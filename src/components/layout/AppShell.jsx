@@ -191,7 +191,7 @@ function UserMenu({ user, logout }) {
   const isUrl = (s) => typeof s === 'string' && s.startsWith('http')
   const roleLabel = {
     new_family:  'משפחה חדשה',
-    host_family: 'משפחה מארחת',
+    host_family: 'משפחה קולטת',
     community:   'חבר קהילה',
     admin:       'מנהל',
     super_admin: 'מנהל ראשי',

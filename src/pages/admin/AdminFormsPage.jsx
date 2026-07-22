@@ -20,7 +20,7 @@ const FIELD_TYPES = [
 
 const TARGET_OPTIONS = [
   { value: 'new_family',  label: 'משפחות חדשות',  icon: User },
-  { value: 'host_family', label: 'משפחות מארחות', icon: Users },
+  { value: 'host_family', label: 'משפחות קולטות', icon: Users },
   { value: 'all',         label: 'כולם',           icon: Users },
   { value: 'class',       label: 'כיתה ספציפית',  icon: GraduationCap },
 ]

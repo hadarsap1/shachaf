@@ -9,14 +9,14 @@ import clsx from 'clsx'
 
 const VIEW_AS_OPTIONS = [
   { role: 'new_family',  label: 'משפחה חדשה',  sub: 'לוח בית, כיתה, משימות',       icon: Home,           bg: 'bg-primary-50',   text: 'text-primary-700',   border: 'border-primary-200' },
-  { role: 'host_family', label: 'משפחה מארחת', sub: 'ניהול משפחות מוקצות',          icon: Users,          bg: 'bg-secondary-50', text: 'text-secondary-700', border: 'border-secondary-200' },
+  { role: 'host_family', label: 'משפחה קולטת', sub: 'ניהול משפחות מוקצות',          icon: Users,          bg: 'bg-secondary-50', text: 'text-secondary-700', border: 'border-secondary-200' },
   { role: 'community',   label: 'חבר קהילה',   sub: 'אירועים, ועדות, קבוצות',      icon: GraduationCap,  bg: 'bg-green-50',     text: 'text-green-700',     border: 'border-green-200' },
   { role: 'admin',       label: 'מנהל',         sub: 'פאנל ניהול, הודעות, דוחות',   icon: Shield,         bg: 'bg-accent-50',    text: 'text-accent-700',    border: 'border-accent-200' },
 ]
 
 const ROLES = [
   { value: 'new_family',  label: 'משפחה חדשה' },
-  { value: 'host_family', label: 'משפחה מארחת' },
+  { value: 'host_family', label: 'משפחה קולטת' },
   { value: 'admin',       label: 'מנהל' },
   { value: 'super_admin', label: 'מנהל ראשי' },
 ]
