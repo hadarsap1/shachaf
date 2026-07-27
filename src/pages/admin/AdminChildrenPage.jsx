@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { classLabel, normalizeClassName, inferGrade } from '../../lib/grades'
+import { phoneIndex, matchUserToParent } from '../../lib/phone'
 import { readSheetRows } from '../../lib/spreadsheet'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
@@ -107,6 +108,18 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
     setDraft(d => ({ ...d, parents: [...(d.parents || []), { name: '', phone: '', email: '' }] }))
   const removeParent = (i) =>
     setDraft(d => ({ ...d, parents: (d.parents || []).filter((_, idx) => idx !== i) }))
+
+  // Match an imported parent entry to a registered account: by email when the
+  // file has one, otherwise by a UNIQUE phone number (registry exports carry
+  // "נייד אב"/"נייד אם" but no emails). Admin-side only — see lib/phone.js.
+  const userByEmail = Object.fromEntries(
+    allUsers.filter(u => u.email).map(u => [u.email.toLowerCase(), u.uid])
+  )
+  const byPhone = phoneIndex(allUsers)
+  const findUser = (p) => {
+    const uid = matchUserToParent(p, { userByEmail, byPhone })
+    return uid ? allUsers.find(u => u.uid === uid) : null
+  }
 
   const parentSuggestions = parentSearch.length > 1
     ? allUsers.filter(u =>
@@ -218,7 +231,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
               <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">פרטי הורים</div>
               {(() => {
                 const matchable = (draft.parents || [])
-                  .map(p => ({ p, u: p.email && allUsers.find(u => u.email?.toLowerCase() === p.email) }))
+                  .map(p => ({ p, u: findUser(p) }))
                   .filter(({ u }) => u && !(draft.parentUids || []).includes(u.uid))
                 return matchable.length > 1 ? (
                   <button
@@ -232,7 +245,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
             </div>
 
             {(draft.parents || []).map((p, i) => {
-              const match = p.email && allUsers.find(u => u.email?.toLowerCase() === p.email)
+              const match = findUser(p)
               const alreadyLinked = match && (draft.parentUids || []).includes(match.uid)
               return (
                 <div key={i} className="rounded-lg border border-gray-100 bg-white p-2.5 space-y-2 dark:bg-gray-800 dark:border-gray-700">
@@ -253,7 +266,8 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
                   {match && !alreadyLinked && (
                     <button onClick={() => handleLink(match.uid, p)} disabled={linking}
                       className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
-                      <Link2 size={11} /> קשר למשתמש רשום ({match.name})
+                      <Link2 size={11} />
+                      קשר ל{match.name} (זוהה לפי {p.email && userByEmail[String(p.email).toLowerCase()] ? 'אימייל' : 'טלפון'})
                     </button>
                   )}
                   {alreadyLinked && (
@@ -653,12 +667,14 @@ export default function AdminChildrenPage() {
 
   const handleImport = async (rows) => {
     const created = await bulkImportChildren(rows)
-    // Auto-link children to existing users by parent email
+    // Auto-link children to existing users by parent email, or — when the file
+    // has no emails (registry export) — by a unique phone match
     const userByEmail = Object.fromEntries(users.filter(u => u.email).map(u => [u.email.toLowerCase(), u.uid]))
+    const byPhone = phoneIndex(users)
     let linked = 0
     for (const child of created) {
       for (const p of child.parents || []) {
-        const uid = p.email && userByEmail[p.email]
+        const uid = matchUserToParent(p, { userByEmail, byPhone })
         if (uid) {
           try { await linkAndEnrich(child.id, uid, p, child); linked++ } catch (e) { console.error('auto-link failed', child.name, e) }
         }
@@ -723,15 +739,17 @@ export default function AdminChildrenPage() {
     }
   }
 
-  // Link every checked child to registered users whose email matches an imported parent
+  // Link every checked child to registered users matching an imported parent —
+  // by email, or by a unique phone number when the file carried no emails
   const handleBulkLink = async () => {
     setBulkWorking(true)
     try {
       const userByEmail = Object.fromEntries(users.filter(u => u.email).map(u => [u.email.toLowerCase(), u.uid]))
+      const byPhone = phoneIndex(users)
       let linked = 0
       for (const child of children.filter(c => checkedIds.has(c.id))) {
         for (const p of child.parents || []) {
-          const uid = p.email && userByEmail[p.email]
+          const uid = matchUserToParent(p, { userByEmail, byPhone })
           if (uid && !(child.parentUids || []).includes(uid)) {
             try { await linkAndEnrich(child.id, uid, p, child); linked++ } catch (e) { console.error('bulk link failed', child.name, e) }
           }
@@ -739,8 +757,34 @@ export default function AdminChildrenPage() {
       }
       setCheckedIds(new Set())
       load()
-      if (linked === 0) toast('לא נמצאו הורים רשומים להצמדה (לפי מייל)', 'error')
+      if (linked === 0) toast('לא נמצאו הורים רשומים להצמדה (לפי מייל או טלפון)', 'error')
       else toast(`קושרו ${linked} הורים`)
+    } finally {
+      setBulkWorking(false)
+    }
+  }
+
+  // Bulk move: reassign every checked child to another class (fixes duplicate
+  // classes created by an import, or a whole cohort moving up a year)
+  const handleBulkMove = async (classId) => {
+    if (!classId) return
+    const target = classes.find(c => c.id === classId)
+    const moving = children.filter(c => checkedIds.has(c.id) && c.classId !== classId)
+    if (!moving.length) { toast('כל הילדים שנבחרו כבר בכיתה הזו'); return }
+    if (!window.confirm(`להעביר ${moving.length} ילדים ל${classLabel(target?.name, target?.grade)}?`)) return
+    setBulkWorking(true)
+    try {
+      let moved = 0
+      for (const child of moving) {
+        try { await saveChild({ ...child, classId }); moved++ }
+        catch (e) { console.error('bulk move failed', child.name, e) }
+      }
+      logAudit(currentUser, 'children_bulk_move', {
+        details: `הועברו ${moved} ילדים ל${target?.name || classId}`,
+      })
+      setCheckedIds(new Set())
+      load()
+      toast(moved ? `הועברו ${moved} ילדים ל${classLabel(target?.name, target?.grade)}` : 'ההעברה נכשלה', moved ? undefined : 'error')
     } finally {
       setBulkWorking(false)
     }
@@ -806,11 +850,23 @@ export default function AdminChildrenPage() {
               {checkedIds.size > 0 ? `${checkedIds.size} נבחרו` : 'בחר הכל'}
             </span>
             {checkedIds.size > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <select
+                  value=""
+                  disabled={bulkWorking}
+                  onChange={e => { const v = e.target.value; e.target.value = ''; handleBulkMove(v) }}
+                  title="העבר את הנבחרים לכיתה אחרת"
+                  className="text-xs border border-gray-200 dark:border-gray-600 rounded-full px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 max-w-[11rem]"
+                >
+                  <option value="">העבר לכיתה…</option>
+                  {classes.map(c => (
+                    <option key={c.id} value={c.id}>{classLabel(c.name, c.grade)}</option>
+                  ))}
+                </select>
                 <button onClick={handleBulkLink} disabled={bulkWorking}
                   className="text-xs text-primary-600 dark:text-primary-400 bg-primary-50 border border-primary-200 rounded-full px-3 py-1.5 hover:bg-primary-100 dark:hover:bg-primary-900/40 flex items-center gap-1 dark:bg-primary-900/30">
                   {bulkWorking ? <Loader2 size={11} className="animate-spin" /> : <Link2 size={11} />}
-                  קשר הורים לפי מייל
+                  קשר הורים
                 </button>
                 <button onClick={handleBulkDelete} disabled={bulkWorking}
                   className="text-xs text-red-600 dark:text-red-400 bg-red-50 border border-red-200 dark:border-red-700 rounded-full px-3 py-1.5 hover:bg-red-100 flex items-center gap-1 dark:bg-red-900/20">
