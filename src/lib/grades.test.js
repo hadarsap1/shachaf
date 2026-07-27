@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GRADES, GRADE_SEP, gradeList, isKindergarten, classLabel } from './grades'
+import { GRADES, GRADE_SEP, gradeList, isKindergarten, classLabel, normalizeClassName, inferGrade } from './grades'
 
 describe('gradeList', () => {
   it('splits a multi-grade string back to its parts', () => {
@@ -40,5 +40,41 @@ describe('classLabel', () => {
   it('isKindergarten detects גן values only', () => {
     expect(isKindergarten('גן חובה')).toBe(true)
     expect(isKindergarten('א')).toBe(false)
+  })
+})
+
+describe('normalizeClassName (import matching)', () => {
+  it('matches a registry name to the existing garden class', () => {
+    // The real bug: file said "שחפית", system had "גן שחפית" → duplicate class
+    expect(normalizeClassName('שחפית')).toBe(normalizeClassName('גן שחפית'))
+    expect(normalizeClassName('חופית')).toBe(normalizeClassName('גן חופית'))
+  })
+  it('strips the כיתה prefix and quotes', () => {
+    expect(normalizeClassName('כיתה א')).toBe('א')
+    expect(normalizeClassName("א'")).toBe('א')
+    expect(normalizeClassName('א״1')).toBe('א1')
+  })
+  it('does not strip גן when it is part of the name itself', () => {
+    // "גני" is not the prefix "גן " — must stay intact
+    expect(normalizeClassName('גני תל אביב')).toBe('גני תל אביב')
+  })
+  it('keeps distinct classes distinct', () => {
+    expect(normalizeClassName('שחפית')).not.toBe(normalizeClassName('שחף'))
+  })
+})
+
+describe('inferGrade (auto-created classes on import)', () => {
+  it('gives a garden name a garden grade, not its first letter', () => {
+    // was: grade "ש" → class rendered as "כיתה שחפית"
+    expect(inferGrade('גן שחפית')).toBe('גן חובה')
+    expect(inferGrade('שחפית')).toBe('')
+  })
+  it('uses the leading letter only when it is a real grade', () => {
+    expect(inferGrade('א1')).toBe('א')
+    expect(inferGrade('ג')).toBe('ג')
+  })
+  it('returns empty for names with no derivable grade', () => {
+    expect(inferGrade('')).toBe('')
+    expect(inferGrade('מיוחדת')).toBe('')
   })
 })

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { classLabel } from '../../lib/grades'
+import { classLabel, normalizeClassName, inferGrade } from '../../lib/grades'
 import { readSheetRows } from '../../lib/spreadsheet'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
@@ -343,12 +343,9 @@ function ImportPanel({ classes, onImport, onClose }) {
 
   useEscapeToClose(onClose, !saving)
 
-  // Normalize class labels so "א", "א'", "כיתה א" all match the same class
-  const normClass = (s) => String(s || '')
-    .replace(/['׳"״]/g, '')
-    .replace(/^כיתה\s*/, '')
-    .trim()
-    .toLowerCase()
+  // Normalize class labels so "א", "א'", "כיתה א" — and "שחפית" vs
+  // "גן שחפית" — all match the same class (see normalizeClassName)
+  const normClass = normalizeClassName
   const classByName = Object.fromEntries(
     classes.map(c => [normClass(c.name), c.id])
   )
@@ -475,22 +472,27 @@ function ImportPanel({ classes, onImport, onClose }) {
     if (!importable.length) return
     setSaving(true)
     try {
-      // Create classes that don't exist yet, one per unique name
-      const missing = [...new Set(importable.filter(r => r.willCreate).map(r => normClass(r.className)))]
+      // Create classes that don't exist yet, one per unique name. Keep the
+      // name AS WRITTEN in the file (the normalized key is for matching only,
+      // and strips the כיתה/גן prefix), and derive the grade with inferGrade
+      // so a name like "שחפית" doesn't become grade "ש".
+      const missing = new Map()
+      importable.filter(r => r.willCreate)
+        .forEach(r => { if (!missing.has(normClass(r.className))) missing.set(normClass(r.className), r.className.trim()) })
       const created = {}
       const CLASS_COLORS = ['#1B3B70', '#0E7490', '#B45309', '#6D28D9', '#BE185D', '#065F46']
-      for (let i = 0; i < missing.length; i++) {
-        const key = missing[i]
-        const display = key.replace(/\s+/g, ' ')
+      let i = 0
+      for (const [key, display] of missing) {
         const cls = await saveClass({
           id: 'class-' + Date.now() + i,
-          name: display,
-          grade: display[0] || 'א',
+          name: display.replace(/\s+/g, ' '),
+          grade: inferGrade(display),
           color: CLASS_COLORS[i % CLASS_COLORS.length],
           adminUids: [],
           needsUpdate: true,
         })
         created[key] = cls.id
+        i++
       }
       await onImport(importable.map(r => ({
         name: r.name,
