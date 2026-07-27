@@ -333,10 +333,13 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
 
 function ImportPanel({ classes, onImport, onClose }) {
   const fileRef = useRef(null)
-  const [rows, setRows]       = useState([])
+  const [parsedRows, setParsedRows] = useState([])
   const [error, setError]     = useState('')
   const [saving, setSaving]   = useState(false)
   const [preview, setPreview] = useState(false)
+  // Target class for rows the file didn't classify (registry exports often have
+  // no כיתה column at all — without this the whole file is un-importable).
+  const [fallbackClassId, setFallbackClassId] = useState('')
 
   useEscapeToClose(onClose, !saving)
 
@@ -399,21 +402,47 @@ function ImportPanel({ classes, onImport, onClose }) {
     }).filter(Boolean).filter(r => r.name)
   }
 
-  // Simple format: שם (or שם פרטי + שם משפחה) + כיתה columns
+  // Header-driven format: שם (or שם פרטי + שם משפחה), optional כיתה, and —
+  // when present — address and parent columns as exported by the school
+  // registry (רחוב / מספר בית / שם אב / נייד אב / שם אם / נייד אם).
+  // A file WITHOUT a כיתה column is still importable: the panel asks the admin
+  // to pick a target class, applied to every row that has no class of its own.
   const parseSimple = (rawRows) => {
     const stripKey = (s) => String(s ?? '').trim().replace(/["״]/g, '')
     const headers = (rawRows[0] || []).map(stripKey)
     const idx = (...keys) => headers.findIndex(h => keys.includes(h))
     const nameIdx = idx('שם', 'name', 'שם ילד'), firstIdx = idx('שם פרטי'), lastIdx = idx('שם משפחה')
     const classIdx = idx('כיתה', 'class', 'class_name')
+    const addressIdx = idx('כתובת', 'address')
+    const streetIdx = idx('רחוב', 'street'), houseIdx = idx('מספר בית', 'מס בית', 'בית')
+    const cityIdx = idx('עיר', 'city')
+    // Parent columns come in pairs (name + phone/email); support the common
+    // registry spellings plus a generic "הורה" fallback.
+    const parentCols = [
+      { name: idx('שם אב', 'אב', 'שם האב'), phone: idx('נייד אב', 'טלפון אב', 'נייד האב'), email: idx('מייל אב', 'אימייל אב') },
+      { name: idx('שם אם', 'אם', 'שם האם'), phone: idx('נייד אם', 'טלפון אם', 'נייד האם'), email: idx('מייל אם', 'אימייל אם') },
+      { name: idx('שם הורה', 'הורה'), phone: idx('נייד הורה', 'טלפון הורה', 'טלפון'), email: idx('מייל הורה', 'אימייל הורה', 'מייל', 'אימייל', 'email') },
+    ]
+    const at = (vals, i) => (i >= 0 ? (vals[i] || '') : '')
     const out = rawRows.slice(1).map(cols => {
       const vals = cols.map(c => String(c ?? '').trim())
+      const familyName = at(vals, lastIdx)
       const name = nameIdx >= 0 && vals[nameIdx]
         ? vals[nameIdx]
-        : [vals[firstIdx] || '', vals[lastIdx] || ''].filter(Boolean).join(' ')
-      return finishRow(name, vals[classIdx] || '', '', [])
+        : [at(vals, firstIdx), familyName].filter(Boolean).join(' ')
+      const address = addressIdx >= 0
+        ? at(vals, addressIdx)
+        : [at(vals, streetIdx), at(vals, houseIdx), at(vals, cityIdx)].filter(Boolean).join(' ')
+      const parents = parentCols
+        .map(c => ({
+          name: at(vals, c.name),
+          phone: at(vals, c.phone),
+          email: at(vals, c.email).toLowerCase(),
+        }))
+        .filter(p => p.name || p.phone || p.email)
+      return finishRow(name, at(vals, classIdx), address, parents, familyName)
     }).filter(r => r.name)
-    if (!out.length) throw new Error('העמודות חייבות להיות: שם (או שם פרטי + שם משפחה), כיתה')
+    if (!out.length) throw new Error('לא זוהו שמות בקובץ — נדרשת עמודת שם (או שם פרטי + שם משפחה)')
     return out
   }
 
@@ -425,12 +454,21 @@ function ImportPanel({ classes, onImport, onClose }) {
       const rawRows = await readSheetRows(file)
       const headers = rawRows[0].map(h => String(h ?? '').trim())
       const isPhoneBook = headers[0] === 'כיתה' && headers.some(h => h.includes('הורה'))
-      setRows(isPhoneBook ? parsePhoneBook(rawRows) : parseSimple(rawRows))
+      setParsedRows(isPhoneBook ? parsePhoneBook(rawRows) : parseSimple(rawRows))
       setPreview(true)
     } catch (e) {
       setError(e.message)
     }
   }
+
+  // Rows the file left unclassified inherit the chosen target class
+  const fallbackClass = classes.find(c => c.id === fallbackClassId)
+  const rows = parsedRows.map(r => (
+    r.className || !fallbackClass
+      ? r
+      : { ...r, className: fallbackClass.name, classId: fallbackClass.id, valid: !!r.name, willCreate: false }
+  ))
+  const unclassifiedCount = parsedRows.filter(r => !r.className).length
 
   const handleImport = async () => {
     const importable = rows.filter(r => r.valid || r.willCreate)
@@ -488,8 +526,9 @@ function ImportPanel({ classes, onImport, onClose }) {
             <>
               <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 space-y-1 dark:bg-blue-900/20 dark:text-blue-300">
                 <p className="font-semibold">פורמט הקובץ (CSV / Excel):</p>
-                <p>עמודות חובה: <strong>שם</strong> (או <strong>שם פרטי</strong> + <strong>שם משפחה</strong>), <strong>כיתה</strong></p>
-                <p>שם הכיתה חייב להתאים לכיתות הקיימות במערכת</p>
+                <p>עמודת חובה: <strong>שם</strong> (או <strong>שם פרטי</strong> + <strong>שם משפחה</strong>)</p>
+                <p><strong>כיתה</strong> — אם אין עמודה כזו, תתבקשו לבחור כיתת יעד לכל הקובץ</p>
+                <p>נקראות אוטומטית גם: כתובת (או רחוב + מספר בית), שם ונייד של אב/אם</p>
                 <p>ספר הטלפונים של בית הספר נתמך כמו שהוא</p>
               </div>
               {error && <div className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
@@ -516,6 +555,20 @@ function ImportPanel({ classes, onImport, onClose }) {
                   </div>
                 )}
               </div>
+              {unclassifiedCount > 0 && (
+                <div className="bg-blue-50 rounded-xl px-3 py-2.5 space-y-1.5 dark:bg-blue-900/20">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 text-right">
+                    ל{unclassifiedCount === 1 ? 'שורה אחת' : `-${unclassifiedCount} שורות`} אין עמודת כיתה בקובץ — בחרו כיתת יעד:
+                  </p>
+                  <select value={fallbackClassId} onChange={e => setFallbackClassId(e.target.value)}
+                    className="input w-full text-sm py-1.5">
+                    <option value="">בחרו כיתה…</option>
+                    {classes.map(c => (
+                      <option key={c.id} value={c.id}>{classLabel(c.name, c.grade)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {newClassNames.length > 0 && (
                 <div className="bg-amber-50 rounded-xl px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
                   כיתות חדשות שייווצרו: {newClassNames.join(', ')}
@@ -538,7 +591,7 @@ function ImportPanel({ classes, onImport, onClose }) {
                 ))}
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setPreview(false); setRows([]) }} className="flex-1 btn-outline text-sm py-2">
+                <button onClick={() => { setPreview(false); setParsedRows([]); setFallbackClassId('') }} className="flex-1 btn-outline text-sm py-2">
                   חזור
                 </button>
                 <button onClick={handleImport} disabled={saving || validCount + createCount === 0}
