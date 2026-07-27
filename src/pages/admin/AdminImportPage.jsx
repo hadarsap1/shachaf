@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { getPendingFamilies, deletePendingFamily } from '../../lib/db'
+import { readSheetObjects } from '../../lib/spreadsheet'
 import clsx from 'clsx'
 
 // ── Column aliases ─────────────────────────────────────────────────────────────
@@ -97,24 +98,16 @@ function normalizeRows(data) {
 }
 
 async function parseFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase()
   let data, headers
-  if (ext === 'csv') {
+  if (/\.csv$/i.test(file.name)) {
     const { default: Papa } = await import('papaparse')
     const text = await file.text()
     const parsed = Papa.parse(text, { header: true, skipEmptyLines: true })
     data = parsed.data
     headers = parsed.meta?.fields || []
   } else {
-    const { default: readXlsxFile } = await import('read-excel-file/browser')
-    const xlsxRows = await readXlsxFile(file)
-    if (!xlsxRows.length) return []
-    headers = xlsxRows[0].map(h => String(h ?? ''))
-    data = xlsxRows.slice(1).map(row => {
-      const obj = {}
-      headers.forEach((h, i) => { obj[h] = row[i] })
-      return obj
-    })
+    // readSheetObjects handles the read-excel-file v9 sheet-array shape
+    ;({ headers, data } = await readSheetObjects(file))
   }
   if (isClassListFormat(headers)) return normalizeClassListRows(data)
   return normalizeRows(data)
