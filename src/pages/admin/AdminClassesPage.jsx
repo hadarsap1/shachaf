@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { GRADES, GRADE_SEP, gradeList, classLabel } from '../../lib/grades'
+import { readSheetObjects } from '../../lib/spreadsheet'
 
 const SCHEDULE_DAYS  = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
 const SCHEDULE_PERIODS = [
@@ -214,22 +215,14 @@ function ClassChildrenTab({ classId, classColor }) {
   const parseImportFile = async (file) => {
     setError('')
     try {
-      const ext = file.name.split('.').pop().toLowerCase()
       let data
-      if (ext === 'csv') {
+      if (/\.csv$/i.test(file.name)) {
         const { default: Papa } = await import('papaparse')
         const text = await file.text()
         data = Papa.parse(text, { header: true, skipEmptyLines: true }).data
       } else {
-        const { default: readXlsxFile } = await import('read-excel-file/browser')
-        const xlsxRows = await readXlsxFile(file)
-        if (!xlsxRows.length) { setError('הקובץ ריק'); return }
-        const headers = xlsxRows[0]
-        data = xlsxRows.slice(1).map(row => {
-          const obj = {}
-          headers.forEach((h, i) => { obj[String(h ?? '')] = row[i] })
-          return obj
-        })
+        // readSheetObjects handles the read-excel-file v9 sheet-array shape
+        data = (await readSheetObjects(file)).data
       }
       const nameFields = ['שם', 'שם מלא', 'name', 'full name']
       const rows = data.map(row => {

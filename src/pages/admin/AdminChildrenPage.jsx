@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { classLabel } from '../../lib/grades'
+import { readSheetRows } from '../../lib/spreadsheet'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
   bulkImportChildren, bulkDeleteChildren, linkChildToParent, unlinkChildFromParent,
@@ -419,16 +420,9 @@ function ImportPanel({ classes, onImport, onClose }) {
   const handleFile = async (file) => {
     setError('')
     try {
-      let rawRows
-      if (file.name.endsWith('.csv')) {
-        const { default: Papa } = await import('papaparse')
-        const text = await file.text()
-        rawRows = Papa.parse(text, { header: false, skipEmptyLines: true }).data
-      } else {
-        const { default: readXlsxFile } = await import('read-excel-file/browser')
-        rawRows = await readXlsxFile(file)
-      }
-      if (!rawRows?.length) throw new Error('הקובץ ריק')
+      // readSheetRows handles CSV + XLSX (incl. the read-excel-file v9 shape)
+      // and throws Hebrew errors for empty/unreadable files
+      const rawRows = await readSheetRows(file)
       const headers = rawRows[0].map(h => String(h ?? '').trim())
       const isPhoneBook = headers[0] === 'כיתה' && headers.some(h => h.includes('הורה'))
       setRows(isPhoneBook ? parsePhoneBook(rawRows) : parseSimple(rawRows))
