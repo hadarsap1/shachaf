@@ -356,7 +356,10 @@ export default function DashboardPage() {
                     {cls.teacherName && <div className="text-xs text-gray-400 mt-0.5">מורה: {cls.teacherName}</div>}
                   </div>
                   <div className="flex gap-2">
-                    <Link to="/class" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5">
+                    {/* Carry the class id so the page opens on THIS class,
+                        not on whichever happens to be first */}
+                    <Link to={`/class?class=${encodeURIComponent(cls.id)}`}
+                      className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5">
                       <Users size={12} /> {membersOfLabel(cls.name, cls.grade)}
                     </Link>
                   </div>
