@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
@@ -9,6 +9,7 @@ import FeedbackButton from '../ui/FeedbackButton'
 import WelcomeTutorial, { shouldShowTutorial } from '../ui/WelcomeTutorial'
 import Toaster from '../ui/Toaster'
 import RouteErrorBoundary from '../ui/RouteErrorBoundary'
+import { subscribePageTitle, getPageTitleOverride } from '../../lib/pageTitle'
 import { Menu, X, LogOut, ChevronDown, Sun, Moon } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -380,7 +381,10 @@ export default function AppShell() {
   const activeLink = links.find(l =>
     l.to && (pathname === l.to || (l.to !== '/dashboard' && l.to !== '/admin' && pathname.startsWith(l.to)))
   )
-  const pageTitle = activeLink?.label || ''
+  // A page may publish a live title (e.g. ClassPage shows the class currently
+  // selected instead of listing every class the parent belongs to)
+  const titleOverride = useSyncExternalStore(subscribePageTitle, getPageTitleOverride, getPageTitleOverride)
+  const pageTitle = titleOverride || activeLink?.label || ''
 
   // Re-check on every navigation so the badge clears after messages are read
   useEffect(() => {
