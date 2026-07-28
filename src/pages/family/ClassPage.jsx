@@ -454,26 +454,44 @@ export default function ClassPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
-      {/* Class switcher */}
+      {/* Class switcher — a labeled, clearly-selectable row. The old version
+          was bare pills that read as decoration, so parents with more than one
+          child didn't realize they could switch between classes. */}
       {myClasses.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
-          {myClasses.map((c, i) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedIdx(i)}
-              className={clsx(
-                'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-all border',
-                i === selectedIdx
-                  ? 'text-white border-transparent shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
-              )}
-              style={i === selectedIdx ? { backgroundColor: c.color || '#1B3B70' } : {}}
-            >
-              <span className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: i === selectedIdx ? 'rgba(255,255,255,0.7)' : (c.color || '#1B3B70') }} />
-              {c.name}
-            </button>
-          ))}
+        <div className="mb-5">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 text-right">
+            יש לך {myClasses.length} כיתות — בחר/י כדי לעבור ביניהן:
+          </p>
+          <div
+            role="tablist"
+            aria-label="בחירת כיתה"
+            className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+          >
+            {myClasses.map((c, i) => {
+              const active = i === selectedIdx
+              return (
+                <button
+                  key={c.id}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSelectedIdx(i)}
+                  className={clsx(
+                    'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
+                    active
+                      ? 'text-white shadow-md font-bold'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-400'
+                  )}
+                  style={active ? { backgroundColor: c.color || '#1B3B70', borderColor: c.color || '#1B3B70' } : {}}
+                >
+                  {active
+                    ? <Check size={15} className="flex-shrink-0" />
+                    : <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: c.color || '#1B3B70' }} />}
+                  {classLabel(c.name, c.grade)}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 

@@ -5,6 +5,7 @@ import {
   getTasks, saveTask, getEvents, getForms, getSubmissionsForFamily,
   getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
 } from '../../lib/db'
+import { classLabel, membersOfLabel } from '../../lib/grades'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -351,12 +352,12 @@ export default function DashboardPage() {
                     <GraduationCap size={16} className="text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="flex-1 text-right">
-                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{cls.name}</div>
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{classLabel(cls.name, cls.grade)}</div>
                     {cls.teacherName && <div className="text-xs text-gray-400 mt-0.5">מורה: {cls.teacherName}</div>}
                   </div>
                   <div className="flex gap-2">
                     <Link to="/class" className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-0.5">
-                      <Users size={12} /> חברים/ות בכיתה
+                      <Users size={12} /> {membersOfLabel(cls.name, cls.grade)}
                     </Link>
                   </div>
                 </div>

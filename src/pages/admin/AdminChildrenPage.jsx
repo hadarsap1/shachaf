@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { classLabel, normalizeClassName, inferGrade } from '../../lib/grades'
+import { classLabel, classShortLabel, normalizeClassName, inferGrade } from '../../lib/grades'
 import { phoneIndex, matchUserToParent } from '../../lib/phone'
 import { readSheetRows } from '../../lib/spreadsheet'
 import {
@@ -885,11 +885,14 @@ export default function AdminChildrenPage() {
               )}>
                 <input type="checkbox" checked={checkedIds.has(child.id)} onChange={() => toggleOne(child.id)}
                   className="w-4 h-4 accent-primary-600 flex-shrink-0" />
+                {/* Pill, not a fixed circle: long names like "גן שחפית" used
+                    to spill out of a w-8 h-8 badge */}
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                  className="px-2 py-1 min-w-8 max-w-[5.5rem] rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 truncate"
                   style={{ backgroundColor: cls?.color || '#9CA3AF' }}
+                  title={cls?.name || ''}
                 >
-                  {cls?.name || '?'}
+                  {cls ? classShortLabel(cls.name) : '?'}
                 </div>
                 {child.photoUrl && (
                   <img src={child.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
@@ -897,7 +900,7 @@ export default function AdminChildrenPage() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-800 text-sm dark:text-gray-100">{child.name}</div>
                   <div className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
-                    {cls ? `כיתה ${cls.name}` : 'כיתה לא ידועה'}
+                    {cls ? classLabel(cls.name, cls.grade) : 'כיתה לא ידועה'}
                     {child.parentUids?.length > 0 && (
                       <span className="text-secondary-600 dark:text-secondary-400">· {child.parentUids.length} הורה/ים</span>
                     )}

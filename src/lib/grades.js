@@ -17,6 +17,20 @@ export function isKindergarten(s) {
   return typeof s === 'string' && s.trim().startsWith('גן')
 }
 
+// Short form for tight spaces (avatar-style badges): the class letter/number
+// without the גן/כיתה prefix, capped so a name like "גן שחפית" can't overflow
+// its badge. "גן שחפית" → "שחפית", "א1" → "א1".
+export function classShortLabel(name, max = 6) {
+  const s = String(name || '').replace(/^(כיתה|גן)\s+/, '').trim()
+  if (!s) return '?'
+  return s.length > max ? s.slice(0, max - 1) + '…' : s
+}
+
+// Prefix for "members of…" links: a kindergarten has חברים בגן, not בכיתה.
+export function membersOfLabel(name, grade = '') {
+  return isKindergarten(name) || isKindergarten(grade) ? 'חברים/ות בגן' : 'חברים/ות בכיתה'
+}
+
 // Normalize a class name for MATCHING (import files vs existing classes).
 // Strips quotes and BOTH the "כיתה" and "גן" prefixes, so a registry export
 // that says "שחפית" matches the existing class "גן שחפית" instead of creating
