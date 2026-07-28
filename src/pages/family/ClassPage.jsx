@@ -8,7 +8,7 @@ import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
   Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact, Plus,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
 import ContactSheetModal from '../../components/ui/ContactSheetModal'
 
@@ -373,6 +373,10 @@ export default function ClassPage() {
   const [classParents, setClassParents]   = useState([])
   const [classAdmins, setClassAdmins]     = useState([])
   const [loading, setLoading]             = useState(true)
+  // ?class=<id> — lets a link (e.g. a specific class row on the dashboard)
+  // open this page on that class instead of always on the first one
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedClassId = searchParams.get('class')
 
   useEffect(() => {
     if (!user) return
@@ -394,7 +398,22 @@ export default function ClassPage() {
     load()
   }, [user])
 
+  // Honor ?class=<id> once the classes are loaded
+  useEffect(() => {
+    if (!requestedClassId || !myClasses.length) return
+    const i = myClasses.findIndex(c => c.id === requestedClassId)
+    if (i >= 0) setSelectedIdx(i)
+  }, [requestedClassId, myClasses])
+
   const cls = myClasses[selectedIdx]
+
+  // Switching tabs keeps the URL in sync, so a refresh (or back) stays on the
+  // class being viewed rather than snapping back to the first one
+  const selectClass = (i) => {
+    setSelectedIdx(i)
+    const target = myClasses[i]
+    if (target) setSearchParams({ class: target.id }, { replace: true })
+  }
 
   // Header shows the class actually on screen, not the full list of classes
   useEffect(() => {
@@ -481,7 +500,7 @@ export default function ClassPage() {
                   key={c.id}
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setSelectedIdx(i)}
+                  onClick={() => selectClass(i)}
                   className={clsx(
                     'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
                     active
