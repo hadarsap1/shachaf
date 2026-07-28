@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent } from '../../lib/db'
 import { hasConsented, childHasConsentedParent, CONSENT_VERSION } from '../../lib/consent'
 import { classLabel } from '../../lib/grades'
+import { setPageTitleOverride } from '../../lib/pageTitle'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
@@ -394,6 +395,12 @@ export default function ClassPage() {
   }, [user])
 
   const cls = myClasses[selectedIdx]
+
+  // Header shows the class actually on screen, not the full list of classes
+  useEffect(() => {
+    setPageTitleOverride(cls ? classLabel(cls.name, cls.grade) : '')
+    return () => setPageTitleOverride('')
+  }, [cls?.id, cls?.name, cls?.grade])
 
   // Roster reloads whenever the selected class changes (multi-class parents)
   useEffect(() => {
