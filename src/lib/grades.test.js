@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GRADES, GRADE_SEP, gradeList, isKindergarten, classLabel, normalizeClassName, inferGrade } from './grades'
+import { GRADES, GRADE_SEP, gradeList, isKindergarten, classLabel, classShortLabel, membersOfLabel, normalizeClassName, inferGrade } from './grades'
 
 describe('gradeList', () => {
   it('splits a multi-grade string back to its parts', () => {
@@ -76,5 +76,29 @@ describe('inferGrade (auto-created classes on import)', () => {
   it('returns empty for names with no derivable grade', () => {
     expect(inferGrade('')).toBe('')
     expect(inferGrade('מיוחדת')).toBe('')
+  })
+})
+
+describe('classShortLabel (badge text)', () => {
+  it('drops the גן/כיתה prefix so a badge does not overflow', () => {
+    expect(classShortLabel('גן שחפית')).toBe('שחפית')
+    expect(classShortLabel('כיתה א1')).toBe('א1')
+  })
+  it('truncates very long names', () => {
+    expect(classShortLabel('שחפיתון גדול')).toBe('שחפית…')
+  })
+  it('falls back to ? when there is no name', () => {
+    expect(classShortLabel('')).toBe('?')
+    expect(classShortLabel(undefined)).toBe('?')
+  })
+})
+
+describe('membersOfLabel', () => {
+  it('says בגן for kindergartens', () => {
+    expect(membersOfLabel('גן שחף')).toBe('חברים/ות בגן')
+    expect(membersOfLabel('שחפית', 'גן חובה')).toBe('חברים/ות בגן')
+  })
+  it('says בכיתה for regular classes', () => {
+    expect(membersOfLabel('א1', 'א')).toBe('חברים/ות בכיתה')
   })
 })
