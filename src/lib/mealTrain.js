@@ -79,6 +79,19 @@ export function canSeeAddress(train, uid, isAdmin = false) {
   return (train.claimerUids || []).includes(uid)
 }
 
+// Who may OPEN a meal train: admins, and members of the community-support
+// committee — not every committee. A committee qualifies when an admin ticked
+// `mealTrains` on it, or (out of the box, before anyone configured anything)
+// when its name marks it as the support committee. The same test is enforced
+// in firestore.rules on mealTrains create.
+export const SUPPORT_COMMITTEE_HINT = 'תמיכה'
+
+export function isMealTrainCommittee(committee) {
+  if (!committee) return false
+  if (committee.mealTrains === true) return true
+  return typeof committee.name === 'string' && committee.name.includes(SUPPORT_COMMITTEE_HINT)
+}
+
 // Progress for the card header: how many slots are still open
 export function slotStats(slots) {
   const all = slots || []
