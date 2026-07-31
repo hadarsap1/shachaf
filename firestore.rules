@@ -557,6 +557,62 @@ service cloud.firestore {
                        );
     }
 
+    // Meal trains ("סירי לידה") — a rota of meals for a family with a newborn.
+    // The public document carries the family/preferences/slots so members can
+    // sign up. The HOME ADDRESS + building entry code live in a private
+    // subdocument readable only by people who actually need to show up:
+    // whoever claimed a slot (tracked in claimerUids), the coordinator who
+    // opened it, and admins. Firestore has no per-field read rules, hence the
+    // split — hiding those fields in the UI alone would not protect them.
+    match /mealTrains/{trainId} {
+      function isPrivileged() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                 in ['admin', 'super_admin'];
+      }
+      function isCommitteeMember() {
+        // opening a meal train is a role action: admins + members of any committee
+        return request.resource.data.committeeId is string
+               && request.auth.uid in get(/databases/$(database)/documents/committees/$(request.resource.data.committeeId)).data.get('memberUids', []);
+      }
+
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.get('familyName', '').size() <= 200
+                    && request.resource.data.get('preferences', '').size() <= 1000
+                    && request.resource.data.get('concept', '').size() <= 1000
+                    && request.resource.data.get('delivery', '').size() <= 500
+                    && (isPrivileged() || isCommitteeMember());
+      // Coordinator/admin edits the whole thing
+      allow update, delete: if request.auth != null
+                    && (isPrivileged() || resource.data.createdBy == request.auth.uid);
+      // Any member may claim/release a slot — but may only add or remove THEIR
+      // OWN uid from claimerUids, which is what gates the address subdocument.
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slots', 'claimerUids'])
+                    && (
+                         (request.resource.data.get('claimerUids', []).hasAll(resource.data.get('claimerUids', []))
+                          && request.resource.data.get('claimerUids', []).removeAll(resource.data.get('claimerUids', [])).hasOnly([request.auth.uid]))
+                         ||
+                         (resource.data.get('claimerUids', []).hasAll(request.resource.data.get('claimerUids', []))
+                          && resource.data.get('claimerUids', []).removeAll(request.resource.data.get('claimerUids', [])).hasOnly([request.auth.uid]))
+                       );
+
+      match /private/{docId} {
+        allow read: if request.auth != null
+                    && (
+                         request.auth.uid in get(/databases/$(database)/documents/mealTrains/$(trainId)).data.get('claimerUids', [])
+                         || get(/databases/$(database)/documents/mealTrains/$(trainId)).data.get('createdBy', '') == request.auth.uid
+                         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']
+                       );
+        allow write: if request.auth != null
+                     && (
+                          get(/databases/$(database)/documents/mealTrains/$(trainId)).data.get('createdBy', '') == request.auth.uid
+                          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']
+                        );
+      }
+    }
+
     // Settings (e.g. emergencyMode) — all authenticated can read; only admins write
     match /settings/{settingId} {
       allow read: if request.auth != null;

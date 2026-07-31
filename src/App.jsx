@@ -27,6 +27,7 @@ import ClassRosterPage from './pages/family/ClassRosterPage'
 import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
 import PendingApprovalPage from './pages/family/PendingApprovalPage'
 import MyPrivacyPage from './pages/family/MyPrivacyPage'
+import MealTrainsPage from './pages/family/MealTrainsPage'
 
 // Legal pages — public (reachable before login/consent, e.g. from the consent dialog)
 const PrivacyPage       = lazy(() => import('./pages/legal/PrivacyPage'))
@@ -155,6 +156,7 @@ export default function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/my-privacy" element={<MyPrivacyPage />} />
+            <Route path="/meal-trains" element={<MealTrainsPage />} />
             <Route path="/forms" element={<FormFillPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/help" element={<HelpPage />} />

@@ -48,6 +48,18 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'committeeSummaries', 'sumMgr'), {
     committeeId: 'commMgr', title: 'ישיבה', content: 'סיכום', date: '2030-01-01',
   })
+  // meal train: stranger1 already claimed a slot, parent1 has not
+  await setDoc(doc(db, 'mealTrains', 'trainA'), {
+    familyName: 'משפחת קרטיס', committeeId: 'commX', createdBy: 'someuid',
+    claimerUids: ['stranger1'],
+    slots: [
+      { id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: 'stranger1', byName: 'Stranger' },
+      { id: '2030-08-05_treat', date: '2030-08-05', type: 'treat', byUid: '', byName: '' },
+    ],
+  })
+  await setDoc(doc(db, 'mealTrains', 'trainA', 'private', 'details'), {
+    address: 'תירוש 36, קומה 1 דירה 6', buildingCode: '1974',
+  })
 })
 
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
@@ -198,6 +210,40 @@ await check('non-admin CANNOT read the audit log',
   getDoc(doc(parent, 'auditLog', 'a1')), 'deny')
 await check('admin CAN read the audit log',
   getDoc(doc(admin, 'auditLog', 'a1')), 'allow')
+
+console.log('\n— meal trains: address gated on having claimed a slot —')
+await check('a slot claimer CAN read the private address',
+  getDoc(doc(stranger, 'mealTrains', 'trainA', 'private', 'details')), 'allow')
+await check('a member who has NOT signed up CANNOT read the address',
+  getDoc(doc(parent, 'mealTrains', 'trainA', 'private', 'details')), 'deny')
+await check('everyone signed in can read the public meal-train doc',
+  getDoc(doc(parent, 'mealTrains', 'trainA')), 'allow')
+await check('a member CAN claim a slot (adds only their own uid to claimerUids)',
+  updateDoc(doc(parent, 'mealTrains', 'trainA'), {
+    slots: [
+      { id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: 'stranger1', byName: 'Stranger' },
+      { id: '2030-08-05_treat', date: '2030-08-05', type: 'treat', byUid: 'parent1', byName: 'Parent' },
+    ],
+    claimerUids: ['stranger1', 'parent1'],
+  }), 'allow')
+await check('after claiming, that member CAN read the address',
+  getDoc(doc(parent, 'mealTrains', 'trainA', 'private', 'details')), 'allow')
+await check('a member CANNOT add SOMEONE ELSE to claimerUids (address theft)',
+  updateDoc(doc(parent, 'mealTrains', 'trainA'), { claimerUids: ['stranger1', 'parent1', 'outsider'] }), 'deny')
+await check('a member CANNOT edit the family details on the public doc',
+  updateDoc(doc(parent, 'mealTrains', 'trainA'), { familyName: 'שונה' }), 'deny')
+await check('a non-claimer CANNOT write the private address',
+  setDoc(doc(parent, 'mealTrains', 'trainA', 'private', 'details'), { address: 'x' }), 'deny')
+await check('admin CAN read the address',
+  getDoc(doc(admin, 'mealTrains', 'trainA', 'private', 'details')), 'allow')
+await check('a committee member CAN open a meal train',
+  setDoc(doc(parent, 'mealTrains', 'trainNew'), {
+    familyName: 'משפחה', committeeId: 'commX', createdBy: 'parent1', claimerUids: [], slots: [],
+  }), 'allow')
+await check('a non-member CANNOT open a meal train for a committee they are not in',
+  setDoc(doc(stranger, 'mealTrains', 'trainBad'), {
+    familyName: 'משפחה', committeeId: 'commX', createdBy: 'stranger1', claimerUids: [], slots: [],
+  }), 'deny')
 
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',

@@ -34,6 +34,7 @@ export const NAV_EMOJI = {
   '/help':            '❓',
   '/settings':        '⚙️',
   '/my-privacy':      '🔒',
+  '/meal-trains':     '🍲',
   '/admin':           '🏛️',
   '/admin/users':     '👥',
   '/admin/classes':   '🎓',
@@ -64,6 +65,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/committees', label: 'ועדות', committeeBadge: true },
     { to: '/admin/community',  label: 'קבוצות קהילה', groupBadge: true },
     { to: '/businesses',       label: 'עסקים בקהילה' },
+    { to: '/meal-trains',      label: 'סירי לידה' },
     { heading: 'תוכן' },
     { to: '/admin/events',     label: 'אירועים' },
     { to: '/admin/tasks',      label: 'משימות' },
@@ -84,6 +86,7 @@ const ADMIN_NAV_LINKS = {
     { to: '/admin/committees', label: 'ועדות', committeeBadge: true },
     { to: '/admin/community',  label: 'קבוצות קהילה', groupBadge: true },
     { to: '/businesses',       label: 'עסקים בקהילה' },
+    { to: '/meal-trains',      label: 'סירי לידה' },
     { heading: 'תוכן' },
     { to: '/admin/events',     label: 'אירועים' },
     { to: '/admin/tasks',      label: 'משימות' },
@@ -129,6 +132,7 @@ function buildMemberNav(allRoles, classIds, className, status) {
   links.push({ to: '/committees', label: 'ועדות' })
   links.push({ to: '/community',  label: 'קבוצות קהילה' })
   links.push({ to: '/businesses', label: 'עסקים בקהילה' })
+  links.push({ to: '/meal-trains', label: 'סירי לידה' })
 
   links.push({ to: '/resources', label: 'מידע שימושי' })
   links.push({ to: '/contact',   label: 'צור קשר', contactBadge: true })
