@@ -6,7 +6,7 @@ import {
 import { CONSENT_VERSION } from '../../lib/consent'
 import {
   SLOT_TYPES, WEEKDAYS, generateDates, buildSlots, groupByDate,
-  formatSlotDate, canSeeAddress, slotStats,
+  formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee,
 } from '../../lib/mealTrain'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
@@ -324,9 +324,13 @@ export default function MealTrainsPage() {
 
   useEffect(() => {
     load()
-    // Opening a meal train is a role action — committees the user belongs to
+    // Opening a meal train is reserved for the community-support committee —
+    // only those committees of the user's count as a "hat" here.
     getCommittees()
-      .then(cs => setHats(cs.filter(c => c.status !== 'pending' && (c.memberUids || []).includes(user?.uid))
+      .then(cs => setHats(cs
+        .filter(c => c.status !== 'pending'
+          && (c.memberUids || []).includes(user?.uid)
+          && isMealTrainCommittee(c))
         .map(c => ({ id: c.id, name: c.name }))))
       .catch(() => {})
   }, [user?.uid])
@@ -365,7 +369,10 @@ export default function MealTrainsPage() {
         <div className="text-center py-16 text-gray-400">
           <Baby size={44} className="mx-auto mb-4 opacity-25" />
           <p className="font-semibold text-gray-500 dark:text-gray-400">אין סירי לידה פעילים כרגע</p>
-          <p className="text-sm mt-1">כשמשפחה בקהילה יולדת, נפתח כאן סיר לפינוקים</p>
+          <p className="text-sm mt-1">
+            כשמשפחה בקהילה יולדת, ועדת התמיכה או הנהלת הקהילה פותחות כאן סיר —
+            וכולם מוזמנים לשריין תאריך
+          </p>
         </div>
       ) : (
         <div className="space-y-4">

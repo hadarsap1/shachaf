@@ -569,10 +569,20 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                  in ['admin', 'super_admin'];
       }
-      function isCommitteeMember() {
-        // opening a meal train is a role action: admins + members of any committee
-        return request.resource.data.committeeId is string
-               && request.auth.uid in get(/databases/$(database)/documents/committees/$(request.resource.data.committeeId)).data.get('memberUids', []);
+      // Opening a meal train is reserved for the community-support committee
+      // (admins can flag any committee with mealTrains:true; by default the
+      // committee whose name marks it as the support committee qualifies).
+      // Mirrored by isMealTrainCommittee() in src/lib/mealTrain.js.
+      function committeeMayOpen(c) {
+        return request.auth.uid in c.get('memberUids', [])
+               && (c.get('mealTrains', false) == true || c.get('name', '').matches('.*תמיכה.*'));
+      }
+      function isSupportCommitteeMember() {
+        return request.resource.data.get('committeeId', '') is string
+               && request.resource.data.get('committeeId', '') != ''
+               && committeeMayOpen(
+                    get(/databases/$(database)/documents/committees/$(request.resource.data.committeeId)).data
+                  );
       }
 
       allow read: if request.auth != null;
@@ -582,7 +592,7 @@ service cloud.firestore {
                     && request.resource.data.get('preferences', '').size() <= 1000
                     && request.resource.data.get('concept', '').size() <= 1000
                     && request.resource.data.get('delivery', '').size() <= 500
-                    && (isPrivileged() || isCommitteeMember());
+                    && (isPrivileged() || isSupportCommitteeMember());
       // Coordinator/admin edits the whole thing
       allow update, delete: if request.auth != null
                     && (isPrivileged() || resource.data.createdBy == request.auth.uid);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { getCommittees, saveCommittee, deleteCommittee, getUsers, approveCommittee } from '../../lib/db'
 import { COMMITTEE_ICONS, CLASS_COLORS } from '../../lib/classColors'
+import { isMealTrainCommittee } from '../../lib/mealTrain'
 import {
   Users, Plus, Edit2, Trash2, X, Check, Loader2,
   Heart, Star, Music, Book, Globe, Zap, Gift, Coffee,
@@ -170,6 +171,20 @@ function CommitteePanel({ committee, isNew, onSave, onClose, communityUsers }) {
             <textarea value={draft.description || ''} onChange={e => set('description', e.target.value)}
               placeholder="מה הוועדה עושה?" rows={3} className="input w-full resize-none text-sm" />
           </div>
+
+          {/* Meal trains are opened by the community-support committee — an admin
+              can grant the permission to any committee here. */}
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" checked={isMealTrainCommittee(draft)}
+              onChange={e => set('mealTrains', e.target.checked)}
+              className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0" />
+            <span className="text-sm text-gray-700 dark:text-gray-200 text-right leading-relaxed">
+              ועדה זו רשאית לפתוח סירי לידה 🍲
+              <span className="block text-xs text-gray-400">
+                כברירת מחדל רק ועדת התמיכה בקהילה ומנהלי המערכת פותחים סירים
+              </span>
+            </span>
+          </label>
 
           <div>
             <label className="label">אייקון</label>

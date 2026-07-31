@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   generateDates, buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
+  isMealTrainCommittee,
 } from './mealTrain'
 
 describe('generateDates', () => {
@@ -89,5 +90,24 @@ describe('SLOT_TYPES', () => {
   it('carries the hints the sheet spelled out', () => {
     expect(SLOT_TYPES.find(t => t.value === 'meal').hint).toContain('תבשיל')
     expect(SLOT_TYPES.find(t => t.value === 'treat').hint).toContain('עוגה')
+  })
+})
+
+describe('isMealTrainCommittee', () => {
+  it('accepts the community-support committee out of the box', () => {
+    expect(isMealTrainCommittee({ name: 'ועדת תמיכה בקהילה' })).toBe(true)
+    expect(isMealTrainCommittee({ name: 'תמיכה' })).toBe(true)
+  })
+
+  it('rejects every other committee', () => {
+    expect(isMealTrainCommittee({ name: 'ועד הורים' })).toBe(false)
+    expect(isMealTrainCommittee({ name: 'ועדת תרבות' })).toBe(false)
+    expect(isMealTrainCommittee(null)).toBe(false)
+    expect(isMealTrainCommittee({})).toBe(false)
+  })
+
+  it('accepts any committee an admin explicitly flagged', () => {
+    expect(isMealTrainCommittee({ name: 'ועדת תרבות', mealTrains: true })).toBe(true)
+    expect(isMealTrainCommittee({ name: 'ועדת תרבות', mealTrains: false })).toBe(false)
   })
 })

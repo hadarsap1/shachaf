@@ -48,6 +48,14 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'committeeSummaries', 'sumMgr'), {
     committeeId: 'commMgr', title: 'ישיבה', content: 'סיכום', date: '2030-01-01',
   })
+  // meal-train committees: the community-support committee qualifies by name,
+  // and an admin can flag any other committee with mealTrains:true.
+  await setDoc(doc(db, 'committees', 'commSupport'), {
+    name: 'ועדת תמיכה בקהילה', memberUids: ['parent1'],
+  })
+  await setDoc(doc(db, 'committees', 'commFlagged'), {
+    name: 'ועדת תרבות', memberUids: ['parent1'], mealTrains: true,
+  })
   // meal train: stranger1 already claimed a slot, parent1 has not
   await setDoc(doc(db, 'mealTrains', 'trainA'), {
     familyName: 'משפחת קרטיס', committeeId: 'commX', createdBy: 'someuid',
@@ -236,14 +244,30 @@ await check('a non-claimer CANNOT write the private address',
   setDoc(doc(parent, 'mealTrains', 'trainA', 'private', 'details'), { address: 'x' }), 'deny')
 await check('admin CAN read the address',
   getDoc(doc(admin, 'mealTrains', 'trainA', 'private', 'details')), 'allow')
-await check('a committee member CAN open a meal train',
+await check('a support-committee member CAN open a meal train',
   setDoc(doc(parent, 'mealTrains', 'trainNew'), {
-    familyName: 'משפחה', committeeId: 'commX', createdBy: 'parent1', claimerUids: [], slots: [],
+    familyName: 'משפחה', committeeId: 'commSupport', createdBy: 'parent1', claimerUids: [], slots: [],
   }), 'allow')
-await check('a non-member CANNOT open a meal train for a committee they are not in',
-  setDoc(doc(stranger, 'mealTrains', 'trainBad'), {
-    familyName: 'משפחה', committeeId: 'commX', createdBy: 'stranger1', claimerUids: [], slots: [],
+await check('a member of a committee an admin flagged CAN open a meal train',
+  setDoc(doc(parent, 'mealTrains', 'trainFlagged'), {
+    familyName: 'משפחה', committeeId: 'commFlagged', createdBy: 'parent1', claimerUids: [], slots: [],
+  }), 'allow')
+await check('a member of an ORDINARY committee CANNOT open a meal train',
+  setDoc(doc(parent, 'mealTrains', 'trainOrdinary'), {
+    familyName: 'משפחה', committeeId: 'commX', createdBy: 'parent1', claimerUids: [], slots: [],
   }), 'deny')
+await check('a non-member CANNOT open a meal train for the support committee',
+  setDoc(doc(stranger, 'mealTrains', 'trainBad'), {
+    familyName: 'משפחה', committeeId: 'commSupport', createdBy: 'stranger1', claimerUids: [], slots: [],
+  }), 'deny')
+await check('nobody can open a meal train with no committee at all',
+  setDoc(doc(parent, 'mealTrains', 'trainNoComm'), {
+    familyName: 'משפחה', committeeId: '', createdBy: 'parent1', claimerUids: [], slots: [],
+  }), 'deny')
+await check('an admin CAN open a meal train without a committee',
+  setDoc(doc(admin, 'mealTrains', 'trainAdmin'), {
+    familyName: 'משפחה', committeeId: '', createdBy: 'admin1', claimerUids: [], slots: [],
+  }), 'allow')
 
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
