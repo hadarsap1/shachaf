@@ -5,7 +5,7 @@ import {
 } from '../../lib/db'
 import { CONSENT_VERSION } from '../../lib/consent'
 import {
-  SLOT_TYPES, WEEKDAYS, generateDates, buildSlots, groupByDate,
+  SLOT_TYPES, buildSlots, groupByDate, addDay, removeDay, toggleDayType,
   formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee,
 } from '../../lib/mealTrain'
 import { useAuth } from '../../context/AuthContext'
@@ -154,19 +154,25 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
     address: '', city: '', buildingCode: '',
   })
   const [committeeId, setCommitteeId] = useState(hats.length === 1 ? hats[0].id : '')
-  const [range, setRange] = useState({ from: '', to: '' })
-  const [weekdays, setWeekdays] = useState([0, 3])   // Sunday + Wednesday, as the community used
+  const [days, setDays] = useState([])
+  const [newDate, setNewDate] = useState('')
   const [publishAck, setPublishAck] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   useEscapeToClose(onClose, !saving)
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
-  const dates = generateDates({ ...range, weekdays })
+
+  const handleAddDay = () => {
+    if (!newDate) return
+    setDays(d => addDay(d, newDate))
+    setNewDate('')
+    setError('')
+  }
 
   const handleSave = async () => {
     if (!form.familyName.trim()) { setError('שם המשפחה הוא שדה חובה'); return }
-    if (!dates.length) { setError('בחרו טווח תאריכים וימים בשבוע'); return }
+    if (!days.length) { setError('הוסיפו לפחות יום אחד לסיר'); return }
     if (!committeeId && hats.length) { setError('בחרו מטעם איזו ועדה נפתח הסיר'); return }
     if (!publishAck) { setError('יש לאשר את פרסום פרטי הסיר בהתאם לתקנון'); return }
     setSaving(true)
@@ -188,7 +194,7 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
           createdBy: uid,
           createdByName: userName || '',
           claimerUids: [],
-          slots: buildSlots(dates),
+          slots: buildSlots(days),
           status: 'active',
         },
         // private subdocument — only slot claimers / coordinator / admins may read
@@ -259,31 +265,57 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
             <input value={form.contactPhone} onChange={set('contactPhone')} placeholder="טלפון" dir="ltr" className="input flex-1 text-sm" />
           </div>
 
+          {/* Days of the rota — one row per day, with the two signup options
+              the sheet had: a meal and a sweet treat. */}
           <div className="pt-1">
-            <label className="label">תאריכים</label>
+            <label className="label">ימי הבישול</label>
             <div className="flex gap-2">
-              <input type="date" value={range.from} onChange={e => setRange(r => ({ ...r, from: e.target.value }))} className="input flex-1 text-sm" />
-              <input type="date" value={range.to} onChange={e => setRange(r => ({ ...r, to: e.target.value }))} className="input flex-1 text-sm" />
+              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                aria-label="תאריך להוספה" className="input flex-1 text-sm" />
+              <button type="button" onClick={handleAddDay} disabled={!newDate}
+                className="btn-primary text-sm px-3 py-1.5 flex items-center gap-1 disabled:opacity-40">
+                <Plus size={14} />הוסף יום
+              </button>
             </div>
-            <div className="flex flex-wrap gap-1.5 mt-2 justify-end">
-              {WEEKDAYS.map(d => {
-                const on = weekdays.includes(d.value)
-                return (
-                  <button key={d.value} type="button"
-                    onClick={() => setWeekdays(w => on ? w.filter(x => x !== d.value) : [...w, d.value])}
-                    className={clsx('px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
-                      on ? 'bg-primary-600 text-white border-primary-600'
-                         : 'bg-white text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600')}>
-                    {d.label}
-                  </button>
-                )
-              })}
-            </div>
-            {dates.length > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-right">
-                ייווצרו {dates.length} תאריכים ({dates.length * 2} משבצות): {dates.slice(0, 3).map(formatSlotDate).join(' · ')}
-                {dates.length > 3 ? ' …' : ''}
+
+            {days.length === 0 ? (
+              <p className="text-xs text-gray-400 mt-2 text-right">
+                הוסיפו את הימים שבהם הקהילה מבשלת — לכל יום נפתחות משבצת ארוחה ומשבצת פינוק מתוק
               </p>
+            ) : (
+              <div className="mt-2 space-y-1.5">
+                {days.map(day => (
+                  <div key={day.date}
+                    className="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-700 px-2.5 py-2">
+                    <button type="button" onClick={() => setDays(d => removeDay(d, day.date))}
+                      aria-label={`הסר את ${formatSlotDate(day.date)}`}
+                      className="text-gray-300 hover:text-red-500 flex-shrink-0">
+                      <X size={14} />
+                    </button>
+                    <div className="flex gap-1.5 flex-1 justify-start">
+                      {SLOT_TYPES.map(t => {
+                        const on = day.types.includes(t.value)
+                        return (
+                          <button key={t.value} type="button"
+                            onClick={() => setDays(d => toggleDayType(d, day.date, t.value))}
+                            aria-pressed={on}
+                            className={clsx('px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                              on ? 'bg-primary-600 text-white border-primary-600'
+                                 : 'bg-white text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600')}>
+                            {t.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-shrink-0">
+                      {formatSlotDate(day.date)}
+                    </span>
+                  </div>
+                ))}
+                <p className="text-xs text-gray-400 text-right pt-0.5">
+                  {days.length} ימים · {buildSlots(days).length} משבצות לשריון
+                </p>
+              </div>
             )}
           </div>
 
