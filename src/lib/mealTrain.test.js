@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
   isMealTrainCommittee, addDay, removeDay, toggleDayType,
+  myMealTrainEvents, mealTrainInviteMessage,
 } from './mealTrain'
 
 describe('addDay / removeDay', () => {
@@ -136,5 +137,88 @@ describe('isMealTrainCommittee', () => {
   it('accepts any committee an admin explicitly flagged', () => {
     expect(isMealTrainCommittee({ name: 'ועדת תרבות', mealTrains: true })).toBe(true)
     expect(isMealTrainCommittee({ name: 'ועדת תרבות', mealTrains: false })).toBe(false)
+  })
+})
+
+const sampleTrain = {
+  id: 'train1',
+  familyName: 'כהן',
+  babyName: 'יהלי',
+  parents: 'עידן ונועה',
+  preferences: 'צמחוני ובריא',
+  concept: 'מכינים מכל הלב',
+  delivery: 'משאירים מחוץ לדלת',
+  contactName: 'עידן',
+  contactPhone: '054-5923478',
+  claimerUids: ['me'],
+  slots: [
+    { id: '2026-08-05_meal',  date: '2026-08-05', type: 'meal',  byUid: 'me',    byName: 'אני' },
+    { id: '2026-08-05_treat', date: '2026-08-05', type: 'treat', byUid: '',      byName: '' },
+    { id: '2026-08-09_meal',  date: '2026-08-09', type: 'meal',  byUid: 'other', byName: 'מישהו' },
+  ],
+}
+
+describe('myMealTrainEvents', () => {
+  it('turns the slots I claimed into calendar entries', () => {
+    const events = myMealTrainEvents([sampleTrain], 'me')
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({ date: '2026-08-05', mealTrainId: 'train1', type: 'community' })
+    expect(events[0].title).toContain('ארוחה')
+    expect(events[0].title).toContain('כהן')
+  })
+
+  it('ignores slots taken by someone else, and closed trains', () => {
+    expect(myMealTrainEvents([sampleTrain], 'nobody')).toEqual([])
+    expect(myMealTrainEvents([{ ...sampleTrain, status: 'closed' }], 'me')).toEqual([])
+    expect(myMealTrainEvents([sampleTrain], '')).toEqual([])
+    expect(myMealTrainEvents(undefined, 'me')).toEqual([])
+  })
+
+  it('never carries the delivery address into an exportable calendar entry', () => {
+    const [event] = myMealTrainEvents([{ ...sampleTrain, address: 'תירוש 36' }], 'me')
+    expect(event.location).toBe('')
+    expect(JSON.stringify(event)).not.toContain('תירוש')
+  })
+})
+
+describe('mealTrainInviteMessage', () => {
+  const msg = mealTrainInviteMessage(sampleTrain, 'https://shachaf.vercel.app/meal-trains?train=train1')
+
+  it('opens with the family and the baby', () => {
+    expect(msg).toContain('סיר לידה למשפחת כהן')
+    expect(msg).toContain('יהלי')
+    expect(msg).toContain('עידן ונועה')
+  })
+
+  it('lists the dates and how many slots are still open', () => {
+    expect(msg).toContain('רביעי 5/08')
+    expect(msg).toContain('ראשון 9/08')
+    expect(msg).toContain('נותרה משבצת אחת פנויה מתוך 3')
+  })
+
+  it('carries the signup link', () => {
+    expect(msg).toContain('https://shachaf.vercel.app/meal-trains?train=train1')
+  })
+
+  it('never leaks the private address or entry code — the message gets forwarded', () => {
+    const withPrivate = { ...sampleTrain, address: 'תירוש 36, דירה 6', buildingCode: '1974' }
+    const out = mealTrainInviteMessage(withPrivate, 'https://x/y')
+    expect(out).not.toContain('תירוש')
+    expect(out).not.toContain('1974')
+  })
+
+  it('pluralises the open-slot count properly', () => {
+    const twoOpen = { ...sampleTrain, slots: sampleTrain.slots.map(s => ({ ...s, byUid: s.byUid === 'me' ? 'me' : '' })) }
+    expect(mealTrainInviteMessage(twoOpen, '')).toContain('נותרו 2 משבצות פנויות מתוך 3')
+  })
+
+  it('celebrates a full pot instead of begging', () => {
+    const full = { ...sampleTrain, slots: sampleTrain.slots.map(s => ({ ...s, byUid: 'someone' })) }
+    expect(mealTrainInviteMessage(full, 'https://x/y')).toContain('כל המשבצות שוריינו')
+  })
+
+  it('survives a bare train with no optional fields', () => {
+    expect(mealTrainInviteMessage({ familyName: 'לוי', slots: [] }, '')).toContain('משפחת לוי')
+    expect(mealTrainInviteMessage(null, '')).toBe('')
   })
 })

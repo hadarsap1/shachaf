@@ -6,13 +6,14 @@ import {
 import { CONSENT_VERSION } from '../../lib/consent'
 import {
   SLOT_TYPES, buildSlots, groupByDate, addDay, removeDay, toggleDayType,
-  formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee,
+  formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee, mealTrainInviteMessage,
 } from '../../lib/mealTrain'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from '../../components/ui/Toaster'
 import {
-  Baby, Plus, X, Loader2, MapPin, Lock, Phone, Utensils, Cake, Check, Trash2,
+  Baby, Plus, X, Loader2, MapPin, Lock, Phone, Utensils, Cake, Check, Trash2, Share2, Copy,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -55,6 +56,66 @@ function AddressBlock({ train, uid, isAdmin }) {
         ) : <span className="text-gray-400">טוען כתובת…</span>}
       </div>
     </div>
+  )
+}
+
+// ── Share panel ───────────────────────────────────────────────────────────────
+// The ready-made WhatsApp call-for-help: the message the coordinator forwards
+// to the community group, ending in a link straight to this pot's signup grid.
+function SharePanel({ train, onClose }) {
+  const [copied, setCopied] = useState(false)
+  useEscapeToClose(onClose, true)
+
+  const url = `${window.location.origin}/meal-trains?train=${train.id}`
+  const message = mealTrainInviteMessage(train, url)
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(message)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast('ההעתקה נכשלה — סמנו את הטקסט והעתיקו ידנית', 'error')
+    }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div role="dialog" aria-modal="true" aria-label="הודעה להפצה"
+        className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">הודעה להפצה</h2>
+          <div className="w-8" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-right leading-relaxed">
+            העתיקו לקבוצת הוואטסאפ של הקהילה. ההודעה כוללת קישור ישיר לשריון תאריך —
+            הכתובת וקוד הכניסה <span className="font-semibold">לא</span> נכללים בה, והם ייחשפו
+            רק למי שמשריין בפועל.
+          </p>
+          <pre className="whitespace-pre-wrap text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 rounded-xl p-3 text-right leading-relaxed font-sans">
+            {message}
+          </pre>
+        </div>
+
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex gap-2">
+          <a href={`https://wa.me/?text=${encodeURIComponent(message)}`}
+            target="_blank" rel="noopener noreferrer"
+            className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2 no-underline">
+            <Share2 size={15} />
+            שלח בוואטסאפ
+          </a>
+          <button onClick={copy}
+            className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+            {copied ? <Check size={15} className="text-secondary-500" /> : <Copy size={15} />}
+            {copied ? 'הועתק' : 'העתק'}
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -145,7 +206,7 @@ function SlotGrid({ train, uid, userName, onChanged }) {
 }
 
 // ── Create panel ──────────────────────────────────────────────────────────────
-function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
+function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
   const [form, setForm] = useState({
     familyName: '', babyName: '', parents: '', siblings: '',
     preferences: '', concept: 'מכינים מכל הלב, מתובל בהמון אהבה. להשתדל בכלים שלא צריך להחזיר.',
@@ -178,8 +239,7 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
     setSaving(true)
     setError('')
     try {
-      await saveMealTrain(
-        {
+      const train = {
           id: 'train-' + Date.now(),
           familyName: form.familyName.trim(),
           babyName: form.babyName.trim(),
@@ -196,7 +256,9 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
           claimerUids: [],
           slots: buildSlots(days),
           status: 'active',
-        },
+      }
+      await saveMealTrain(
+        train,
         // private subdocument — only slot claimers / coordinator / admins may read
         { address: form.address.trim(), city: form.city.trim(), buildingCode: form.buildingCode.trim() },
       )
@@ -207,6 +269,7 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated }) {
       })
       await onCreated()
       onClose()
+      onSaved?.(train)
     } catch (e) {
       console.error('meal train create failed', e)
       setError('השמירה נכשלה — נסו שוב')
@@ -349,6 +412,10 @@ export default function MealTrainsPage() {
   const [trains, setTrains] = useState(null)
   const [hats, setHats] = useState([])
   const [showCreate, setShowCreate] = useState(false)
+  const [shareTrain, setShareTrain] = useState(null)
+  // Deep link from the WhatsApp invite (and from a calendar entry): ?train=<id>
+  const [params] = useSearchParams()
+  const focusId = params.get('train')
 
   const load = async () => {
     try { setTrains(await getMealTrains()) } catch { setTrains([]) }
@@ -368,7 +435,11 @@ export default function MealTrainsPage() {
   }, [user?.uid])
 
   const canCreate = isAdmin || hats.length > 0
-  const active = (trains || []).filter(t => t.status !== 'closed')
+  // A linked pot opens at the top, so the link lands on the right family even
+  // when several pots are running.
+  const active = (trains || [])
+    .filter(t => t.status !== 'closed')
+    .sort((a, b) => (b.id === focusId ? 1 : 0) - (a.id === focusId ? 1 : 0))
 
   const handleDelete = async (train) => {
     if (!window.confirm(`למחוק את סיר הלידה של ${train.familyName}?`)) return
@@ -412,14 +483,24 @@ export default function MealTrainsPage() {
             const stats = slotStats(train.slots)
             const mine = isAdmin || train.createdBy === user?.uid
             return (
-              <div key={train.id} className="card p-5 space-y-3">
+              <div key={train.id}
+                className={clsx('card p-5 space-y-3',
+                  train.id === focusId && 'ring-2 ring-primary-400 dark:ring-primary-500')}>
                 <div className="flex items-start justify-between gap-2">
-                  {mine && (
-                    <button onClick={() => handleDelete(train)}
-                      className="text-gray-300 hover:text-red-500 flex-shrink-0" title="מחק">
-                      <Trash2 size={14} />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {mine && (
+                      <button onClick={() => handleDelete(train)}
+                        className="text-gray-300 hover:text-red-500" title="מחק" aria-label={`מחק את סיר הלידה של ${train.familyName}`}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                    <button onClick={() => setShareTrain(train)}
+                      className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                      aria-label={`הודעה להפצה עבור סיר הלידה של ${train.familyName}`}>
+                      <Share2 size={13} />
+                      שתפו
                     </button>
-                  )}
+                  </div>
                   <div className="text-right flex-1 min-w-0">
                     <h2 className="font-bold text-gray-800 dark:text-gray-100">
                       {train.familyName}
@@ -473,8 +554,13 @@ export default function MealTrainsPage() {
           userName={user?.name}
           onClose={() => setShowCreate(false)}
           onCreated={load}
+          // A pot nobody knows about stays empty — hand the coordinator the
+          // message to forward the moment it's created.
+          onSaved={setShareTrain}
         />
       )}
+
+      {shareTrain && <SharePanel train={shareTrain} onClose={() => setShareTrain(null)} />}
     </div>
   )
 }

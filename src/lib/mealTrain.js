@@ -105,6 +105,74 @@ export function isMealTrainCommittee(committee) {
   return typeof committee.name === 'string' && committee.name.includes(SUPPORT_COMMITTEE_HINT)
 }
 
+// Slots you claimed, shaped like events so they sit in the app calendar next to
+// community events — a commitment you took on shouldn't live in a page you have
+// to remember to open.
+// The delivery address is deliberately NOT part of these entries: they can be
+// exported to an external calendar, and the address is private to slot claimers.
+export function myMealTrainEvents(trains, uid) {
+  if (!uid) return []
+  return (trains || [])
+    .filter(t => t.status !== 'closed')
+    .flatMap(t => (t.slots || [])
+      .filter(s => s.byUid === uid)
+      .map(s => {
+        const type = SLOT_TYPES.find(x => x.value === s.type)
+        return {
+          id: `mealtrain_${t.id}_${s.id}`,
+          mealTrainId: t.id,
+          date: s.date,
+          time: '',
+          title: `🍲 ${type?.label || 'סיר לידה'} למשפחת ${t.familyName}`,
+          description: `שיריינת ${type?.label || 'משבצת'} בסיר הלידה של משפחת ${t.familyName}. ` +
+            'פרטי המסירה והכתובת בעמוד "סירי לידה".',
+          type: 'community',
+          targetGroups: ['all'],
+          location: '',
+          attendeeUids: [],
+        }
+      }))
+}
+
+// The WhatsApp call-for-help sent out when a pot opens. Carries only what the
+// community already sees in the app — never the address or the entry code,
+// because a forwarded message travels far beyond the people who signed up.
+export function mealTrainInviteMessage(train, url) {
+  if (!train) return ''
+  const stats = slotStats(train.slots)
+  const dates = [...new Set((train.slots || []).map(s => s.date))].sort()
+  const lines = [`🍲 *סיר לידה למשפחת ${train.familyName}*`]
+
+  if (train.babyName) lines.push(`ברוכה הבאה / ברוך הבא ${train.babyName} 👶`)
+  const family = [train.parents, train.siblings].filter(Boolean).join(' · ')
+  if (family) lines.push(family)
+
+  lines.push('')
+  if (train.preferences) lines.push(`*העדפות:* ${train.preferences}`)
+  if (train.concept) lines.push(train.concept)
+  if (train.delivery) lines.push(train.delivery)
+
+  if (dates.length) {
+    lines.push('')
+    lines.push(`*התאריכים:* ${dates.map(formatSlotDate).join(' · ')}`)
+  }
+  if (stats.total) {
+    if (stats.open === 0) lines.push('כל המשבצות שוריינו — תודה לכולם! 🎉')
+    else if (stats.open === 1) lines.push(`נותרה משבצת אחת פנויה מתוך ${stats.total} 🙏`)
+    else lines.push(`נותרו ${stats.open} משבצות פנויות מתוך ${stats.total} 🙏`)
+  }
+
+  lines.push('')
+  lines.push('לשריון תאריך באפליקציה:')
+  if (url) lines.push(url)
+  if (train.contactPhone) {
+    lines.push('')
+    lines.push(`לתיאום: ${train.contactName || 'איש קשר'} ${train.contactPhone}`)
+  }
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 // Progress for the card header: how many slots are still open
 export function slotStats(slots) {
   const all = slots || []

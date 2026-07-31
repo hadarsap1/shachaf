@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees } from '../../lib/db'
+import { useNavigate } from 'react-router-dom'
+import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees, getMealTrains } from '../../lib/db'
+import { myMealTrainEvents } from '../../lib/mealTrain'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -56,20 +58,25 @@ export default function EventsPage() {
   const [hats, setHats] = useState([])
   const [allClasses, setAllClasses] = useState([])
   const [showCreate, setShowCreate] = useState(false)
+  // Meal-train slots this user claimed, rendered as calendar entries
+  const [mealTrainEvents, setMealTrainEvents] = useState([])
+  const navigate = useNavigate()
 
   const refreshEvents = () => getEvents().then(setEvents).catch(() => {})
 
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const [allEvents, classes, myChildren, groups, committees] = await Promise.all([
+      const [allEvents, classes, myChildren, groups, committees, mealTrains] = await Promise.all([
         getEvents(),
         getClasses(),
         getChildrenByParent(user.uid),
         getHobbyGroups(),
         getCommittees(),
+        getMealTrains().catch(() => []),
       ])
       setAllClasses(classes)
+      setMealTrainEvents(myMealTrainEvents(mealTrains, user.uid))
 
       const entityIds = new Set([
         ...groups.filter(g => (g.memberUids || []).includes(user.uid)).map(g => g.id),
@@ -121,7 +128,17 @@ export default function EventsPage() {
   const canSeeMembersEvent = (ev) =>
     (ev.groupId && myEntityIds.has(ev.groupId))
     || (ev.committeeId && myEntityIds.has(ev.committeeId))
-  const filteredEvents = events.filter(ev => matchesFilter(ev, filterValue, canSeeMembersEvent(ev)))
+  // Your own meal-train commitments always ride along — they're personal, so no
+  // audience filter applies to them; clicking one opens the pot itself.
+  const filteredEvents = [
+    ...events.filter(ev => matchesFilter(ev, filterValue, canSeeMembersEvent(ev))),
+    ...mealTrainEvents,
+  ]
+
+  const openEvent = (ev) => {
+    if (ev.mealTrainId) navigate(`/meal-trains?train=${ev.mealTrainId}`)
+    else setSelectedEvent(ev)
+  }
 
   return (
     <div className="page-container rtl" dir="rtl">
@@ -208,7 +225,7 @@ export default function EventsPage() {
           events={filteredEvents}
           filterRole="all"
           classColorMap={classColorMap}
-          onEventClick={setSelectedEvent}
+          onEventClick={openEvent}
           birthdays={birthdays}
         />
       )}
@@ -218,7 +235,7 @@ export default function EventsPage() {
         <>
           <div className="grid sm:grid-cols-2 gap-4">
             {filteredEvents.map(event => (
-              <EventCard key={event.id} event={event} onCardClick={() => setSelectedEvent(event)} />
+              <EventCard key={event.id} event={event} onCardClick={() => openEvent(event)} />
             ))}
           </div>
 
