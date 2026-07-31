@@ -1,37 +1,64 @@
 import { describe, it, expect } from 'vitest'
 import {
-  generateDates, buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
-  isMealTrainCommittee,
+  buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
+  isMealTrainCommittee, addDay, removeDay, toggleDayType,
 } from './mealTrain'
 
-describe('generateDates', () => {
-  it('picks every selected weekday in the range (Sun + Wed, like the sheet)', () => {
-    // 2026-08-02 is a Sunday; 2026-08-05 Wednesday
-    const dates = generateDates({ from: '2026-08-02', to: '2026-08-16', weekdays: [0, 3] })
-    expect(dates).toEqual([
-      '2026-08-02', '2026-08-05', '2026-08-09', '2026-08-12', '2026-08-16',
-    ])
+describe('addDay / removeDay', () => {
+  it('adds a day with both slot types open and keeps the list sorted', () => {
+    let days = addDay([], '2026-08-09')
+    days = addDay(days, '2026-08-05')
+    expect(days.map(d => d.date)).toEqual(['2026-08-05', '2026-08-09'])
+    expect(days[0].types).toEqual(['meal', 'treat'])
   })
-  it('includes both endpoints when they match', () => {
-    expect(generateDates({ from: '2026-08-02', to: '2026-08-02', weekdays: [0] })).toEqual(['2026-08-02'])
+  it('ignores a duplicate or empty date', () => {
+    const days = addDay([], '2026-08-05')
+    expect(addDay(days, '2026-08-05')).toBe(days)
+    expect(addDay(days, '')).toBe(days)
   })
-  it('returns [] for missing or reversed input', () => {
-    expect(generateDates({ from: '', to: '2026-08-16', weekdays: [0] })).toEqual([])
-    expect(generateDates({ from: '2026-08-16', to: '2026-08-02', weekdays: [0] })).toEqual([])
-    expect(generateDates({ from: '2026-08-02', to: '2026-08-16', weekdays: [] })).toEqual([])
+  it('caps the rota so a mis-click cannot create hundreds of days', () => {
+    let days = []
+    for (let i = 1; i <= 70; i++) days = addDay(days, `2026-08-${String(i).padStart(2, '0')}`)
+    expect(days).toHaveLength(60)
   })
-  it('caps runaway ranges', () => {
-    const dates = generateDates({ from: '2026-01-01', to: '2030-01-01', weekdays: [0, 1, 2, 3, 4, 5, 6] }, 10)
-    expect(dates).toHaveLength(10)
+  it('removes a day', () => {
+    const days = addDay(addDay([], '2026-08-05'), '2026-08-09')
+    expect(removeDay(days, '2026-08-05').map(d => d.date)).toEqual(['2026-08-09'])
+  })
+})
+
+describe('toggleDayType', () => {
+  it('turns a slot type off and back on for that day only', () => {
+    const days = addDay(addDay([], '2026-08-05'), '2026-08-09')
+    const off = toggleDayType(days, '2026-08-05', 'treat')
+    expect(off[0].types).toEqual(['meal'])
+    expect(off[1].types).toEqual(['meal', 'treat'])
+    expect(toggleDayType(off, '2026-08-05', 'treat')[0].types).toEqual(['meal', 'treat'])
+  })
+  it('refuses to leave a day with no slot at all', () => {
+    const days = toggleDayType(addDay([], '2026-08-05'), '2026-08-05', 'treat')
+    expect(toggleDayType(days, '2026-08-05', 'meal')[0].types).toEqual(['meal'])
   })
 })
 
 describe('buildSlots', () => {
-  it('creates a meal slot and a treat slot per date', () => {
-    const slots = buildSlots(['2026-08-05'])
+  it('creates a meal slot and a treat slot per day', () => {
+    const slots = buildSlots(addDay([], '2026-08-05'))
     expect(slots).toHaveLength(2)
     expect(slots.map(s => s.type)).toEqual(['meal', 'treat'])
     expect(slots[0]).toMatchObject({ id: '2026-08-05_meal', date: '2026-08-05', byUid: '', byName: '' })
+  })
+  it('honours a day where only one type was left open', () => {
+    const days = toggleDayType(addDay([], '2026-08-05'), '2026-08-05', 'meal')
+    expect(buildSlots(days).map(s => s.type)).toEqual(['treat'])
+  })
+  it('keeps the meal-before-treat order whatever order the types were toggled in', () => {
+    expect(buildSlots([{ date: '2026-08-05', types: ['treat', 'meal'] }]).map(s => s.type))
+      .toEqual(['meal', 'treat'])
+  })
+  it('still accepts a plain date string (trains created before day types)', () => {
+    expect(buildSlots(['2026-08-05']).map(s => s.id))
+      .toEqual(['2026-08-05_meal', '2026-08-05_treat'])
   })
   it('handles empty input', () => {
     expect(buildSlots([])).toEqual([])

@@ -19,31 +19,44 @@ export const WEEKDAYS = [
 ]
 
 const pad = (n) => String(n).padStart(2, '0')
-const toKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
-// Build the dates of the rota: every selected weekday between `from` and `to`
-// (inclusive). Returns sorted YYYY-MM-DD strings; invalid/empty input → [].
-// Capped so a mistyped range can't generate thousands of rows.
-export function generateDates({ from, to, weekdays = [] }, max = 60) {
-  if (!from || !to || !weekdays.length) return []
-  const start = new Date(from + 'T00:00:00')
-  const end = new Date(to + 'T00:00:00')
-  if (isNaN(start) || isNaN(end) || end < start) return []
-  const wanted = new Set(weekdays.map(Number))
-  const out = []
-  const cur = new Date(start)
-  while (cur <= end && out.length < max) {
-    if (wanted.has(cur.getDay())) out.push(toKey(cur))
-    cur.setDate(cur.getDate() + 1)
-  }
-  return out
+// The rota is a plain list of days, each carrying the slot types open on it —
+// exactly what the sheet showed: a date, an "ארוחה" row and a "פינוק מתוק" row.
+// A day is { date: 'YYYY-MM-DD', types: ['meal', 'treat'] }.
+export const ALL_SLOT_TYPES = SLOT_TYPES.map(t => t.value)
+const MAX_DAYS = 60
+
+export function addDay(days, date, types = ALL_SLOT_TYPES) {
+  const list = days || []
+  if (!date || list.some(d => d.date === date) || list.length >= MAX_DAYS) return list
+  return [...list, { date, types: [...types] }].sort((a, b) => a.date.localeCompare(b.date))
 }
 
-// One slot per type per date — the shape stored on the meal-train document.
-export function buildSlots(dates) {
-  return (dates || []).flatMap(date =>
-    SLOT_TYPES.map(t => ({ id: `${date}_${t.value}`, date, type: t.value, byUid: '', byName: '' }))
-  )
+export function removeDay(days, date) {
+  return (days || []).filter(d => d.date !== date)
+}
+
+// Turning both types off would leave a day nobody can sign up for, so the last
+// one stays on — the day itself is removed with the ✕ instead.
+export function toggleDayType(days, date, type) {
+  return (days || []).map(d => {
+    if (d.date !== date) return d
+    const on = d.types.includes(type)
+    if (on && d.types.length === 1) return d
+    return { ...d, types: on ? d.types.filter(t => t !== type) : [...d.types, type] }
+  })
+}
+
+// One slot per open type per day — the shape stored on the meal-train document.
+export function buildSlots(days) {
+  return (days || []).flatMap(day => {
+    const date = typeof day === 'string' ? day : day?.date
+    if (!date) return []
+    const types = typeof day === 'string' ? ALL_SLOT_TYPES : (day.types || [])
+    return ALL_SLOT_TYPES
+      .filter(t => types.includes(t))
+      .map(t => ({ id: `${date}_${t}`, date, type: t, byUid: '', byName: '' }))
+  })
 }
 
 // Dates in ascending order with their slots grouped — what the signup grid renders.
