@@ -1045,6 +1045,76 @@ async function _deleteCommitteeEvent(id) {
   await deleteDoc(doc(db, 'events', id))
 }
 
+// ── Meal trains ("סירי לידה") ─────────────────────────────────────────────────
+// Public doc = family + preferences + slots (everyone signed in may read, so
+// members can sign up). Address + building code live in a PRIVATE subdocument
+// that Firestore rules expose only to slot-claimers / coordinator / admins.
+async function _getMealTrains() {
+  const snap = await getDocs(collection(db, 'mealTrains'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+}
+
+// Returns null when the caller isn't allowed to see the address — the caller
+// renders a "sign up to see the address" hint instead.
+export async function getMealTrainPrivate(trainId) {
+  try {
+    const snap = await getDoc(doc(db, 'mealTrains', trainId, 'private', 'details'))
+    return snap.exists() ? snap.data() : null
+  } catch {
+    return null   // permission denied = not a claimer
+  }
+}
+
+async function _saveMealTrain(train, privateDetails) {
+  const { id, ...data } = train
+  let trainId = id
+  if (id && !id.startsWith('train-')) {
+    await updateDoc(doc(db, 'mealTrains', id), { ...data, updatedAt: serverTimestamp() })
+  } else {
+    const ref = await addDoc(collection(db, 'mealTrains'), {
+      ...data, claimerUids: data.claimerUids || [], createdAt: serverTimestamp(),
+    })
+    trainId = ref.id
+  }
+  if (privateDetails) {
+    await setDoc(doc(db, 'mealTrains', trainId, 'private', 'details'), privateDetails)
+  }
+  return { ...train, id: trainId }
+}
+
+async function _deleteMealTrain(id) {
+  try { await deleteDoc(doc(db, 'mealTrains', id, 'private', 'details')) } catch { /* already gone */ }
+  await deleteDoc(doc(db, 'mealTrains', id))
+}
+
+// Claim a slot: writes the slot AND adds the claimer to claimerUids — the array
+// the rules use to unlock the address. Re-reads first so two people claiming at
+// once don't clobber each other's slots.
+async function _claimMealSlot(trainId, slotId, uid, name) {
+  const snap = await getDoc(doc(db, 'mealTrains', trainId))
+  if (!snap.exists()) return
+  const slots = (snap.data().slots || []).map(s =>
+    s.id === slotId ? { ...s, byUid: uid, byName: name || '' } : s
+  )
+  await updateDoc(doc(db, 'mealTrains', trainId), { slots, claimerUids: arrayUnion(uid) })
+}
+
+// Release a slot the user took. Their uid leaves claimerUids (and with it the
+// address access) only once they hold no other slot on this train.
+async function _releaseMealSlot(trainId, slotId, uid) {
+  const snap = await getDoc(doc(db, 'mealTrains', trainId))
+  if (!snap.exists()) return
+  const slots = (snap.data().slots || []).map(s =>
+    s.id === slotId && s.byUid === uid ? { ...s, byUid: '', byName: '' } : s
+  )
+  const stillClaims = slots.some(s => s.byUid === uid)
+  await updateDoc(doc(db, 'mealTrains', trainId), {
+    slots,
+    ...(stillClaims ? {} : { claimerUids: arrayRemove(uid) }),
+  })
+}
+
 // ── Emergency mode ────────────────────────────────────────────────────────────
 export async function getEmergencyMode() {
   const snap = await getDoc(doc(db, 'settings', 'emergencyMode'))
@@ -1276,6 +1346,11 @@ export async function deleteEvent(...args) { const r = await _deleteEvent(...arg
 export async function rsvpEvent(...args) { const r = await _rsvpEvent(...args); invalidate('events'); return r }
 export async function createGroupEvent(...args) { const r = await _createGroupEvent(...args); invalidate('events'); return r }
 export async function deleteGroupEvent(...args) { const r = await _deleteGroupEvent(...args); invalidate('events'); return r }
+export function getMealTrains() { return cached('mealTrains', 1 * MIN, () => _getMealTrains()) }
+export async function saveMealTrain(...args) { const r = await _saveMealTrain(...args); invalidate('mealTrains'); return r }
+export async function deleteMealTrain(...args) { const r = await _deleteMealTrain(...args); invalidate('mealTrains'); return r }
+export async function claimMealSlot(...args) { const r = await _claimMealSlot(...args); invalidate('mealTrains'); return r }
+export async function releaseMealSlot(...args) { const r = await _releaseMealSlot(...args); invalidate('mealTrains'); return r }
 export async function createCommitteeEvent(...args) { const r = await _createCommitteeEvent(...args); invalidate('events'); return r }
 export async function deleteCommitteeEvent(...args) { const r = await _deleteCommitteeEvent(...args); invalidate('events'); return r }
 export async function saveCommittee(...args) { const r = await _saveCommittee(...args); invalidate('committees'); return r }

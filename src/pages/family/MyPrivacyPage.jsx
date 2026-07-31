@@ -35,6 +35,8 @@ const CONSENT_TYPE_LABELS = {
   join_committee:  'אישור הצטרפות לוועדה',
   join_group:      'אישור הצטרפות לקבוצה',
   event_publish:   'אישור פרסום אירוע',
+  meal_train_open:   'אישור פתיחת סיר לידה וחשיפת פרטי מסירה לנרשמים',
+  meal_train_signup: 'אישור שיבוץ לסיר לידה וצפייה בפרטי המסירה',
 }
 
 export default function MyPrivacyPage() {
