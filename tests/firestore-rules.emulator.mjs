@@ -292,6 +292,25 @@ await check('a plain member CANNOT write someone else into a slot',
     slots: [{ id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: '', byName: 'מישהו' }],
     claimerUids: ['stranger1', 'parent1'],
   }), 'deny')
+await check('an admin CAN sign another member up for a slot on their behalf',
+  updateDoc(doc(admin, 'mealTrains', 'trainA'), {
+    slots: [
+      { id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: 'parent1', byName: 'Parent', assignedBy: 'admin1' },
+      { id: '2030-08-05_treat', date: '2030-08-05', type: 'treat', byUid: '', byName: '' },
+    ],
+    claimerUids: ['parent1'],
+  }), 'allow')
+await check('that member CAN then read the address they were signed up for',
+  getDoc(doc(parent, 'mealTrains', 'trainA', 'private', 'details')), 'allow')
+await check('and CAN release the slot someone else took for them',
+  updateDoc(doc(parent, 'mealTrains', 'trainA'), {
+    slots: [
+      { id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: '', byName: '' },
+      { id: '2030-08-05_treat', date: '2030-08-05', type: 'treat', byUid: '', byName: '' },
+    ],
+    claimerUids: [],
+  }), 'allow')
+
 await check('the pot creator CAN update the private address',
   setDoc(doc(someuidCtx, 'mealTrains', 'trainA', 'private', 'details'), { address: 'תירוש 38', buildingCode: '1974' }), 'allow')
 

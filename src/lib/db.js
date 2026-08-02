@@ -1131,6 +1131,22 @@ async function _setMealSlotName(trainId, slotId, name) {
   await updateDoc(doc(db, 'mealTrains', trainId), { slots, claimerUids: claimerUidsOf(slots) })
 }
 
+// Sign a fellow member up for a slot on their behalf — someone who asked in the
+// WhatsApp group to be put down while they couldn't get to the app. They get a
+// real uid on the slot, so the pot lands in their calendar and the address opens
+// up for them exactly as if they had signed up themselves.
+// `assignedBy` records who did it, so the entry isn't anonymous.
+async function _assignMealSlot(trainId, slotId, member, assignedBy) {
+  const snap = await getDoc(doc(db, 'mealTrains', trainId))
+  if (!snap.exists()) return
+  const slots = (snap.data().slots || []).map(s =>
+    s.id === slotId
+      ? { ...s, byUid: member.uid, byName: member.name || '', assignedBy: assignedBy || '' }
+      : s
+  )
+  await updateDoc(doc(db, 'mealTrains', trainId), { slots, claimerUids: claimerUidsOf(slots) })
+}
+
 // ── Emergency mode ────────────────────────────────────────────────────────────
 export async function getEmergencyMode() {
   const snap = await getDoc(doc(db, 'settings', 'emergencyMode'))
@@ -1368,6 +1384,7 @@ export async function deleteMealTrain(...args) { const r = await _deleteMealTrai
 export async function claimMealSlot(...args) { const r = await _claimMealSlot(...args); invalidate('mealTrains'); return r }
 export async function releaseMealSlot(...args) { const r = await _releaseMealSlot(...args); invalidate('mealTrains'); return r }
 export async function setMealSlotName(...args) { const r = await _setMealSlotName(...args); invalidate('mealTrains'); return r }
+export async function assignMealSlot(...args) { const r = await _assignMealSlot(...args); invalidate('mealTrains'); return r }
 export async function createCommitteeEvent(...args) { const r = await _createCommitteeEvent(...args); invalidate('events'); return r }
 export async function deleteCommitteeEvent(...args) { const r = await _deleteCommitteeEvent(...args); invalidate('events'); return r }
 export async function saveCommittee(...args) { const r = await _saveCommittee(...args); invalidate('committees'); return r }
