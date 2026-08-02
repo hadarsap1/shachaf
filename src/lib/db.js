@@ -7,6 +7,7 @@ import { getAuth, createUserWithEmailAndPassword, updateProfile as updateFBProfi
 import { initializeApp, deleteApp } from 'firebase/app'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { compressImage } from './image'
+import { claimerUidsOf } from './mealTrain'
 
 // ── Read cache ────────────────────────────────────────────────────────────────
 // Pages remount (and refetch) on every navigation; with hundreds of users that
@@ -1115,6 +1116,21 @@ async function _releaseMealSlot(trainId, slotId, uid) {
   })
 }
 
+// Coordinator bookkeeping: someone outside the app took a slot (a neighbour, a
+// grandparent, a message in the WhatsApp group), or a signup has to be cleared.
+// Written as a name with no uid — the rules allow the whole-document update
+// path only to the pot's creator and to admins.
+// claimerUids is recomputed from the slots either way, so clearing someone's
+// last slot also takes away their access to the address.
+async function _setMealSlotName(trainId, slotId, name) {
+  const snap = await getDoc(doc(db, 'mealTrains', trainId))
+  if (!snap.exists()) return
+  const slots = (snap.data().slots || []).map(s =>
+    s.id === slotId ? { ...s, byUid: '', byName: (name || '').trim() } : s
+  )
+  await updateDoc(doc(db, 'mealTrains', trainId), { slots, claimerUids: claimerUidsOf(slots) })
+}
+
 // ── Emergency mode ────────────────────────────────────────────────────────────
 export async function getEmergencyMode() {
   const snap = await getDoc(doc(db, 'settings', 'emergencyMode'))
@@ -1351,6 +1367,7 @@ export async function saveMealTrain(...args) { const r = await _saveMealTrain(..
 export async function deleteMealTrain(...args) { const r = await _deleteMealTrain(...args); invalidate('mealTrains'); return r }
 export async function claimMealSlot(...args) { const r = await _claimMealSlot(...args); invalidate('mealTrains'); return r }
 export async function releaseMealSlot(...args) { const r = await _releaseMealSlot(...args); invalidate('mealTrains'); return r }
+export async function setMealSlotName(...args) { const r = await _setMealSlotName(...args); invalidate('mealTrains'); return r }
 export async function createCommitteeEvent(...args) { const r = await _createCommitteeEvent(...args); invalidate('events'); return r }
 export async function deleteCommitteeEvent(...args) { const r = await _deleteCommitteeEvent(...args); invalidate('events'); return r }
 export async function saveCommittee(...args) { const r = await _saveCommittee(...args); invalidate('committees'); return r }

@@ -59,6 +59,41 @@ export function buildSlots(days) {
   })
 }
 
+// A slot is taken either by an app user (byUid) or by someone the coordinator
+// wrote in by hand — a neighbour or a grandparent with no account (byName only).
+export function isSlotTaken(slot) {
+  return !!(slot?.byUid || slot?.byName)
+}
+
+// claimerUids must always mirror the slots: it is what unlocks the address, so
+// clearing someone's last slot has to drop their address access with it.
+export function claimerUidsOf(slots) {
+  return [...new Set((slots || []).map(s => s.byUid).filter(Boolean))]
+}
+
+// Editing a published pot rebuilds its slots from the chosen days — carry the
+// existing signups across so a fixed typo doesn't wipe who volunteered.
+// A signup on a day that was removed is dropped with the day.
+export function mergeSlots(newSlots, oldSlots) {
+  const byId = new Map((oldSlots || []).map(s => [s.id, s]))
+  return (newSlots || []).map(s => {
+    const old = byId.get(s.id)
+    return old ? { ...s, byUid: old.byUid || '', byName: old.byName || '' } : s
+  })
+}
+
+// The day list behind the editor, reconstructed from a pot's stored slots.
+export function daysFromSlots(slots) {
+  const byDate = new Map()
+  for (const s of slots || []) {
+    if (!byDate.has(s.date)) byDate.set(s.date, new Set())
+    byDate.get(s.date).add(s.type)
+  }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, types]) => ({ date, types: ALL_SLOT_TYPES.filter(t => types.has(t)) }))
+}
+
 // Dates in ascending order with their slots grouped — what the signup grid renders.
 export function groupByDate(slots) {
   const byDate = new Map()
@@ -176,6 +211,6 @@ export function mealTrainInviteMessage(train, url) {
 // Progress for the card header: how many slots are still open
 export function slotStats(slots) {
   const all = slots || []
-  const taken = all.filter(s => s.byUid).length
+  const taken = all.filter(isSlotTaken).length
   return { total: all.length, taken, open: all.length - taken }
 }
