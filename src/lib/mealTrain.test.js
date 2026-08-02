@@ -3,6 +3,7 @@ import {
   buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
   isMealTrainCommittee, addDay, removeDay, toggleDayType,
   myMealTrainEvents, mealTrainInviteMessage,
+  isSlotTaken, claimerUidsOf, mergeSlots, daysFromSlots,
 } from './mealTrain'
 
 describe('addDay / removeDay', () => {
@@ -208,17 +209,86 @@ describe('mealTrainInviteMessage', () => {
   })
 
   it('pluralises the open-slot count properly', () => {
-    const twoOpen = { ...sampleTrain, slots: sampleTrain.slots.map(s => ({ ...s, byUid: s.byUid === 'me' ? 'me' : '' })) }
+    const twoOpen = { ...sampleTrain, slots: sampleTrain.slots.map(s => (
+      s.byUid === 'me' ? s : { ...s, byUid: '', byName: '' })) }
     expect(mealTrainInviteMessage(twoOpen, '')).toContain('נותרו 2 משבצות פנויות מתוך 3')
   })
 
   it('celebrates a full pot instead of begging', () => {
-    const full = { ...sampleTrain, slots: sampleTrain.slots.map(s => ({ ...s, byUid: 'someone' })) }
+    const full = { ...sampleTrain, slots: sampleTrain.slots.map(s => ({ ...s, byUid: 'someone', byName: 'מישהו' })) }
     expect(mealTrainInviteMessage(full, 'https://x/y')).toContain('כל המשבצות שוריינו')
   })
 
   it('survives a bare train with no optional fields', () => {
     expect(mealTrainInviteMessage({ familyName: 'לוי', slots: [] }, '')).toContain('משפחת לוי')
     expect(mealTrainInviteMessage(null, '')).toBe('')
+  })
+})
+
+describe('isSlotTaken', () => {
+  it('counts an app signup and a hand-written volunteer alike', () => {
+    expect(isSlotTaken({ byUid: 'u1', byName: 'דנה' })).toBe(true)
+    expect(isSlotTaken({ byUid: '', byName: 'שכנה מהבניין' })).toBe(true)
+    expect(isSlotTaken({ byUid: '', byName: '' })).toBe(false)
+    expect(isSlotTaken(null)).toBe(false)
+  })
+
+  it('makes slotStats count manual volunteers too', () => {
+    const slots = [{ byUid: 'u1' }, { byUid: '', byName: 'סבתא' }, { byUid: '', byName: '' }]
+    expect(slotStats(slots)).toEqual({ total: 3, taken: 2, open: 1 })
+  })
+})
+
+describe('claimerUidsOf', () => {
+  it('lists exactly the uids still holding a slot', () => {
+    expect(claimerUidsOf([
+      { byUid: 'u1' }, { byUid: 'u2' }, { byUid: 'u1' }, { byUid: '', byName: 'שכן' }, { byUid: '' },
+    ])).toEqual(['u1', 'u2'])
+  })
+  it('drops everyone when nothing is claimed — address access goes with it', () => {
+    expect(claimerUidsOf([{ byUid: '', byName: '' }])).toEqual([])
+    expect(claimerUidsOf(undefined)).toEqual([])
+  })
+})
+
+describe('mergeSlots', () => {
+  const old = [
+    { id: '2026-08-05_meal', date: '2026-08-05', type: 'meal', byUid: 'u1', byName: 'דנה' },
+    { id: '2026-08-05_treat', date: '2026-08-05', type: 'treat', byUid: '', byName: 'סבתא' },
+  ]
+
+  it('keeps existing signups when the pot is edited', () => {
+    const merged = mergeSlots(buildSlots([{ date: '2026-08-05', types: ['meal', 'treat'] }]), old)
+    expect(merged[0]).toMatchObject({ byUid: 'u1', byName: 'דנה' })
+    expect(merged[1]).toMatchObject({ byUid: '', byName: 'סבתא' })
+  })
+
+  it('leaves a newly added day empty', () => {
+    const merged = mergeSlots(buildSlots(addDay(daysFromSlots(old), '2026-08-09')), old)
+    const fresh = merged.filter(s => s.date === '2026-08-09')
+    expect(fresh).toHaveLength(2)
+    expect(fresh.every(s => !s.byUid && !s.byName)).toBe(true)
+  })
+
+  it('drops a signup together with the day it was on', () => {
+    expect(mergeSlots(buildSlots([{ date: '2026-08-09', types: ['meal'] }]), old))
+      .toEqual([{ id: '2026-08-09_meal', date: '2026-08-09', type: 'meal', byUid: '', byName: '' }])
+  })
+})
+
+describe('daysFromSlots', () => {
+  it('rebuilds the editor day list from stored slots', () => {
+    expect(daysFromSlots([
+      { id: 'b_treat', date: '2026-08-09', type: 'treat' },
+      { id: 'a_treat', date: '2026-08-05', type: 'treat' },
+      { id: 'a_meal',  date: '2026-08-05', type: 'meal' },
+    ])).toEqual([
+      { date: '2026-08-05', types: ['meal', 'treat'] },
+      { date: '2026-08-09', types: ['treat'] },
+    ])
+  })
+  it('round-trips through buildSlots', () => {
+    const days = addDay(addDay([], '2026-08-05'), '2026-08-09')
+    expect(daysFromSlots(buildSlots(days))).toEqual(days)
   })
 })

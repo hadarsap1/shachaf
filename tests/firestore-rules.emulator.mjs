@@ -72,6 +72,8 @@ await env.withSecurityRulesDisabled(async (ctx) => {
 
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
 const stranger = env.authenticatedContext('stranger1', { email: 'stranger@x.com' }).firestore()
+// 'someuid' opened trainA — the pot's coordinator
+const someuidCtx = env.authenticatedContext('someuid', { email: 'coordinator@x.com' }).firestore()
 
 let pass = 0, fail = 0
 async function check(name, promise, expect) {
@@ -264,6 +266,35 @@ await check('nobody can open a meal train with no committee at all',
   setDoc(doc(parent, 'mealTrains', 'trainNoComm'), {
     familyName: 'משפחה', committeeId: '', createdBy: 'parent1', claimerUids: [], slots: [],
   }), 'deny')
+// Coordinator edits: fixing a typo, and writing in a volunteer who has no app
+await check('the pot creator CAN edit its details after publishing',
+  updateDoc(doc(someuidCtx, 'mealTrains', 'trainA'), { familyName: 'משפחת קרטיס-לוי' }), 'allow')
+await check('the pot creator CAN write in a volunteer with no account',
+  updateDoc(doc(someuidCtx, 'mealTrains', 'trainA'), {
+    slots: [
+      { id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: 'stranger1', byName: 'Stranger' },
+      { id: '2030-08-05_treat', date: '2030-08-05', type: 'treat', byUid: '', byName: 'שכנה מהבניין' },
+    ],
+    claimerUids: ['stranger1'],
+  }), 'allow')
+await check('an admin CAN clear a signup and drop that claimer address access',
+  updateDoc(doc(admin, 'mealTrains', 'trainA'), {
+    slots: [
+      { id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: '', byName: '' },
+      { id: '2030-08-05_treat', date: '2030-08-05', type: 'treat', byUid: '', byName: 'שכנה מהבניין' },
+    ],
+    claimerUids: [],
+  }), 'allow')
+await check('a plain member CANNOT edit the pot details',
+  updateDoc(doc(stranger, 'mealTrains', 'trainA'), { familyName: 'שינוי' }), 'deny')
+await check('a plain member CANNOT write someone else into a slot',
+  updateDoc(doc(stranger, 'mealTrains', 'trainA'), {
+    slots: [{ id: '2030-08-05_meal', date: '2030-08-05', type: 'meal', byUid: '', byName: 'מישהו' }],
+    claimerUids: ['stranger1', 'parent1'],
+  }), 'deny')
+await check('the pot creator CAN update the private address',
+  setDoc(doc(someuidCtx, 'mealTrains', 'trainA', 'private', 'details'), { address: 'תירוש 38', buildingCode: '1974' }), 'allow')
+
 await check('an admin CAN open a meal train without a committee',
   setDoc(doc(admin, 'mealTrains', 'trainAdmin'), {
     familyName: 'משפחה', committeeId: '', createdBy: 'admin1', claimerUids: [], slots: [],

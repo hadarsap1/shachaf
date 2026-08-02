@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import {
   getMealTrains, getMealTrainPrivate, saveMealTrain, deleteMealTrain,
-  claimMealSlot, releaseMealSlot, getCommittees, logConsent,
+  claimMealSlot, releaseMealSlot, setMealSlotName, getCommittees, logConsent,
 } from '../../lib/db'
 import { CONSENT_VERSION } from '../../lib/consent'
 import {
   SLOT_TYPES, buildSlots, groupByDate, addDay, removeDay, toggleDayType,
   formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee, mealTrainInviteMessage,
+  isSlotTaken, mergeSlots, daysFromSlots,
 } from '../../lib/mealTrain'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -14,6 +15,7 @@ import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from '../../components/ui/Toaster'
 import {
   Baby, Plus, X, Loader2, MapPin, Lock, Phone, Utensils, Cake, Check, Trash2, Share2, Copy,
+  Pencil, UserPlus,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -120,8 +122,11 @@ function SharePanel({ train, onClose }) {
 }
 
 // ── Signup grid ───────────────────────────────────────────────────────────────
-function SlotGrid({ train, uid, userName, onChanged }) {
+function SlotGrid({ train, uid, userName, isCoordinator, onChanged }) {
   const [busy, setBusy] = useState('')
+  // Slot the coordinator is currently writing a name into, and the name typed
+  const [manualSlot, setManualSlot] = useState('')
+  const [manualName, setManualName] = useState('')
   const groups = groupByDate(train.slots)
 
   const claim = async (slot) => {
@@ -151,6 +156,21 @@ function SlotGrid({ train, uid, userName, onChanged }) {
     } finally { setBusy('') }
   }
 
+  // Coordinator writes in someone who signed up outside the app, or clears a
+  // slot (a volunteer who cancelled by phone).
+  const saveManual = async (slot, name) => {
+    setBusy(slot.id)
+    try {
+      await setMealSlotName(train.id, slot.id, name)
+      setManualSlot('')
+      setManualName('')
+      await onChanged()
+    } catch (e) {
+      console.error('manual slot update failed', e)
+      toast('העדכון נכשל — נסו שוב', 'error')
+    } finally { setBusy('') }
+  }
+
   if (!groups.length) return <p className="text-xs text-gray-400 text-center py-3">לא הוגדרו תאריכים</p>
 
   return (
@@ -164,36 +184,75 @@ function SlotGrid({ train, uid, userName, onChanged }) {
             {slots.map(slot => {
               const Icon = TYPE_ICON[slot.type] || Utensils
               const type = SLOT_TYPES.find(t => t.value === slot.type)
-              const mine = slot.byUid === uid
-              const taken = !!slot.byUid
+              const mine = !!uid && slot.byUid === uid
+              const taken = isSlotTaken(slot)
+              const editing = manualSlot === slot.id
               return (
-                <div key={slot.id} className="flex items-center gap-2 px-3 py-2">
-                  <Icon size={13} className="text-gray-400 flex-shrink-0" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0 text-right">{type?.label}</span>
-                  <div className="flex-1 min-w-0 text-right">
-                    {taken ? (
-                      <span className={clsx('text-xs font-medium truncate',
-                        mine ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200')}>
-                        {mine ? 'שוריין על ידך' : slot.byName || 'שוריין'}
-                      </span>
+                <div key={slot.id} className="px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Icon size={13} className="text-gray-400 flex-shrink-0" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0 text-right">{type?.label}</span>
+                    <div className="flex-1 min-w-0 text-right">
+                      {taken ? (
+                        <span className={clsx('text-xs font-medium truncate',
+                          mine ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200')}>
+                          {mine ? 'שוריין על ידך' : slot.byName || 'שוריין'}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">{type?.hint}</span>
+                      )}
+                    </div>
+
+                    {busy === slot.id ? (
+                      <Loader2 size={13} className="animate-spin text-gray-400 flex-shrink-0" />
                     ) : (
-                      <span className="text-xs text-gray-400">{type?.hint}</span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {/* Coordinator: write in / clear anyone, including people
+                            who signed up in the WhatsApp group and never opened the app */}
+                        {isCoordinator && (
+                          taken ? (
+                            <button onClick={() => saveManual(slot, '')}
+                              aria-label={`נקה את השיבוץ ל${type?.label} ב${formatSlotDate(slot.date)}`}
+                              className="text-gray-300 hover:text-red-500">
+                              <X size={13} />
+                            </button>
+                          ) : (
+                            <button onClick={() => { setManualSlot(slot.id); setManualName('') }}
+                              aria-label={`שבצו ידנית ל${type?.label} ב${formatSlotDate(slot.date)}`}
+                              className="text-gray-400 hover:text-primary-600" title="שיבוץ ידני">
+                              <UserPlus size={13} />
+                            </button>
+                          )
+                        )}
+                        {mine ? (
+                          <button onClick={() => release(slot)}
+                            className="text-[11px] text-gray-500 hover:text-red-600 border border-gray-200 dark:border-gray-600 rounded-full px-2 py-0.5">
+                            ביטול
+                          </button>
+                        ) : !taken ? (
+                          <button onClick={() => claim(slot)}
+                            className="text-[11px] font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-full px-2.5 py-1">
+                            אני לוקח/ת
+                          </button>
+                        ) : (
+                          <Check size={13} className="text-secondary-500" />
+                        )}
+                      </div>
                     )}
                   </div>
-                  {busy === slot.id ? (
-                    <Loader2 size={13} className="animate-spin text-gray-400 flex-shrink-0" />
-                  ) : mine ? (
-                    <button onClick={() => release(slot)}
-                      className="text-[11px] text-gray-500 hover:text-red-600 border border-gray-200 dark:border-gray-600 rounded-full px-2 py-0.5 flex-shrink-0">
-                      ביטול
-                    </button>
-                  ) : !taken ? (
-                    <button onClick={() => claim(slot)}
-                      className="text-[11px] font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-full px-2.5 py-1 flex-shrink-0">
-                      אני לוקח/ת
-                    </button>
-                  ) : (
-                    <Check size={13} className="text-secondary-500 flex-shrink-0" />
+
+                  {editing && (
+                    <div className="flex gap-1.5 mt-2">
+                      <input autoFocus value={manualName} onChange={e => setManualName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && manualName.trim()) saveManual(slot, manualName) }}
+                        placeholder="שם המתנדב/ת (מחוץ לאפליקציה)"
+                        aria-label="שם לשיבוץ ידני"
+                        className="input flex-1 text-xs text-right py-1" />
+                      <button onClick={() => saveManual(slot, manualName)} disabled={!manualName.trim()}
+                        className="btn-primary text-xs px-3 py-1 disabled:opacity-40">שמור</button>
+                      <button onClick={() => setManualSlot('')}
+                        className="text-xs text-gray-500 px-2">בטל</button>
+                    </div>
                   )}
                 </div>
               )
@@ -205,19 +264,42 @@ function SlotGrid({ train, uid, userName, onChanged }) {
   )
 }
 
-// ── Create panel ──────────────────────────────────────────────────────────────
-function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
+// ── Create / edit panel ───────────────────────────────────────────────────────
+// `train` set = editing a published pot (typos, a moved date, a new phone
+// number). Editing preserves who already signed up: the days rebuild the slots,
+// and mergeSlots carries the existing names across.
+function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved }) {
+  const editing = !!train
   const [form, setForm] = useState({
-    familyName: '', babyName: '', parents: '', siblings: '',
-    preferences: '', concept: 'מכינים מכל הלב, מתובל בהמון אהבה. להשתדל בכלים שלא צריך להחזיר.',
-    delivery: 'אורזים ומשאירים מחוץ לדלת / מסירה אישית עם חיבוק (לאחר תיאום)',
-    contactName: '', contactPhone: '',
+    familyName: train?.familyName || '',
+    babyName: train?.babyName || '',
+    parents: train?.parents || '',
+    siblings: train?.siblings || '',
+    preferences: train?.preferences || '',
+    concept: train?.concept ?? 'מכינים מכל הלב, מתובל בהמון אהבה. להשתדל בכלים שלא צריך להחזיר.',
+    delivery: train?.delivery ?? 'אורזים ומשאירים מחוץ לדלת / מסירה אישית עם חיבוק (לאחר תיאום)',
+    contactName: train?.contactName || '',
+    contactPhone: train?.contactPhone || '',
     address: '', city: '', buildingCode: '',
   })
-  const [committeeId, setCommitteeId] = useState(hats.length === 1 ? hats[0].id : '')
-  const [days, setDays] = useState([])
+  // The address lives in the private subdocument — fetch it so an edit doesn't
+  // silently wipe it (the coordinator and admins are allowed to read it).
+  const [privateLoaded, setPrivateLoaded] = useState(!editing)
+  useEffect(() => {
+    if (!editing) return
+    let active = true
+    getMealTrainPrivate(train.id).then(d => {
+      if (!active) return
+      if (d) setForm(f => ({ ...f, address: d.address || '', city: d.city || '', buildingCode: d.buildingCode || '' }))
+      setPrivateLoaded(true)
+    })
+    return () => { active = false }
+  }, [editing, train?.id])
+
+  const [committeeId, setCommitteeId] = useState(train?.committeeId || (hats.length === 1 ? hats[0].id : ''))
+  const [days, setDays] = useState(() => (train ? daysFromSlots(train.slots) : []))
   const [newDate, setNewDate] = useState('')
-  const [publishAck, setPublishAck] = useState(false)
+  const [publishAck, setPublishAck] = useState(editing)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -236,11 +318,13 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
     if (!days.length) { setError('הוסיפו לפחות יום אחד לסיר'); return }
     if (!committeeId && hats.length) { setError('בחרו מטעם איזו ועדה נפתח הסיר'); return }
     if (!publishAck) { setError('יש לאשר את פרסום פרטי הסיר בהתאם לתקנון'); return }
+    if (!privateLoaded) { setError('רגע, טוענים את פרטי הכתובת…'); return }
     setSaving(true)
     setError('')
     try {
-      const train = {
-          id: 'train-' + Date.now(),
+      const saved = {
+          ...(train || {}),
+          id: train?.id || 'train-' + Date.now(),
           familyName: form.familyName.trim(),
           babyName: form.babyName.trim(),
           parents: form.parents.trim(),
@@ -251,27 +335,27 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
           contactName: form.contactName.trim(),
           contactPhone: form.contactPhone.trim(),
           committeeId: committeeId || '',
-          createdBy: uid,
-          createdByName: userName || '',
-          claimerUids: [],
-          slots: buildSlots(days),
-          status: 'active',
+          createdBy: train?.createdBy || uid,
+          createdByName: train?.createdByName || userName || '',
+          claimerUids: train?.claimerUids || [],
+          slots: mergeSlots(buildSlots(days), train?.slots),
+          status: train?.status || 'active',
       }
       await saveMealTrain(
-        train,
+        saved,
         // private subdocument — only slot claimers / coordinator / admins may read
         { address: form.address.trim(), city: form.city.trim(), buildingCode: form.buildingCode.trim() },
       )
-      logConsent(uid, 'meal_train_open', {
+      if (!editing) logConsent(uid, 'meal_train_open', {
         label: 'אישור פתיחת סיר לידה — פרטי המשפחה יוצגו לחברי הקהילה וכתובת המסירה למשריינים בלבד',
         version: CONSENT_VERSION,
         context: form.familyName.trim(),
       })
       await onCreated()
       onClose()
-      onSaved?.(train)
+      if (!editing) onSaved?.(saved)
     } catch (e) {
-      console.error('meal train create failed', e)
+      console.error('meal train save failed', e)
       setError('השמירה נכשלה — נסו שוב')
       setSaving(false)
     }
@@ -280,11 +364,11 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-label="סיר לידה חדש"
+      <div role="dialog" aria-modal="true" aria-label={editing ? 'עריכת סיר לידה' : 'סיר לידה חדש'}
         className="fixed top-0 right-0 h-full w-full max-w-sm bg-white z-50 flex flex-col animate-slide-from-right dark:bg-gray-800" dir="rtl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
-          <h2 className="font-bold text-gray-800 dark:text-gray-100">סיר לידה חדש</h2>
+          <h2 className="font-bold text-gray-800 dark:text-gray-100">{editing ? 'עריכת סיר לידה' : 'סיר לידה חדש'}</h2>
           <div className="w-8" />
         </div>
 
@@ -382,6 +466,7 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
             )}
           </div>
 
+          {!editing && (
           <label className="flex items-start gap-2 cursor-pointer pt-1">
             <input type="checkbox" checked={publishAck} onChange={e => { setPublishAck(e.target.checked); setError('') }}
               className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
@@ -390,6 +475,7 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
               וכתובת המסירה וקוד הכניסה יוצגו רק למי שמשריין תאריך — בהתאם לתקנון
             </span>
           </label>
+          )}
 
           {error && <p className="text-xs text-red-500 text-right">{error}</p>}
         </div>
@@ -397,8 +483,8 @@ function CreatePanel({ hats, uid, userName, onClose, onCreated, onSaved }) {
         <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
           <button onClick={handleSave} disabled={saving || !publishAck}
             className="w-full btn-primary py-2.5 flex items-center justify-center gap-2 disabled:opacity-50">
-            {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-            פתח סיר לידה
+            {saving ? <Loader2 size={15} className="animate-spin" /> : editing ? <Check size={15} /> : <Plus size={15} />}
+            {editing ? 'שמור שינויים' : 'פתח סיר לידה'}
           </button>
         </div>
       </div>
@@ -412,6 +498,7 @@ export default function MealTrainsPage() {
   const [trains, setTrains] = useState(null)
   const [hats, setHats] = useState([])
   const [showCreate, setShowCreate] = useState(false)
+  const [editTrain, setEditTrain] = useState(null)
   const [shareTrain, setShareTrain] = useState(null)
   // Deep link from the WhatsApp invite (and from a calendar entry): ?train=<id>
   const [params] = useSearchParams()
@@ -489,10 +576,18 @@ export default function MealTrainsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {mine && (
-                      <button onClick={() => handleDelete(train)}
-                        className="text-gray-300 hover:text-red-500" title="מחק" aria-label={`מחק את סיר הלידה של ${train.familyName}`}>
-                        <Trash2 size={14} />
-                      </button>
+                      <>
+                        <button onClick={() => handleDelete(train)}
+                          className="text-gray-300 hover:text-red-500" title="מחק" aria-label={`מחק את סיר הלידה של ${train.familyName}`}>
+                          <Trash2 size={14} />
+                        </button>
+                        <button onClick={() => setEditTrain(train)}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 dark:text-gray-400"
+                          aria-label={`ערוך את סיר הלידה של ${train.familyName}`}>
+                          <Pencil size={13} />
+                          ערוך
+                        </button>
+                      </>
                     )}
                     <button onClick={() => setShareTrain(train)}
                       className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
@@ -540,7 +635,8 @@ export default function MealTrainsPage() {
                   </a>
                 )}
 
-                <SlotGrid train={train} uid={user?.uid} userName={user?.name} onChanged={load} />
+                <SlotGrid train={train} uid={user?.uid} userName={user?.name}
+                  isCoordinator={mine} onChanged={load} />
               </div>
             )
           })}
@@ -548,7 +644,7 @@ export default function MealTrainsPage() {
       )}
 
       {showCreate && (
-        <CreatePanel
+        <TrainPanel
           hats={hats}
           uid={user?.uid}
           userName={user?.name}
@@ -557,6 +653,17 @@ export default function MealTrainsPage() {
           // A pot nobody knows about stays empty — hand the coordinator the
           // message to forward the moment it's created.
           onSaved={setShareTrain}
+        />
+      )}
+
+      {editTrain && (
+        <TrainPanel
+          train={editTrain}
+          hats={hats}
+          uid={user?.uid}
+          userName={user?.name}
+          onClose={() => setEditTrain(null)}
+          onCreated={load}
         />
       )}
 
