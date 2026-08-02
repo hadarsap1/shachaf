@@ -18,6 +18,22 @@ export const WEEKDAYS = [
   { value: 6, label: 'שבת' },
 ]
 
+// Who arrived — drives the greeting in the card and in the WhatsApp invite.
+// Twins get a plural greeting; mixed twins take the masculine plural, as Hebrew
+// does. Leaving it unset keeps the neutral "ברוך/ה הבא/ה".
+export const BABY_TYPES = [
+  { value: 'boy',        label: 'בן',     greeting: 'ברוך הבא' },
+  { value: 'girl',       label: 'בת',     greeting: 'ברוכה הבאה' },
+  { value: 'twins',      label: 'תאומים', greeting: 'ברוכים הבאים' },
+  { value: 'twin_girls', label: 'תאומות', greeting: 'ברוכות הבאות' },
+]
+
+export function babyGreeting(train) {
+  const name = (train?.babyName || '').trim()
+  const greeting = BABY_TYPES.find(b => b.value === train?.babyGender)?.greeting || 'ברוך/ה הבא/ה'
+  return name ? `${greeting} ${name}` : greeting
+}
+
 const pad = (n) => String(n).padStart(2, '0')
 
 // The rota is a plain list of days, each carrying the slot types open on it —
@@ -178,7 +194,7 @@ export function mealTrainInviteMessage(train, url) {
   const dates = [...new Set((train.slots || []).map(s => s.date))].sort()
   const lines = [`🍲 *סיר לידה למשפחת ${train.familyName}*`]
 
-  if (train.babyName) lines.push(`ברוכה הבאה / ברוך הבא ${train.babyName} 👶`)
+  if (train.babyName || train.babyGender) lines.push(`${babyGreeting(train)} 👶`)
   const family = [train.parents, train.siblings].filter(Boolean).join(' · ')
   if (family) lines.push(family)
 

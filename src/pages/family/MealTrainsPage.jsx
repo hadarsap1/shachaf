@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import {
   getMealTrains, getMealTrainPrivate, saveMealTrain, deleteMealTrain,
-  claimMealSlot, releaseMealSlot, setMealSlotName, getCommittees, logConsent,
+  claimMealSlot, releaseMealSlot, setMealSlotName, assignMealSlot, getCommittees, getUsers, logConsent,
 } from '../../lib/db'
 import { CONSENT_VERSION } from '../../lib/consent'
 import {
   SLOT_TYPES, buildSlots, groupByDate, addDay, removeDay, toggleDayType,
   formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee, mealTrainInviteMessage,
-  isSlotTaken, mergeSlots, daysFromSlots,
+  isSlotTaken, mergeSlots, daysFromSlots, BABY_TYPES, babyGreeting,
 } from '../../lib/mealTrain'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -122,12 +122,28 @@ function SharePanel({ train, onClose }) {
 }
 
 // ── Signup grid ───────────────────────────────────────────────────────────────
-function SlotGrid({ train, uid, userName, isCoordinator, onChanged }) {
+function SlotGrid({ train, uid, userName, isCoordinator, canPickMembers, onChanged }) {
   const [busy, setBusy] = useState('')
   // Slot the coordinator is currently writing a name into, and the name typed
   const [manualSlot, setManualSlot] = useState('')
   const [manualName, setManualName] = useState('')
+  // Community members to choose from — only admins may list users (Firestore
+  // rules), so the picker is theirs; everyone else writes a free-text name.
+  const [members, setMembers] = useState([])
   const groups = groupByDate(train.slots)
+
+  useEffect(() => {
+    if (!canPickMembers || !manualSlot || members.length) return
+    getUsers()
+      .then(us => setMembers(us.filter(u => u.uid && u.name && u.status !== 'alumni')))
+      .catch(() => {})
+  }, [canPickMembers, manualSlot, members.length])
+
+  const matches = manualName.trim().length >= 1
+    ? members
+        .filter(m => m.name.toLowerCase().includes(manualName.trim().toLowerCase()))
+        .slice(0, 5)
+    : []
 
   const claim = async (slot) => {
     setBusy(slot.id)
@@ -168,6 +184,22 @@ function SlotGrid({ train, uid, userName, isCoordinator, onChanged }) {
     } catch (e) {
       console.error('manual slot update failed', e)
       toast('העדכון נכשל — נסו שוב', 'error')
+    } finally { setBusy('') }
+  }
+
+  // Sign a member up on their behalf — they get the slot, the address and the
+  // calendar entry exactly as if they had done it themselves.
+  const assignMember = async (slot, member) => {
+    setBusy(slot.id)
+    try {
+      await assignMealSlot(train.id, slot.id, member, uid)
+      setManualSlot('')
+      setManualName('')
+      await onChanged()
+      toast(`${member.name} שובץ/ה ל${formatSlotDate(slot.date)}`)
+    } catch (e) {
+      console.error('assign failed', e)
+      toast('השיבוץ נכשל — נסו שוב', 'error')
     } finally { setBusy('') }
   }
 
@@ -242,16 +274,36 @@ function SlotGrid({ train, uid, userName, isCoordinator, onChanged }) {
                   </div>
 
                   {editing && (
-                    <div className="flex gap-1.5 mt-2">
-                      <input autoFocus value={manualName} onChange={e => setManualName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && manualName.trim()) saveManual(slot, manualName) }}
-                        placeholder="שם המתנדב/ת (מחוץ לאפליקציה)"
-                        aria-label="שם לשיבוץ ידני"
-                        className="input flex-1 text-xs text-right py-1" />
-                      <button onClick={() => saveManual(slot, manualName)} disabled={!manualName.trim()}
-                        className="btn-primary text-xs px-3 py-1 disabled:opacity-40">שמור</button>
-                      <button onClick={() => setManualSlot('')}
-                        className="text-xs text-gray-500 px-2">בטל</button>
+                    <div className="mt-2">
+                      <div className="flex gap-1.5">
+                        <input autoFocus value={manualName} onChange={e => setManualName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && manualName.trim()) saveManual(slot, manualName) }}
+                          placeholder={canPickMembers ? 'שם — חפשו חבר קהילה או כתבו שם חופשי' : 'שם המתנדב/ת (מחוץ לאפליקציה)'}
+                          aria-label="שם לשיבוץ"
+                          className="input flex-1 text-xs text-right py-1" />
+                        <button onClick={() => saveManual(slot, manualName)} disabled={!manualName.trim()}
+                          className="btn-primary text-xs px-3 py-1 disabled:opacity-40">שמור כשם</button>
+                        <button onClick={() => setManualSlot('')}
+                          className="text-xs text-gray-500 px-2">בטל</button>
+                      </div>
+
+                      {matches.length > 0 && (
+                        <div className="mt-1.5 rounded-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700 overflow-hidden">
+                          {matches.map(m => (
+                            <button key={m.uid} onClick={() => assignMember(slot, m)}
+                              className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-right hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <UserPlus size={12} className="text-primary-500 flex-shrink-0" />
+                              <span className="text-xs text-gray-700 dark:text-gray-200 truncate">{m.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {canPickMembers && (
+                        <p className="text-[11px] text-gray-400 mt-1 text-right">
+                          שיבוץ חבר קהילה מהרשימה יופיע בלוח השנה שלו ויפתח לו את הכתובת;
+                          שם חופשי מיועד למי שאין לו את האפליקציה
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -273,6 +325,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
   const [form, setForm] = useState({
     familyName: train?.familyName || '',
     babyName: train?.babyName || '',
+    babyGender: train?.babyGender || '',
     parents: train?.parents || '',
     siblings: train?.siblings || '',
     preferences: train?.preferences || '',
@@ -327,6 +380,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
           id: train?.id || 'train-' + Date.now(),
           familyName: form.familyName.trim(),
           babyName: form.babyName.trim(),
+          babyGender: form.babyGender,
           parents: form.parents.trim(),
           siblings: form.siblings.trim(),
           preferences: form.preferences.trim(),
@@ -387,6 +441,21 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
           <div className="flex gap-2">
             <input value={form.babyName} onChange={set('babyName')} placeholder="שם התינוק/ת" className="input flex-1 text-sm text-right" />
             <input value={form.parents} onChange={set('parents')} placeholder="שמות ההורים" className="input flex-1 text-sm text-right" />
+          </div>
+          {/* Drives the greeting in the card and in the WhatsApp invite */}
+          <div className="flex flex-wrap gap-1.5 justify-end" role="group" aria-label="מי נולד">
+            {BABY_TYPES.map(b => {
+              const on = form.babyGender === b.value
+              return (
+                <button key={b.value} type="button" aria-pressed={on}
+                  onClick={() => setForm(f => ({ ...f, babyGender: on ? '' : b.value }))}
+                  className={clsx('px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                    on ? 'bg-primary-600 text-white border-primary-600'
+                       : 'bg-white text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600')}>
+                  {b.label}
+                </button>
+              )
+            })}
           </div>
           <input value={form.siblings} onChange={set('siblings')} placeholder="אחים/אחיות (אופציונלי)" className="input w-full text-sm text-right" />
 
@@ -599,7 +668,9 @@ export default function MealTrainsPage() {
                   <div className="text-right flex-1 min-w-0">
                     <h2 className="font-bold text-gray-800 dark:text-gray-100">
                       {train.familyName}
-                      {train.babyName && <span className="font-normal text-gray-500 dark:text-gray-400"> · ברוך/ה הבא/ה {train.babyName} 👶</span>}
+                      {(train.babyName || train.babyGender) && (
+                        <span className="font-normal text-gray-500 dark:text-gray-400"> · {babyGreeting(train)} 👶</span>
+                      )}
                     </h2>
                     {(train.parents || train.siblings) && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -636,7 +707,7 @@ export default function MealTrainsPage() {
                 )}
 
                 <SlotGrid train={train} uid={user?.uid} userName={user?.name}
-                  isCoordinator={mine} onChanged={load} />
+                  isCoordinator={mine} canPickMembers={isAdmin} onChanged={load} />
               </div>
             )
           })}

@@ -3,7 +3,7 @@ import {
   buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
   isMealTrainCommittee, addDay, removeDay, toggleDayType,
   myMealTrainEvents, mealTrainInviteMessage,
-  isSlotTaken, claimerUidsOf, mergeSlots, daysFromSlots,
+  isSlotTaken, claimerUidsOf, mergeSlots, daysFromSlots, babyGreeting, BABY_TYPES,
 } from './mealTrain'
 
 describe('addDay / removeDay', () => {
@@ -290,5 +290,43 @@ describe('daysFromSlots', () => {
   it('round-trips through buildSlots', () => {
     const days = addDay(addDay([], '2026-08-05'), '2026-08-09')
     expect(daysFromSlots(buildSlots(days))).toEqual(days)
+  })
+})
+
+describe('babyGreeting', () => {
+  it('greets a boy, a girl and twins in the right form', () => {
+    expect(babyGreeting({ babyName: 'יהלי', babyGender: 'boy' })).toBe('ברוך הבא יהלי')
+    expect(babyGreeting({ babyName: 'נעמה', babyGender: 'girl' })).toBe('ברוכה הבאה נעמה')
+    expect(babyGreeting({ babyName: 'עידו ורוני', babyGender: 'twins' })).toBe('ברוכים הבאים עידו ורוני')
+    expect(babyGreeting({ babyName: 'שירה ומאיה', babyGender: 'twin_girls' })).toBe('ברוכות הבאות שירה ומאיה')
+  })
+
+  it('stays neutral when nobody said', () => {
+    expect(babyGreeting({ babyName: 'יהלי' })).toBe('ברוך/ה הבא/ה יהלי')
+    expect(babyGreeting({ babyGender: 'girl' })).toBe('ברוכה הבאה')
+    expect(babyGreeting(null)).toBe('ברוך/ה הבא/ה')
+  })
+
+  it('covers every option offered in the UI', () => {
+    for (const b of BABY_TYPES) {
+      expect(babyGreeting({ babyName: 'x', babyGender: b.value })).toBe(`${b.greeting} x`)
+    }
+  })
+})
+
+describe('mealTrainInviteMessage — greeting', () => {
+  it('uses the gendered greeting in the shared message', () => {
+    const msg = mealTrainInviteMessage({ ...sampleTrain, babyGender: 'girl', babyName: 'נעמה' }, '')
+    expect(msg).toContain('ברוכה הבאה נעמה 👶')
+    expect(msg).not.toContain('ברוך הבא נעמה')
+  })
+
+  it('greets twins in the plural', () => {
+    expect(mealTrainInviteMessage({ ...sampleTrain, babyGender: 'twins', babyName: 'עידו ורוני' }, ''))
+      .toContain('ברוכים הבאים עידו ורוני 👶')
+  })
+
+  it('falls back to the neutral greeting for older pots with no gender', () => {
+    expect(mealTrainInviteMessage(sampleTrain, '')).toContain('ברוך/ה הבא/ה יהלי 👶')
   })
 })
