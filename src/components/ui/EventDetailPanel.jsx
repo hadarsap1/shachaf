@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { X, Clock, MapPin, Plus, Calendar, Users, ChevronDown, Loader2, CheckCircle2, Maximize2 } from 'lucide-react'
+import { X, Clock, MapPin, CalendarPlus, Download, Users, ChevronDown, Loader2, CheckCircle2, Maximize2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { rsvpEvent, unrsvpEvent, getUsersByUids } from '../../lib/db'
 import ContactModal from './ContactModal'
 import DietaryBadges from './DietaryBadges'
+// One shared implementation — the panel used to carry its own copy, which
+// drifted from the card's and exported different times.
+import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent } from '../../lib/calendar'
 
 const TYPE_LABEL = {
   social:      'חברתי',
@@ -19,39 +22,6 @@ const TYPE_BADGE = {
   orientation: 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300 border-secondary-200 dark:border-secondary-800',
   ceremony:    'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300 border-accent-200 dark:border-accent-800',
   community:   'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-}
-
-function buildGoogleCalendarUrl(event) {
-  const time  = event.time || '09:00'
-  const start = `${event.date}T${time}`
-  const [h, m] = time.split(':').map(Number)
-  const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00'
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: event.title,
-    dates: `${fmt(start)}/${fmt(end)}`,
-    location: event.location || '',
-    details: event.description || '',
-    ctz: 'Asia/Jerusalem',
-  })
-  return `https://calendar.google.com/calendar/render?${params}`
-}
-
-function buildICSContent(event) {
-  const time  = event.time || '09:00'
-  const start = `${event.date}T${time}`
-  const [h, m] = time.split(':').map(Number)
-  const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 15)
-  return [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
-    `DTSTART;TZID=Asia/Jerusalem:${fmt(start)}`, `DTEND;TZID=Asia/Jerusalem:${fmt(end)}`,
-    `SUMMARY:${event.title}`,
-    `LOCATION:${event.location || ''}`,
-    `DESCRIPTION:${event.description || ''}`,
-    'END:VEVENT', 'END:VCALENDAR',
-  ].join('\n')
 }
 
 export default function EventDetailPanel({ event, onClose }) {
@@ -101,7 +71,7 @@ export default function EventDetailPanel({ event, onClose }) {
   }
 
   const handleDownloadICS = () => {
-    const content = buildICSContent(event)
+    const content = buildICSContent(buildCalendarData(event))
     const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
@@ -232,18 +202,18 @@ export default function EventDetailPanel({ event, onClose }) {
 
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
           <button
-            onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
+            onClick={() => window.open(buildGoogleCalendarUrl(buildCalendarData(event)), '_blank')}
             className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 dark:text-primary-300 bg-primary-50 hover:bg-primary-100 border border-primary-200 dark:border-primary-800 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-primary-900/30 dark:hover:bg-primary-900/50"
           >
-            <Plus size={14} />
-            Google Calendar
+            <CalendarPlus size={14} />
+            הוספה ליומן Google
           </button>
           <button
             onClick={handleDownloadICS}
             className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
           >
-            <Calendar size={14} />
-            יומן (.ics)
+            <Download size={14} />
+            הורדה ליומן (.ics)
           </button>
         </div>
       </div>
