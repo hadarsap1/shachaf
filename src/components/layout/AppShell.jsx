@@ -543,7 +543,9 @@ export default function AppShell() {
           {pageTitle ? (
             <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">{pageTitle}</span>
           ) : (
-            <img src="/logo.png" alt="שחף+" className="h-8 w-auto" />
+            <span className="bg-white/95 rounded-lg px-2 py-1">
+              <img src="/logo.png" alt="שחף+" className="h-7 w-auto" />
+            </span>
           )}
           <button
             onClick={toggleTheme}

@@ -181,7 +181,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3 dark:bg-gray-800">
+          <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3">
             <img src="/logo.png" alt="שחף+" className="h-20 w-auto mx-auto" />
           </div>
           <p className="text-white/90 text-sm">הפלטפורמה הקהילתית שלנו</p>
