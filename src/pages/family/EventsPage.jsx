@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees, getMealTrains } from '../../lib/db'
+import {
+  getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees,
+  getMealTrains, claimedAddresses,
+} from '../../lib/db'
 import { myMealTrainEvents } from '../../lib/mealTrain'
 import { isEventVisibleTo } from '../../lib/eventVisibility'
 import { isEventPast } from '../../lib/calendar'
@@ -80,7 +83,7 @@ export default function EventsPage() {
         getMealTrains().catch(() => []),
       ])
       setAllClasses(classes)
-      setMealTrainEvents(myMealTrainEvents(mealTrains, user.uid))
+      setMealTrainEvents(myMealTrainEvents(mealTrains, user.uid, await claimedAddresses(mealTrains, user.uid)))
 
       const entityIds = new Set([
         ...groups.filter(g => (g.memberUids || []).includes(user.uid)).map(g => g.id),

@@ -330,3 +330,31 @@ describe('mealTrainInviteMessage — greeting', () => {
     expect(mealTrainInviteMessage(sampleTrain, '')).toContain('ברוך/ה הבא/ה יהלי 👶')
   })
 })
+
+describe('myMealTrainEvents — details for the exported calendar entry', () => {
+  const priv = { address: 'תירוש 36, קומה 1 דירה 6', city: 'רעננה', buildingCode: '1974' }
+
+  it('puts the delivery address in the entry location, not buried in the text', () => {
+    const [ev] = myMealTrainEvents([sampleTrain], 'me', { train1: priv })
+    expect(ev.location).toBe('תירוש 36, קומה 1 דירה 6, רעננה')
+  })
+
+  it('carries the entry code, preferences, delivery note and contact', () => {
+    const [ev] = myMealTrainEvents([sampleTrain], 'me', { train1: priv })
+    expect(ev.description).toContain('קוד לבניין: 1974')
+    expect(ev.description).toContain('צמחוני ובריא')
+    expect(ev.description).toContain('משאירים מחוץ לדלת')
+    expect(ev.description).toContain('054-5923478')
+  })
+
+  it('says where to find the address when it could not be fetched', () => {
+    const [ev] = myMealTrainEvents([sampleTrain], 'me')
+    expect(ev.location).toBe('')
+    expect(ev.description).toContain('סירי לידה')
+  })
+
+  it('does not leak one pot\'s address into another pot\'s entry', () => {
+    const [ev] = myMealTrainEvents([sampleTrain], 'me', { otherTrain: priv })
+    expect(ev.location).toBe('')
+  })
+})
