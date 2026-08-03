@@ -1,0 +1,585 @@
+<title>שחף+ — בדיקות QA ידניות</title>
+<style>
+  :root {
+    --paper:#f6f7f9; --card:#ffffff; --ink:#131b26; --ink-soft:#4a5666; --ink-faint:#7b8798;
+    --line:#e3e7ed; --accent:#1d4ed8; --accent-soft:#eaf0ff;
+    --ok:#15803d; --ok-bg:#e8f5ec; --bad:#b42318; --bad-bg:#fdeceb; --skip:#6b7688; --skip-bg:#eef0f3;
+    --shadow:0 1px 2px rgba(19,27,38,.06), 0 6px 20px -12px rgba(19,27,38,.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#0e141c; --card:#161e29; --ink:#e7ecf3; --ink-soft:#a7b2c2; --ink-faint:#77839a;
+      --line:#26313f; --accent:#7aa2ff; --accent-soft:#1b2740;
+      --ok:#5fce8b; --ok-bg:#12301f; --bad:#ff8f83; --bad-bg:#38191a; --skip:#8b96a8; --skip-bg:#1d2531;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0e141c; --card:#161e29; --ink:#e7ecf3; --ink-soft:#a7b2c2; --ink-faint:#77839a;
+    --line:#26313f; --accent:#7aa2ff; --accent-soft:#1b2740;
+    --ok:#5fce8b; --ok-bg:#12301f; --bad:#ff8f83; --bad-bg:#38191a; --skip:#8b96a8; --skip-bg:#1d2531;
+  }
+  :root[data-theme="light"] {
+    --paper:#f6f7f9; --card:#ffffff; --ink:#131b26; --ink-soft:#4a5666; --ink-faint:#7b8798;
+    --line:#e3e7ed; --accent:#1d4ed8; --accent-soft:#eaf0ff;
+    --ok:#15803d; --ok-bg:#e8f5ec; --bad:#b42318; --bad-bg:#fdeceb; --skip:#6b7688; --skip-bg:#eef0f3;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size:16px; line-height:1.6; -webkit-text-size-adjust:100%;
+  }
+  .wrap { max-width:56rem; margin:0 auto; padding:1.5rem 1rem 5rem; }
+  [dir="rtl"] { direction:rtl; }
+
+  header.masthead { padding:1.25rem 0 1rem; border-bottom:2px solid var(--ink); margin-bottom:1.25rem; }
+  .brand { font-size:.75rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  h1 { font-size:clamp(1.6rem,5vw,2.2rem); line-height:1.15; margin:.35rem 0 .4rem; text-wrap:balance; letter-spacing:-.01em; }
+  .lede { color:var(--ink-soft); margin:0; max-width:62ch; }
+  .url { display:inline-block; margin-top:.6rem; font-weight:600; color:var(--accent); text-decoration:none; border-bottom:2px solid var(--accent-soft); }
+
+  .grid { display:grid; gap:1rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:1rem 1.1rem; box-shadow:var(--shadow); }
+  .card h2 { font-size:1.05rem; margin:0 0 .5rem; }
+  .card p:last-child { margin-bottom:0; }
+
+  /* progress */
+  .progress { position:sticky; top:0; z-index:20; background:var(--card); border:1px solid var(--line);
+    border-radius:10px; padding:.6rem .8rem; margin-bottom:1.1rem; box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+  .bar { flex:1 1 8rem; height:8px; background:var(--skip-bg); border-radius:99px; overflow:hidden; min-width:6rem; }
+  .bar i { display:block; height:100%; width:0; background:var(--accent); transition:width .25s ease; }
+  .counts { display:flex; gap:.4rem; font-size:.8rem; font-variant-numeric:tabular-nums; }
+  .counts b { font-weight:700; }
+  .pill { padding:.1rem .5rem; border-radius:99px; }
+  .pill.ok { background:var(--ok-bg); color:var(--ok); }
+  .pill.bad { background:var(--bad-bg); color:var(--bad); }
+  .pill.skip { background:var(--skip-bg); color:var(--skip); }
+
+  .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+  button.tool { font:inherit; font-size:.82rem; font-weight:600; padding:.45rem .8rem; border-radius:8px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  button.tool:hover { border-color:var(--accent); color:var(--accent); }
+  button.tool:focus-visible, .st:focus-visible, a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  section { margin:1.75rem 0; }
+  .sec-head { display:flex; align-items:baseline; gap:.6rem; padding-bottom:.4rem; border-bottom:1px solid var(--line); margin-bottom:.75rem; }
+  .sec-num { font-size:.78rem; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:.04em; }
+  .sec-head h2 { font-size:1.15rem; margin:0; }
+  .sec-note { font-size:.85rem; color:var(--ink-soft); margin:0 0 .75rem; }
+  .sec-note.warn { background:var(--bad-bg); color:var(--bad); padding:.55rem .8rem; border-radius:8px; font-weight:600; }
+
+  .rows { display:grid; gap:.5rem; }
+  .row { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:.7rem .85rem;
+    display:grid; grid-template-columns:auto 1fr; gap:.35rem .7rem; align-items:start; }
+  .row[data-state="ok"]  { border-color:var(--ok); }
+  .row[data-state="bad"] { border-color:var(--bad); background:var(--bad-bg); }
+  .row[data-state="skip"]{ opacity:.55; }
+  .rid { font-size:.72rem; font-weight:700; color:var(--ink-faint); font-variant-numeric:tabular-nums;
+    background:var(--skip-bg); border-radius:6px; padding:.15rem .4rem; white-space:nowrap; }
+  .rbody { min-width:0; }
+  .do { font-weight:600; }
+  .expect { color:var(--ink-soft); font-size:.92rem; margin-top:.15rem; }
+  .expect::before { content:"← "; color:var(--ink-faint); }
+  .states { grid-column:1 / -1; display:flex; gap:.35rem; margin-top:.15rem; }
+  .st { font:inherit; font-size:.78rem; font-weight:700; padding:.25rem .7rem; border-radius:99px; cursor:pointer;
+    border:1px solid var(--line); background:transparent; color:var(--ink-faint); }
+  .st[aria-pressed="true"][data-v="ok"]   { background:var(--ok-bg); color:var(--ok); border-color:var(--ok); }
+  .st[aria-pressed="true"][data-v="bad"]  { background:var(--bad-bg); color:var(--bad); border-color:var(--bad); }
+  .st[aria-pressed="true"][data-v="skip"] { background:var(--skip-bg); color:var(--skip); border-color:var(--skip); }
+
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  .tablewrap { overflow-x:auto; }
+  th, td { text-align:start; padding:.45rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); }
+  td.code { font-weight:700; color:var(--accent); white-space:nowrap; }
+  .star { color:var(--accent); font-weight:700; }
+
+  ol.toc { list-style:none; padding:0; margin:0; columns:2; column-gap:1.5rem; font-size:.9rem; }
+  ol.toc li { margin:.15rem 0; break-inside:avoid; }
+  ol.toc a { color:var(--ink); text-decoration:none; }
+  ol.toc a:hover { color:var(--accent); text-decoration:underline; }
+  ol.toc .n { color:var(--ink-faint); font-variant-numeric:tabular-nums; margin-inline-end:.35rem; }
+
+  footer { margin-top:2.5rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.85rem; }
+
+  @media (max-width:520px) { ol.toc { columns:1; } }
+  @media print {
+    body { background:#fff; }
+    .progress, .toolbar, .states, .no-print { display:none !important; }
+    .row, .card { box-shadow:none; break-inside:avoid; }
+    .row::after { content:"☐ תקין   ☐ תקלה   ☐ לא רלוונטי"; grid-column:1 / -1; font-size:.75rem; color:#666; }
+    section { break-inside:auto; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+
+<div class="wrap" dir="rtl">
+  <header class="masthead">
+    <div class="brand">בדיקות קבלה · גרסה לבודקים</div>
+    <h1>שחף+ — רשימת בדיקות ידניות</h1>
+    <p class="lede">
+      כל בודק מקבל פרסונה אחת, מריץ את הבדיקות המשותפות ואת אלה של הפרסונה שלו, ומסיים בסעיפים 5–9.
+      סמנו כל שורה, ועל כל תקלה צרפו צילום מסך.
+    </p>
+    <a class="url" href="https://shachaf.vercel.app" target="_blank" rel="noopener">shachaf.vercel.app</a>
+  </header>
+
+  <div class="progress no-print" role="status" aria-live="polite">
+    <div class="bar"><i id="bar"></i></div>
+    <div class="counts">
+      <span class="pill ok">תקין <b id="c-ok">0</b></span>
+      <span class="pill bad">תקלות <b id="c-bad">0</b></span>
+      <span class="pill skip">דולג <b id="c-skip">0</b></span>
+      <span style="color:var(--ink-faint)"><b id="c-done">0</b>/<b id="c-all">0</b></span>
+    </div>
+  </div>
+
+  <div class="toolbar no-print">
+    <button class="tool" id="btn-report">העתקת דיווח התקלות</button>
+    <button class="tool" id="btn-print">הדפסה / PDF</button>
+    <button class="tool" id="btn-reset">איפוס הסימונים</button>
+  </div>
+
+  <div class="grid" style="margin-bottom:1.5rem">
+    <div class="card">
+      <h2>איך מדווחים תקלה</h2>
+      <p>על כל שורה שסימנתם בה <strong>תקלה</strong>, כתבו: מספר הבדיקה, מה עשיתם, מה ציפיתם, מה קרה בפועל,
+        <strong>צילום מסך</strong>, סוג המכשיר והדפדפן, השעה, והאם זה קורה שוב בניסיון נוסף.</p>
+      <p>אל תדלגו על בדיקה כי "בטח זה בסדר", ואל תתקנו לבד. גם טקסט חתוך, כפתור שקשה ללחוץ עליו או טעות כתיב — שווים דיווח.</p>
+    </div>
+    <div class="card">
+      <h2>לפני שמתחילים</h2>
+      <p>תאמו עם מנהל המערכת אילו בדיקות מותר להריץ על נתונים אמיתיים ואילו דורשות משתמש בדיקה ייעודי.
+        <strong>לא</strong> נכללות בבדיקה: שליחת הודעות לכלל הקהילה, מחיקת חשבונות אמיתיים, וייבוא קבצים לפרודקשן ללא תיאום.</p>
+    </div>
+    <div class="card">
+      <h2>תוכן העניינים</h2>
+      <ol class="toc" id="toc"></ol>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <h2>1 · מטריצת מכשירים — לחלק בין הבודקים</h2>
+    <p class="sec-note">יש לכסות לפחות את השורות המסומנות ב־<span class="star">★</span>. מצב כהה נקבע בהגדרות המכשיר, ובנוסף יש מתג בתוך המערכת — בדקו את שניהם.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>מכשיר</th><th>דפדפן</th><th>תצוגה</th><th>הערות</th></tr></thead>
+        <tbody id="devices"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <h2>2 · פרסונות — מי בודק מה</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>קוד</th><th>פרסונה</th><th>מה צריך להכין מראש</th></tr></thead>
+        <tbody id="personas"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="card" style="margin-top:2rem">
+    <h2>10 · סיכום הבודק</h2>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><th>כמה בדיקות ביצעתי</th><td style="min-width:8rem"></td></tr>
+          <tr><th>כמה תקלות מצאתי</th><td></td></tr>
+          <tr><th>התקלה החמורה ביותר</th><td></td></tr>
+          <tr><th>משהו שהיה מבלבל אף שהוא "עובד"</th><td></td></tr>
+          <tr><th>הייתי ממליץ/ה על המערכת להורה אחר?</th><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>שחף+ · מסמך בדיקות ידניות · הסימונים נשמרים במכשיר שלכם בלבד</footer>
+</div>
+
+<noscript><p style="padding:1rem;text-align:center">להצגת רשימת הבדיקות יש להפעיל JavaScript, או להשתמש בגרסת ה־Markdown במאגר הקוד.</p></noscript>
+
+<script>
+const DEVICES = [
+  ["★ iPhone (iOS 17+)","Safari","בהיר",""],
+  ["★ iPhone","Safari","כהה",""],
+  ["iPhone","Chrome","בהיר",""],
+  ["★ Android","Chrome","כהה",""],
+  ["Android","Samsung Internet","בהיר",""],
+  ["★ מחשב Windows","Chrome","בהיר",""],
+  ["מחשב Mac","Safari","כהה",""],
+  ["מחשב","Firefox","בהיר",""],
+  ["★ טאבלט","ברירת מחדל","בהיר","גם לרוחב"],
+  ["★ אפליקציה מותקנת (PWA)","—","—","ראו סעיף 7"],
+  ["מכשיר ישן/איטי","ברירת מחדל","—","לשים לב לזמני טעינה"],
+];
+const PERSONAS = [
+  ["P1","הורה רגיל (חבר קהילה)","בלי ועדות, עם ילד משויך לכיתה"],
+  ["P2","הורה שני (בן/בת זוג)","מחובר לאותו ילד של P1"],
+  ["P3","משפחה חדשה","תפקיד new_family"],
+  ["P4","משפחה קולטת","host_family, עם משפחה אחת באחריותה"],
+  ["P5","מנהל כיתה","ניהול כיתה אחת"],
+  ["P6","חבר ועדה (לא מנהל)","ועדה שאינה ועדת התמיכה"],
+  ["P7","מנהל ועדה","מוגדר כמנהל בוועדה"],
+  ["P8","חבר ועדת התמיכה בקהילה","הוועדה שפותחת סירי לידה"],
+  ["P9","מנהל מערכת","admin"],
+  ["P10","מנהל ראשי","super_admin"],
+  ["P11","משתמש חדש לגמרי","חשבון שטרם נרשם — נרשם במהלך הבדיקה"],
+  ["P12","בוגר","alumni"],
+];
+const SECTIONS = [
+  { n:"3.1", t:"כניסה ראשונה והסכמה לתקנון", who:"כל הבודקים", rows:[
+    ["פותחים את כתובת המערכת בדפדפן","מסך התחברות עם הלוגו, בעברית, מיושר לימין"],
+    ["מתחברים עם מייל וסיסמה","מגיעים למסך הבית"],
+    ["מתחברים עם Google","אותה תוצאה"],
+    ["בכניסה הראשונה אחרי העדכון","מופיע חלון הסכמה לתקנון ולא ניתן לדלג עליו"],
+    ["מנסים לסגור את חלון ההסכמה בלי לאשר","לא נכנסים למערכת, ואין מסך טעינה אינסופי"],
+    ["בתוך החלון — לוחצים על הקישור למדיניות הפרטיות","המדיניות נפתחת וניתן לחזור"],
+    ["מאשרים את התקנון","נכנסים למערכת"],
+    ["יוצאים ונכנסים מחדש","לא מבקשים הסכמה שוב"],
+    ['"שכחתי סיסמה" עם מייל קיים',"מגיע מייל איפוס והסיסמה החדשה עובדת"],
+    ['"שכחתי סיסמה" עם מייל שאינו קיים',"הודעה ברורה, בלי קריסה"],
+    ["מזינים סיסמה שגויה שלוש פעמים","הודעת שגיאה ברורה בעברית, לא קוד שגיאה"],
+  ]},
+  { n:"3.2", t:"שם המערכת ומיתוג", who:"כל הבודקים", rows:[
+    ["מסתכלים על כותרת הטאב בדפדפן",'כתוב "שחף+"'],
+    ["עוברים בין עמודים ומסתכלים בכותרת","הכותרת מתעדכנת לפי העמוד"],
+    ["גוללים לתחתית מסך ההתחברות",'"שחף+ ©" עם השנה'],
+    ["עוברים על כל העמודים","אין שם ישן ואין אנגלית תלושה באמצע העברית"],
+  ]},
+  { n:"3.3", t:"ניווט כללי", who:"כל הבודקים", rows:[
+    ["פותחים את התפריט הצדדי","נפתח מימין, כל הקישורים עובדים"],
+    ["לוחצים על כל פריט בתפריט, אחד אחרי השני","כל עמוד נטען, בלי מסך לבן ובלי שגיאה"],
+    ["בכל עמוד לוחצים 'אחורה' בדפדפן","חוזרים לעמוד הקודם"],
+    ["מרעננים בכל עמוד","נשארים באותו עמוד ולא נזרקים החוצה"],
+    ["מסובבים את המכשיר לרוחב","התוכן מסתדר, אין טקסט חתוך"],
+    ["מנסים לגלול לרוחב","העמוד לא זז ימינה־שמאלה"],
+    ["לוחצים על כפתורי אייקון קטנים","קל ללחוץ עליהם באצבע"],
+  ]},
+  { n:"3.4", t:"מסך הבית", who:"כל הבודקים", rows:[
+    ["מסתכלים על 'אירועים קרובים'","מופיעים אירועים עתידיים בלבד"],
+    ["משווים לרשימה בעמוד 'אירועים'","כל אירוע שמופיע בלוח השנה מופיע גם כאן, ולהפך"],
+    ["לוחצים על אירוע","נפתחים פרטי האירוע"],
+    ["בודקים את המספרים בראש העמוד","תואמים למציאות"],
+    ["נכנסים בשעה מאוחרת (אחרי 21:00)","אירועי היום עדיין מופיעים"],
+  ]},
+  { n:"3.5", t:"אירועים וייצוא ליומן", who:"כל הבודקים", rows:[
+    ["עוברים לתצוגת לוח שנה","האירועים על התאריכים הנכונים"],
+    ["עוברים לתצוגת רשימה","אותם אירועים"],
+    ["בודקים אם מוצגים אירועים שכבר עברו","אירועי עבר אינם מוצגים כברירת מחדל"],
+    ["לוחצים על הצ'יפ 'אירועי עבר'","הישנים מופיעים; לחיצה נוספת מסתירה"],
+    ["מסננים לפי כיתה / משפחות חדשות / קולטות","הסינון עובד"],
+    ["פותחים אירוע ולוחצים 'הוספה ליומן Google'","נפתח יומן Google עם האירוע"],
+    ["בודקים ביומן את התאריך והשעה","זהים בדיוק לאפליקציה — לא שעתיים־שלוש אחרי"],
+    ["בודקים ביומן את שדה המיקום","הכתובת בשורת המיקום, לא בתוך התיאור"],
+    ["בודקים ביומן את התיאור","התיאור המלא, כולל מגבלות תזונה אם יש"],
+    ["לוחצים 'הורדה ליומן (.ics)' ופותחים את הקובץ","נפתח ביומן המכשיר עם אותם פרטים ואותה שעה"],
+    ["מורידים את אותו אירוע פעמיים","לא נוצר אירוע כפול"],
+    ["אירוע עם פסיק בשם, למשל 'ערב הורים, כיתה ג'","השם מופיע במלואו ביומן"],
+    ["מאשרים הגעה לאירוע","הסטטוס נשמר גם אחרי רענון"],
+  ]},
+  { n:"3.6", t:"סירי לידה", who:"כל הבודקים", rows:[
+    ["נכנסים ל'סירי לידה'","העמוד נטען"],
+    ["מסתכלים על סיר לפני ששיריינתם תאריך","הכתובת וקוד הכניסה מוסתרים, עם הסבר"],
+    ["לוחצים 'אני לוקח/ת' על משבצת פנויה","המשבצת נתפסת על שמכם"],
+    ["מסתכלים שוב על הכתובת","עכשיו הכתובת וקוד הכניסה מוצגים"],
+    ["נכנסים ללוח השנה ולמסך הבית","השיבוץ מופיע כאירוע ביום הנכון"],
+    ["לוחצים על השיבוץ בלוח השנה","חוזרים לסיר הלידה המתאים"],
+    ["מייצאים את השיבוץ ליומן","הכתובת בשורת המיקום, קוד הבניין בתיאור"],
+    ["מבטלים את השיבוץ","המשבצת משתחררת"],
+    ["בודקים את הכתובת אחרי הביטול","הכתובת שוב מוסתרת"],
+    ["לוחצים 'שתפו'","נפתחת הודעה מוכנה עם התאריכים וקישור"],
+    ["קוראים את ההודעה בעיון","אין בה כתובת ואין קוד כניסה"],
+    ["שולחים לעצמכם בוואטסאפ ולוחצים על הקישור","נפתח הסיר הנכון, מודגש בראש הרשימה"],
+  ]},
+  { n:"3.7", t:"ועדות, קבוצות וכיתות", who:"כל הבודקים", rows:[
+    ["נכנסים ל'ועדות'","רואים את כל הוועדות"],
+    ["פותחים ועדה שאינכם חברים בה","לא רואים מסמכים, שיחות ואירועים פנימיים"],
+    ["מבקשים להצטרף לוועדה","הבקשה נשלחת ומופיעה כממתינה"],
+    ["מנסים להצטרף בלי לסמן את תיבת ההסכמה","לא מתאפשר"],
+    ["אחרי אישור מנהל הוועדה","רואים את תוכן הוועדה"],
+    ["יוצאים מהוועדה","התוכן הפנימי נעלם מיד, כולל אירועים לחברים בלבד"],
+    ["נכנסים ל'כיתות'","רואים את הכיתות שלכם"],
+    ["לוחצים 'חברים בכיתה' בשורה של כיתה מסוימת","נפתחת אותה כיתה בדיוק"],
+    ["בודקים גן","כתוב 'חברים בגן', ואין 'כיתה' לפני שם הגן"],
+    ["מסתכלים על עיגול הכיתה בראש העמוד","הטקסט נכנס בתוך העיגול ולא גולש"],
+    ["מסתכלים ברשימת ההורים בכיתה","מופיעים רק הורים שאישרו את התקנון"],
+  ]},
+  { n:"3.8", t:"פרופיל, ילדים ופרטיות", who:"כל הבודקים", rows:[
+    ["עורכים פרטים אישיים בהגדרות","נשמר ומופיע אחרי רענון"],
+    ["מעלים תמונת פרופיל","מופיעה מיד, לא מעוותת"],
+    ["מעלים תמונת ילד","נדרשת הסכמה מפורשת לפני ההעלאה"],
+    ["בודקים ברשימת הילדים ובדף הקשר","התמונה מופיעה בשני המקומות"],
+    ["נכנסים ל'הפרטיות שלי'","רואים את כל ההסכמות עם תאריכים"],
+    ["משריינים סיר לידה וחוזרים ל'הפרטיות שלי'","ההסכמה החדשה נרשמה"],
+    ["בודקים הורה שני שטרם נרשם","מוצג 'ממתין', בלי פרטיו"],
+    ["מוחקים תמונה או כתובת מההגדרות","נמחק בפועל"],
+  ]},
+  { n:"4.1", t:"מנהל כיתה", who:"P5", rows:[
+    ["נכנסים לכיתה שאתם מנהלים","יש כפתור ליצירת אירוע"],
+    ["יוצרים אירוע כיתתי","מופיע אצל הורי הכיתה"],
+    ["נכנסים לאישור משתמשים","גישה רק למשתמשי הכיתה שלכם"],
+    ["מנסים לפתוח כתובת ניהול של כיתה אחרת","אין גישה"],
+  ]},
+  { n:"4.2", t:"חבר ומנהל ועדה", who:"P6 · P7", rows:[
+    ["פותחים אירוע מתוך הוועדה","חובה לציין קהל יעד"],
+    ["מסמנים 'לחברי הוועדה בלבד'","מופיע רק לחברי הוועדה, כולל בלוח השנה שלהם"],
+    ["מבקשים מהורה שאינו חבר לבדוק","הוא אינו רואה את האירוע"],
+    ["(P7) מאשרים בקשת הצטרפות","המבקש נכנס ומקבל גישה"],
+    ["(P7) דוחים בקשת הצטרפות","הבקשה נעלמת, אין גישה"],
+    ["(P7) מעלים מסמך לוועדה","מצוין שהוא גלוי לחברי הוועדה בלבד"],
+    ["מנסים לפתוח סיר לידה","חבר ועדה רגילה אינו רואה את הכפתור"],
+  ]},
+  { n:"4.3", t:"ועדת התמיכה — פתיחת סיר לידה", who:"P8", rows:[
+    ["נכנסים ל'סירי לידה'","יש כפתור 'סיר לידה חדש'"],
+    ["ממלאים שם משפחה ושם התינוק/ת","נשמר"],
+    ["בוחרים בן / בת / תאומים / תאומות","הברכה מתאימה למגדר ולמספר"],
+    ["לא בוחרים כלום","ניסוח נייטרלי, בלי שגיאה"],
+    ["מוסיפים ימים אחד אחרי השני","כל יום מקבל 'ארוחה' ו'פינוק מתוק'"],
+    ["מכבים 'פינוק מתוק' ביום מסוים","נשארת רק ארוחה"],
+    ["מנסים לכבות את שתי המשבצות באותו יום","לא מתאפשר"],
+    ["מנסים להוסיף את אותו תאריך פעמיים","לא נוסף פעמיים"],
+    ["ממלאים כתובת וקוד בניין","נשמרים"],
+    ["מנסים לשמור בלי לסמן את תיבת ההסכמה","לא נשמר, מוצגת הודעה"],
+    ["שומרים","נפתחת אוטומטית ההודעה להפצה"],
+    ["עורכים את הסיר ומתקנים טעות בשם","השם מתעדכן"],
+    ["פותחים שוב את העריכה ובודקים את הכתובת","הכתובת עדיין שם ולא נמחקה"],
+    ["מוסיפים יום בעריכה","השיבוצים הקיימים נשמרו, היום החדש ריק"],
+    ["מסירים יום שמישהו שוריין בו","היום והשיבוץ נעלמים יחד"],
+    ["רושמים שם חופשי במשבצת פנויה","המשבצת מסומנת על אותו שם"],
+    ["מנקים שיבוץ קיים","המשבצת מתפנה"],
+    ["מוחקים סיר לידה","נמחק, כולל הכתובת"],
+  ]},
+  { n:"4.4", t:"מנהל מערכת", who:"P9 · P10", rows:[
+    ["נכנסים ללוח הבקרה","נטען בלי ספינר אינסופי"],
+    ["מאשרים משתמש ממתין","מקבל גישה"],
+    ["משנים תפקיד למשתמש","משתקף אצלו אחרי רענון"],
+    ["מפעילים 'צפייה כהורה'","רואים את המערכת כהורה, בלי תפריטי ניהול"],
+    ["יוצרים אירוע קהילתי עם תמונה","מופיע לכולם והתמונה נטענת"],
+    ["מוסיפים מגבלת תזונה לאירוע","מופיעה בכרטיס ובייצוא ליומן"],
+    ["עורכים שם ילד ופרטי הורה","נשמר"],
+    ["מעבירים ילדים לכיתה אחרת בפעולה קבוצתית","כולם עברו"],
+    ["בסיר לידה — מחפשים חבר קהילה ברשימה","ניתן לבחור מהרשימה"],
+    ["משבצים אותו ומבקשים ממנו לבדוק","הסיר מופיע בלוח השנה שלו והכתובת נפתחה"],
+    ["הוא מבטל את השיבוץ בעצמו","מתאפשר"],
+    ["מסמנים ועדה כרשאית לפתוח סירי לידה","חבריה רואים את הכפתור"],
+    ["מפעילים מצב חירום","מופיע לכל המשתמשים"],
+    ["(P10) בקרת תקינות ומשוב ובאגים","נטענים"],
+  ]},
+  { n:"4.5", t:"ייבוא נתונים", who:"P5 · P9", rows:[
+    ["מעלים קובץ Excel אמיתי של המרשם","נטען בלי שגיאה"],
+    ["מעלים קובץ CSV","נטען"],
+    ["מעלים קובץ ריק או פגום","הודעת שגיאה ברורה, בלי קריסה"],
+    ["מעלים קובץ עם גן","משויך לגן הקיים, בלי כיתה כפולה"],
+    ["מעלים קובץ בלי כתובות מייל","הקישור לפי טלפון עובד"],
+    ["שני הורים עם אותו מספר טלפון","לא משויך לאדם הלא נכון"],
+    ["מייבאים את אותו קובץ פעמיים","אין כפילויות"],
+  ]},
+  { n:"4.6", t:"משפחה קולטת ומשפחה חדשה", who:"P3 · P4", rows:[
+    ["(P4) נכנסים ל'המשפחות שלי'","רק המשפחות שהוקצו לכם"],
+    ["(P4) בודקים את הניסוח בכל המערכת",'"משפחות קולטות" — אף פעם לא "מארחות"'],
+    ["(P3) מסמנים משימת קליטה","הסימון נשמר"],
+    ["(P3) ממלאים טופס","נשמר ומופיע כהוגש"],
+    ["(P3) מדברים עם העוזר החכם","עונה בעברית ולעניין"],
+    ["שולחים 30+ הודעות לעוזר החכם","הודעה ברורה על המגבלה היומית"],
+  ]},
+  { n:"4.7", t:"בוגר", who:"P12", rows:[
+    ["מתחברים","מגיעים לעמוד העסקים"],
+    ["מנסים לפתוח ידנית עמוד פנימי","מוחזרים החוצה, בלי גישה למידע הקהילה"],
+    ["נכנסים להגדרות ול'הפרטיות שלי'","נגישים"],
+  ]},
+  { n:"5", t:"קליטה, אופליין ומצבי רשת", who:"כל הבודקים", rows:[
+    ["מכבים רשת לגמרי ופותחים את האפליקציה","מסך שמסביר שאין חיבור — לא מסך לבן ולא ספינר אינסופי"],
+    ["מנתקים רשת באמצע גלישה ולוחצים על עמוד חדש","הודעה ברורה, האפליקציה אינה נתקעת"],
+    ["מנתקים רשת ולוחצים 'אני לוקח/ת' בסיר לידה","נכשל בצורה מסודרת עם הודעה, ולא נראה כאילו הצליח"],
+    ["מחזירים רשת ומרעננים","המצב האמיתי מוצג נכון"],
+    ["בקליטה חלשה טוענים עמוד כבד","נטען בסוף או מודיע שנכשל, לא נתקע"],
+    ["עוברים מ־Wi־Fi לסלולרי באמצע שימוש","ממשיך לעבוד"],
+    ["מצב טיסה ואז כיבוי מצב טיסה","חוזר לתפקד בלי סגירת האפליקציה"],
+    ["משאירים את האפליקציה ברקע שעה וחוזרים","עדיין מחוברים ומגיבים"],
+    ["פותחים את אותו חשבון בשני מכשירים","שינוי במכשיר אחד מופיע בשני אחרי רענון"],
+    ["פותחים שני טאבים ומשריינים את אותה משבצת","רק אחד מצליח, השני מקבל מצב מעודכן"],
+    ["שני אנשים תופסים את אותה משבצת בו־זמנית","לא נדרס מידע"],
+    ["מפעילים מצב חיסכון בסוללה","האפליקציה עובדת"],
+  ]},
+  { n:"6", t:"נגישות", who:"כל הבודקים", rows:[
+    ["לוחצים על כפתור הנגישות","נפתח תפריט"],
+    ["מגדילים טקסט פעמיים־שלוש","הטקסט גדל בכל העמודים ואינו נחתך"],
+    ["מפעילים ניגודיות גבוהה","הטקסט קריא בכל העמודים"],
+    ["מפעילים הדגשת קישורים","הקישורים בולטים"],
+    ["מפעילים עצירת אנימציות","אין תנועה מיותרת"],
+    ["מאפסים הגדרות","חוזר למצב רגיל"],
+    ["מרעננים את העמוד","ההגדרות נשמרו"],
+    ["במצב כהה — קוראים תקנון, מדיניות פרטיות והצהרת נגישות","הטקסט קריא לגמרי"],
+    ["מגדילים גופן בהגדרות המכשיר עצמו","המערכת מסתדרת"],
+    ["במחשב — ניווט ב־Tab בלבד","מגיעים לכל הכפתורים ורואים מסגרת מיקוד"],
+    ["במחשב — Tab בעמוד עם תפריט","מופיע קישור 'דילוג לתוכן הראשי'"],
+    ["מפעילים קורא מסך במסך הבית ובאירועים","הכפתורים מוקראים בשמם"],
+    ["מחפשים את הצהרת הנגישות","נגישה מהתפריט וממסך ההתחברות"],
+  ]},
+  { n:"7", t:"התקנה כאפליקציה (PWA) ועדכונים", who:"מי שמקבל מכשיר 10", rows:[
+    ["iOS: שיתוף → הוסף למסך הבית",'מותקן, והשם מתחת לאייקון "שחף+"'],
+    ["אנדרואיד: תפריט → התקן אפליקציה","מותקן"],
+    ["פותחים מהאייקון","נפתח במסך מלא, בלי שורת כתובת"],
+    ["מתחברים מתוך האפליקציה המותקנת","עובד"],
+    ["סוגרים לגמרי ופותחים שוב","עדיין מחוברים"],
+    ["אחרי עדכון — פותחים את האפליקציה","הגרסה החדשה נטענת, לכל היותר אחרי רענון אחד"],
+    ["אם מופיע מסך לבן או תוכן ישן","רענון פותר — ודווחו גם אם נפתר"],
+  ]},
+  { n:"8", t:"אבטחה ופרטיות — לנסות לשבור", who:"כל הבודקים", warn:"אם משהו כאן מצליח — זו תקלה חמורה. דווחו מיד ואל תמשיכו.", rows:[
+    ["מדביקים כתובת של עמוד ניהול כמשתמש רגיל","מוחזרים החוצה"],
+    ["מדביקים כתובת של ועדה שאינכם חברים בה","אין גישה לתוכן פנימי"],
+    ["מבקשים מחבר קהילה לפתוח סיר שלא שיריין בו","הכתובת אינה מוצגת לו"],
+    ["הורה רגיל מנסה לערוך סיר לידה של אחר","אין אפשרות"],
+    ["מסתכלים ברשימת ההורים בכיתה","אין הורים שלא אישרו את התקנון"],
+    ["מסתכלים ברשימת הילדים","אין ילדים של הורים שלא אישרו"],
+    ["קוראים את הודעת השיתוף של סיר לידה","אין בה כתובת ואין קוד כניסה"],
+    ["מתנתקים ולוחצים 'אחורה' בדפדפן","לא רואים מידע אישי מהמסך הקודם"],
+    ["מתנתקים ומדביקים כתובת פנימית","מגיעים למסך התחברות"],
+    ["מחפשים מידע רפואי המקושר לילד מזוהה","לא אמור להופיע בשום מקום"],
+  ]},
+  { n:"9", t:"ביצועים, שפה ועיצוב", who:"כל הבודקים", rows:[
+    ["מודדים טעינה ראשונה ברשת סלולרית","סביר, עד כחמש שניות"],
+    ["עוברים בין עמודים","מהיר, בלי הבהובים"],
+    ["גוללים ברשימות ארוכות","גלילה חלקה"],
+    ["קוראים את הטקסטים במסכים שעברתם",'אין שגיאות כתיב, אין אנגלית תלושה, אין "undefined"'],
+    ["בודקים את הפניות למשתמש","ניסוח מכבד ועקבי"],
+    ["בודקים תאריכים ושעות","פורמט ישראלי ונכונים"],
+    ["בודקים מספרי טלפון","מוצגים משמאל לימין וניתנים לחיוג"],
+    ["מזינים שם ארוך והערה ארוכה","העיצוב לא נשבר"],
+    ["בודקים במסך צר במיוחד","הכל נכנס"],
+    ["בודקים במסך רחב במחשב","התוכן לא נמתח בצורה מכוערת"],
+  ]},
+];
+
+const KEY = 'shachaf_qa_v1';
+// Private browsing and some in-app browsers block storage entirely — the
+// checklist still has to work, it just won't remember between visits.
+const store = {
+  read() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') } catch { return {} } },
+  write(v) { try { localStorage.setItem(KEY, JSON.stringify(v)) } catch { /* no persistence */ } },
+};
+const state = store.read();
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+
+DEVICES.forEach(d => {
+  const tr = el('tr');
+  d.forEach((cell, i) => {
+    const td = el('td', null, cell.replace('★ ', ''));
+    if (i === 0 && cell.startsWith('★')) { const s = el('span', 'star', '★ '); td.prepend(s); }
+    tr.appendChild(td);
+  });
+  document.getElementById('devices').appendChild(tr);
+});
+PERSONAS.forEach(p => {
+  const tr = el('tr');
+  tr.appendChild(el('td', 'code', p[0]));
+  tr.appendChild(el('td', null, p[1]));
+  tr.appendChild(el('td', null, p[2]));
+  document.getElementById('personas').appendChild(tr);
+});
+
+const host = document.getElementById('sections');
+const toc = document.getElementById('toc');
+let total = 0;
+
+SECTIONS.forEach(sec => {
+  const id = 'sec-' + sec.n.replace('.', '-');
+  const s = el('section'); s.id = id;
+  const head = el('div', 'sec-head');
+  head.appendChild(el('span', 'sec-num', sec.n));
+  head.appendChild(el('h2', null, sec.t));
+  s.appendChild(head);
+  const note = el('p', 'sec-note' + (sec.warn ? ' warn' : ''), sec.warn || ('מיועד ל: ' + sec.who));
+  s.appendChild(note);
+
+  const rows = el('div', 'rows');
+  sec.rows.forEach((r, i) => {
+    total++;
+    const rid = sec.n + '.' + (i + 1);
+    const row = el('div', 'row'); row.dataset.id = rid;
+    row.appendChild(el('span', 'rid', rid));
+    const body = el('div', 'rbody');
+    body.appendChild(el('div', 'do', r[0]));
+    body.appendChild(el('div', 'expect', r[1]));
+    row.appendChild(body);
+    const states = el('div', 'states');
+    [['ok', 'תקין'], ['bad', 'תקלה'], ['skip', 'לא רלוונטי']].forEach(([v, label]) => {
+      const b = el('button', 'st', label);
+      b.type = 'button'; b.dataset.v = v;
+      b.setAttribute('aria-label', label + ' — בדיקה ' + rid);
+      b.setAttribute('aria-pressed', state[rid] === v ? 'true' : 'false');
+      b.addEventListener('click', () => {
+        state[rid] = state[rid] === v ? undefined : v;
+        if (!state[rid]) delete state[rid];
+        store.write(state);
+        paint();
+      });
+      states.appendChild(b);
+    });
+    row.appendChild(states);
+    if (state[rid]) row.dataset.state = state[rid];
+    rows.appendChild(row);
+  });
+  s.appendChild(rows);
+  host.appendChild(s);
+
+  const li = el('li');
+  const a = el('a'); a.href = '#' + id;
+  a.appendChild(el('span', 'n', sec.n));
+  a.appendChild(document.createTextNode(sec.t));
+  li.appendChild(a); toc.appendChild(li);
+});
+
+function paint() {
+  let ok = 0, bad = 0, skip = 0;
+  document.querySelectorAll('.row').forEach(row => {
+    const v = state[row.dataset.id];
+    if (v) row.dataset.state = v; else delete row.dataset.state;
+    row.querySelectorAll('.st').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v ? 'true' : 'false'));
+    if (v === 'ok') ok++; else if (v === 'bad') bad++; else if (v === 'skip') skip++;
+  });
+  const done = ok + bad + skip;
+  document.getElementById('c-ok').textContent = ok;
+  document.getElementById('c-bad').textContent = bad;
+  document.getElementById('c-skip').textContent = skip;
+  document.getElementById('c-done').textContent = done;
+  document.getElementById('c-all').textContent = total;
+  document.getElementById('bar').style.width = (total ? (done / total) * 100 : 0) + '%';
+}
+paint();
+
+document.getElementById('btn-print').addEventListener('click', () => window.print());
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (!confirm('לאפס את כל הסימונים?')) return;
+  Object.keys(state).forEach(k => delete state[k]);
+  store.write(state);
+  paint();
+});
+document.getElementById('btn-report').addEventListener('click', async () => {
+  const lines = ['דיווח בדיקות — שחף+', 'מכשיר/דפדפן: ______', 'תאריך: ' + new Date().toLocaleDateString('he-IL'), ''];
+  let n = 0;
+  document.querySelectorAll('.row').forEach(row => {
+    if (state[row.dataset.id] !== 'bad') return;
+    n++;
+    lines.push(`✗ ${row.dataset.id} — ${row.querySelector('.do').textContent}`);
+    lines.push(`   ציפייה: ${row.querySelector('.expect').textContent}`);
+    lines.push('   מה קרה בפועל: ______');
+    lines.push('');
+  });
+  const text = n ? lines.join('\n') : 'לא סומנו תקלות.';
+  const btn = document.getElementById('btn-report');
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = n ? `הועתקו ${n} תקלות` : 'אין תקלות מסומנות';
+  } catch {
+    btn.textContent = 'ההעתקה נכשלה — סמנו את הטקסט ידנית';
+  }
+  setTimeout(() => { btn.textContent = 'העתקת דיווח התקלות'; }, 2500);
+});
+</script>
