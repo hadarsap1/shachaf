@@ -1067,6 +1067,18 @@ export async function getMealTrainPrivate(trainId) {
   }
 }
 
+// Delivery details of every pot this user claimed a slot in, keyed by train id.
+// Firestore refuses the read for anyone else, so a denial simply yields no entry
+// — the calendar entry then falls back to "the address is in the app".
+export async function claimedAddresses(trains, uid) {
+  if (!uid) return {}
+  const mine = (trains || []).filter(t => (t.claimerUids || []).includes(uid))
+  const pairs = await Promise.all(
+    mine.map(async t => [t.id, await getMealTrainPrivate(t.id)])
+  )
+  return Object.fromEntries(pairs.filter(([, details]) => details))
+}
+
 async function _saveMealTrain(train, privateDetails) {
   const { id, ...data } = train
   let trainId = id

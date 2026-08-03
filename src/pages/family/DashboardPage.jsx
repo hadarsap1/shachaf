@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import {
   getTasks, saveTask, getEvents, getForms, getSubmissionsForFamily,
   getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
-  getMealTrains,
+  getMealTrains, claimedAddresses,
 } from '../../lib/db'
 import { classLabel, membersOfLabel } from '../../lib/grades'
 import { isEventVisibleTo, isUpcoming, todayKey } from '../../lib/eventVisibility'
@@ -262,7 +262,7 @@ export default function DashboardPage() {
       getCommittees(),
       getClasses(),
       getMealTrains().catch(() => []),
-    ]).then(([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains]) => {
+    ]).then(async ([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains]) => {
       setTasks(taskData)
       setGroups(groupData)
       setCommittees(committeeData)
@@ -284,7 +284,8 @@ export default function DashboardPage() {
       const entityIds = [...myEntityIds]
       setEvents([
         ...eventData.filter(ev => isUpcoming(ev, today) && isEventVisibleTo(ev, { entityIds })),
-        ...myMealTrainEvents(mealTrains, user.uid).filter(ev => isUpcoming(ev, today)),
+        ...myMealTrainEvents(mealTrains, user.uid, await claimedAddresses(mealTrains, user.uid))
+          .filter(ev => isUpcoming(ev, today)),
       ].sort((a, b) => (a.date || '').localeCompare(b.date || '')))
       if (isFamily) {
         const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]

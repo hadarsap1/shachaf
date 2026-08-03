@@ -159,9 +159,11 @@ export function isMealTrainCommittee(committee) {
 // Slots you claimed, shaped like events so they sit in the app calendar next to
 // community events — a commitment you took on shouldn't live in a page you have
 // to remember to open.
-// The delivery address is deliberately NOT part of these entries: they can be
-// exported to an external calendar, and the address is private to slot claimers.
-export function myMealTrainEvents(trains, uid) {
+// `privateByTrainId` carries the delivery details of pots this user claimed —
+// the caller fetches them, and Firestore only hands them over to claimers. When
+// present they fill the entry's LOCATION row so the address reaches the calendar
+// (and the maps app) rather than only the app screen.
+export function myMealTrainEvents(trains, uid, privateByTrainId = {}) {
   if (!uid) return []
   return (trains || [])
     .filter(t => t.status !== 'closed')
@@ -169,17 +171,30 @@ export function myMealTrainEvents(trains, uid) {
       .filter(s => s.byUid === uid)
       .map(s => {
         const type = SLOT_TYPES.find(x => x.value === s.type)
+        // The delivery details, for the person who has to show up. They already
+        // hold this address in the app; putting it in the entry's own LOCATION
+        // row is what makes it tappable for navigation.
+        const priv = privateByTrainId[t.id] || null
+        const location = priv
+          ? [priv.address, priv.city].filter(Boolean).join(', ')
+          : ''
+        const lines = [`שיריינת ${type?.label || 'משבצת'} בסיר הלידה של משפחת ${t.familyName}.`]
+        if (priv?.buildingCode) lines.push(`קוד לבניין: ${priv.buildingCode}`)
+        if (t.preferences) lines.push(`העדפות: ${t.preferences}`)
+        if (t.delivery) lines.push(t.delivery)
+        if (t.contactPhone) lines.push(`לתיאום: ${t.contactName || 'איש קשר'} ${t.contactPhone}`)
+        if (!priv) lines.push('הכתובת תיפתח בעמוד "סירי לידה" באפליקציה.')
+
         return {
           id: `mealtrain_${t.id}_${s.id}`,
           mealTrainId: t.id,
           date: s.date,
           time: '',
           title: `🍲 ${type?.label || 'סיר לידה'} למשפחת ${t.familyName}`,
-          description: `שיריינת ${type?.label || 'משבצת'} בסיר הלידה של משפחת ${t.familyName}. ` +
-            'פרטי המסירה והכתובת בעמוד "סירי לידה".',
+          description: lines.join('\n'),
           type: 'community',
           targetGroups: ['all'],
-          location: '',
+          location,
           attendeeUids: [],
         }
       }))
