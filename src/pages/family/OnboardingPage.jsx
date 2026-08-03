@@ -108,7 +108,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center px-4 py-8 dark:bg-gray-900" dir="rtl">
-      <img src="/logo.png" alt="שחף" className="h-12 w-auto mb-6 opacity-80" />
+      <img src="/logo.png" alt="שחף+" className="h-12 w-auto mb-6 opacity-80" />
 
       {/* Progress dots */}
       <div className="flex items-center gap-2 mb-8">
@@ -313,7 +313,7 @@ export default function OnboardingPage() {
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-white">הכל מוכן!</h2>
             <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">
-              ברוכים הבאים לקהילת שחף.<br />
+              ברוכים הבאים לשחף+.<br />
               המשיכו ללוח הבית שלכם.
             </p>
             <button

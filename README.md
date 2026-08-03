@@ -1,4 +1,4 @@
-# שחף — פלטפורמת קליטה
+# שחף+ — פלטפורמת קליטה
 
 A Hebrew RTL web application for managing school onboarding of new families. Built with React 19, Firebase, and deployed on Vercel.
 

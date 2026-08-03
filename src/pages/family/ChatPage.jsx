@@ -72,7 +72,7 @@ export default function ChatPage() {
     {
       id: 1,
       role: 'assistant',
-      content: `שלום ${user?.name}! 👋\nאני העוזר החכם של שחף. אני יכול לעזור לך עם משימות, אירועים ומידע על הקהילה.\nמה תרצה לדעת?`,
+      content: `שלום ${user?.name}! 👋\nאני העוזר החכם של שחף+. אני יכול לעזור לך עם משימות, אירועים ומידע על הקהילה.\nמה תרצה לדעת?`,
     },
   ])
   const [input, setInput] = useState('')

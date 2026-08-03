@@ -116,7 +116,7 @@ function header(w, title, subtitle, p) {
 }
 
 function footer(w, h, p) {
-  return `<text x="${w / 2}" y="${h - 24}" text-anchor="middle" font-family="${FONT}" font-size="20" fill="${p.muted}">קהילת שחף 🕊️</text>`
+  return `<text x="${w / 2}" y="${h - 24}" text-anchor="middle" font-family="${FONT}" font-size="20" fill="${p.muted}">שחף+ 🕊️</text>`
 }
 
 // No direction="rtl" on the root: it flips text-anchor semantics (end↔start)
