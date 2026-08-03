@@ -2,22 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getEvents, saveEvent, deleteEvent, getClasses, getCommittees, uploadEventImage, deleteEventImage, logConsent } from '../../lib/db'
 import { CONSENT_VERSION } from '../../lib/consent'
-import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, ExternalLink, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
+import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, CalendarPlus, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { DIETARY_OPTIONS, DIETARY_NOTE_MAX } from '../../lib/dietary'
-
-function googleCalendarUrl(event) {
-  const time = event.time || '09:00'
-  const start = `${event.date}T${time}`
-  const [h, m] = time.split(':').map(Number)
-  const end = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00Z'
-  const params = new URLSearchParams({ action: 'TEMPLATE', text: event.title, dates: `${fmt(start)}/${fmt(end)}`, location: event.location || '', details: event.description || '' })
-  return `https://calendar.google.com/calendar/render?${params}`
-}
+// Shared export logic — this page used to carry its own copy, which stamped the
+// local time as UTC and pushed every event 3 hours late.
+import { buildCalendarData, buildGoogleCalendarUrl } from '../../lib/calendar'
 
 const FAMILY_CARDS = [
   { value: 'new_family',  label: 'משפחות חדשות', color: '#1B3B70', bg: '#EBF1FA' },
@@ -717,11 +710,12 @@ export default function AdminEventsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                     {event.date && (
-                      <a href={googleCalendarUrl(event)} target="_blank" rel="noopener noreferrer"
+                      <a href={buildGoogleCalendarUrl(buildCalendarData(event))} target="_blank" rel="noopener noreferrer"
                         className="p-1.5 rounded-lg text-gray-400 hover:text-secondary-600 hover:bg-secondary-50 transition-colors"
-                        title="הוסף ליומן Google"
+                        title="הוספה ליומן Google"
+                        aria-label={`הוספת "${event.title}" ליומן Google`}
                       >
-                        <ExternalLink size={14} />
+                        <CalendarPlus size={14} />
                       </a>
                     )}
                     <button
