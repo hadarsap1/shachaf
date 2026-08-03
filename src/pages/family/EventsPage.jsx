@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees, getMealTrains } from '../../lib/db'
 import { myMealTrainEvents } from '../../lib/mealTrain'
+import { isEventVisibleTo } from '../../lib/eventVisibility'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -16,14 +17,14 @@ const BASE_FILTERS = [
   { value: 'host_family',label: 'משפחות קולטות' },
 ]
 
-function matchesFilter(ev, filterValue, canSeeMembersEvent) {
-  // Members-only events (created from within a group/committee for its members)
-  // stay out of the community-wide feed EXCEPT for that entity's members, who
-  // see them in their own calendar/feed. Shown under the "all" filter only —
-  // they aren't targeted to a family type or class.
-  if ((ev.targetGroups || []).includes('members')) {
-    return canSeeMembersEvent && filterValue === 'all'
-  }
+// Audience CHIPS (הכל / משפחות חדשות / משפחות קולטות / כיתה) — a view filter on
+// top of the visibility rule in lib/eventVisibility.js, which both this page and
+// the dashboard share.
+function matchesFilter(ev, filterValue, entityIds) {
+  if (!isEventVisibleTo(ev, { entityIds })) return false
+  // A members-only event isn't targeted to a family type or class, so it only
+  // belongs under the "all" chip.
+  if ((ev.targetGroups || []).includes('members')) return filterValue === 'all'
   if (filterValue === 'all') return true
   if (filterValue === 'new_family' || filterValue === 'host_family') {
     const groups = ev.targetGroups || ['all']
@@ -120,18 +121,11 @@ export default function EventsPage() {
     load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
   }, [user, effectiveAdmin])
 
-  // A members-only event appears in the community feed ONLY for current members
-  // of its group/committee — no admin-by-role bypass here, so it truly stays
-  // members-only and disappears the moment you leave the group/committee.
-  // (Admins still manage all events in the admin events page, and see them in
-  // the group/committee's own events tab.)
-  const canSeeMembersEvent = (ev) =>
-    (ev.groupId && myEntityIds.has(ev.groupId))
-    || (ev.committeeId && myEntityIds.has(ev.committeeId))
+  const entityIds = [...myEntityIds]
   // Your own meal-train commitments always ride along — they're personal, so no
   // audience filter applies to them; clicking one opens the pot itself.
   const filteredEvents = [
-    ...events.filter(ev => matchesFilter(ev, filterValue, canSeeMembersEvent(ev))),
+    ...events.filter(ev => matchesFilter(ev, filterValue, entityIds)),
     ...mealTrainEvents,
   ]
 

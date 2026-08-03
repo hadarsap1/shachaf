@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   getTasks, saveTask, getEvents, getForms, getSubmissionsForFamily,
   getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
+  getMealTrains,
 } from '../../lib/db'
 import { classLabel, membersOfLabel } from '../../lib/grades'
+import { isEventVisibleTo, isUpcoming, todayKey } from '../../lib/eventVisibility'
+import { myMealTrainEvents } from '../../lib/mealTrain'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
@@ -218,7 +221,8 @@ function ActivityFeed({ events, groups, committees, user }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { user, allRoles, isAdmin } = useAuth()
+  const { user, allRoles } = useAuth()
+  const navigate = useNavigate()
   const [tasks, setTasks]           = useState([])
   const [events, setEvents]         = useState([])
   const [groups, setGroups]         = useState([])
@@ -227,6 +231,11 @@ export default function DashboardPage() {
   const [pendingForms, setPendingForms] = useState(0)
   const [loading, setLoading]       = useState(true)
   const [selectedEvent, setSelectedEvent] = useState(null)
+  // A meal-train commitment opens its pot, not an event dialog
+  const openEvent = (ev) => {
+    if (ev.mealTrainId) navigate(`/meal-trains?train=${ev.mealTrainId}`)
+    else setSelectedEvent(ev)
+  }
   const [emergency, setEmergency]   = useState(null)
   const [widgetConfig, setWidgetConfig] = useState(loadWidgetConfig)
   const [showCustomize, setShowCustomize] = useState(false)
@@ -240,7 +249,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user?.uid) return
-    const today = new Date().toISOString().slice(0, 10)
+    // Local date, not UTC: after 21:00 Israel time toISOString() already reads
+    // tomorrow, which used to drop today's events off the dashboard.
+    const today = todayKey()
     Promise.all([
       isFamily ? getTasks(user.uid) : Promise.resolve([]),
       getEvents(),
@@ -250,7 +261,8 @@ export default function DashboardPage() {
       getHobbyGroups(),
       getCommittees(),
       getClasses(),
-    ]).then(([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses]) => {
+      getMealTrains().catch(() => []),
+    ]).then(([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains]) => {
       setTasks(taskData)
       setGroups(groupData)
       setCommittees(committeeData)
@@ -266,20 +278,14 @@ export default function DashboardPage() {
         ...groupData.filter(g => (g.memberUids || []).includes(user.uid)).map(g => g.id),
         ...committeeData.filter(c => (c.memberUids || []).includes(user.uid)).map(c => c.id),
       ])
-      setEvents(eventData.filter(ev => {
-        if (ev.date && ev.date < today) return false
-        // Members-only events show only to CURRENT members of their group/
-        // committee — no admin-by-role bypass, so they disappear on leave.
-        if ((ev.targetGroups || []).includes('members')) {
-          return (ev.groupId && myEntityIds.has(ev.groupId))
-            || (ev.committeeId && myEntityIds.has(ev.committeeId))
-        }
-        if (isAdmin) return true
-        const tg = ev.targetGroups || []
-        if (!tg.length || tg.includes('all') || tg.includes(user.role)) return true
-        if (tg.includes('class')) return (ev.classIds || []).some(id => effectiveClassIds.includes(id))
-        return false
-      }))
+      // Same visibility rule the calendar uses (see lib/eventVisibility.js), so
+      // an event can never show in the calendar and be missing here.
+      // Meal-train slots you took ride along — they're personal commitments.
+      const entityIds = [...myEntityIds]
+      setEvents([
+        ...eventData.filter(ev => isUpcoming(ev, today) && isEventVisibleTo(ev, { entityIds })),
+        ...myMealTrainEvents(mealTrains, user.uid).filter(ev => isUpcoming(ev, today)),
+      ].sort((a, b) => (a.date || '').localeCompare(b.date || '')))
       if (isFamily) {
         const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
         const myForms = allForms.filter(f =>
@@ -384,7 +390,7 @@ export default function DashboardPage() {
                       'flex-shrink-0 snap-start cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow',
                       flyerEvents.length === 1 ? 'w-full' : 'w-64'
                     )}
-                      onClick={() => setSelectedEvent(ev)}>
+                      onClick={() => openEvent(ev)}>
                       <img src={ev.imageUrl} alt={ev.title} className="w-full h-36 object-cover" referrerPolicy="no-referrer"
                         onError={e => { e.target.style.display = 'none' }} />
                       <div className="p-2.5 bg-white dark:bg-gray-800 text-right">
@@ -413,7 +419,7 @@ export default function DashboardPage() {
             ) : (
               <div className="grid sm:grid-cols-2 gap-3">
                 {events.slice(0, 3).map(event => (
-                  <EventCard key={event.id} event={event} onCardClick={() => setSelectedEvent(event)} />
+                  <EventCard key={event.id} event={event} onCardClick={() => openEvent(event)} />
                 ))}
               </div>
             )}
