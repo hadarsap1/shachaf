@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getEvents, getClasses } from '../../lib/db'
 import CalendarGrid from '../../components/ui/CalendarGrid'
-import { Calendar, MapPin, Clock, Edit2, X, Plus, Loader2 } from 'lucide-react'
+import { Calendar, MapPin, Clock, Edit2, X, CalendarPlus, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
+import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent } from '../../lib/calendar'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -41,49 +42,11 @@ const TYPE_BADGE = {
   community:   'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
 }
 
-// ── Calendar helpers ──────────────────────────────────────────────────────────
-
-function buildGoogleCalendarUrl(event) {
-  const time  = event.time || '09:00'
-  const start = `${event.date}T${time}`
-  const [h, m] = time.split(':').map(Number)
-  const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 13) + '00Z'
-  const params = new URLSearchParams({
-    action:   'TEMPLATE',
-    text:     event.title,
-    dates:    `${fmt(start)}/${fmt(end)}`,
-    location: event.location || '',
-    details:  event.description || '',
-  })
-  return `https://calendar.google.com/calendar/render?${params}`
-}
-
-function buildICSContent(event) {
-  const time  = event.time || '09:00'
-  const start = `${event.date}T${time}`
-  const [h, m] = time.split(':').map(Number)
-  const end   = `${event.date}T${String((h + 1) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-  const fmt   = (s) => s.replace(/[-:]/g, '').slice(0, 15) + '00Z'
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'BEGIN:VEVENT',
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
-    `SUMMARY:${event.title}`,
-    `LOCATION:${event.location || ''}`,
-    `DESCRIPTION:${event.description || ''}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\n')
-}
-
 // ── Event detail slide panel ──────────────────────────────────────────────────
 
 function EventDetailPanel({ event, onClose }) {
   const handleDownloadICS = () => {
-    const content = buildICSContent(event)
+    const content = buildICSContent(buildCalendarData(event))
     const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
@@ -181,18 +144,18 @@ function EventDetailPanel({ event, onClose }) {
         <div className="px-5 py-4 border-t border-gray-100 space-y-2 dark:border-gray-700">
           <div className="flex gap-2">
             <button
-              onClick={() => window.open(buildGoogleCalendarUrl(event), '_blank')}
+              onClick={() => window.open(buildGoogleCalendarUrl(buildCalendarData(event)), '_blank')}
               className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-primary-900/30"
             >
-              <Plus size={14} />
-              Google Calendar
+              <CalendarPlus size={14} />
+              הוספה ליומן Google
             </button>
             <button
               onClick={handleDownloadICS}
               className="flex-1 flex items-center justify-center gap-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-xl transition-colors font-medium dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
             >
               <Calendar size={14} />
-              יומן (.ics)
+              הורדה ליומן (.ics)
             </button>
           </div>
           <Link
