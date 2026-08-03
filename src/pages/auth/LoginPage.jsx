@@ -184,7 +184,7 @@ export default function LoginPage() {
           <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3 dark:bg-gray-800">
             <img src="/logo.png" alt="שחף+" className="h-20 w-auto mx-auto" />
           </div>
-          <p className="text-primary-100 text-sm">הפלטפורמה הקהילתית שלנו</p>
+          <p className="text-white/90 text-sm">הפלטפורמה הקהילתית שלנו</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-modal p-6 sm:p-8 dark:bg-gray-800" dir="rtl">
@@ -234,7 +234,7 @@ export default function LoginPage() {
                   <div className="text-4xl mb-3">📬</div>
                   <p className="font-semibold text-gray-800 dark:text-gray-100">נשלח מייל לאיפוס</p>
                   <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">בדוק את תיבת הדואר שלך</p>
-                  <button onClick={() => { setMode('login'); setResetSent(false) }} className="mt-4 text-sm text-primary-600 dark:text-primary-300 hover:underline">
+                  <button onClick={() => { setMode('login'); setResetSent(false) }} className="mt-4 text-sm text-primary-600 dark:text-primary-200 hover:underline">
                     חזרה לכניסה
                   </button>
                 </div>
@@ -310,7 +310,7 @@ export default function LoginPage() {
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-                <span className="text-xs text-gray-400">או</span>
+                <span className="text-xs text-gray-600 dark:text-gray-300">או</span>
                 <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
               </div>
 
@@ -379,7 +379,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => { setMode('reset'); setError('') }}
-                    className="w-full text-right py-1 text-sm text-primary-600 dark:text-primary-300 hover:underline"
+                    className="w-full text-right py-1 text-sm text-primary-600 dark:text-primary-200 hover:underline"
                   >
                     שכחת סיסמה?
                   </button>
@@ -397,7 +397,7 @@ export default function LoginPage() {
 
               <div className="mt-5 text-center space-y-3">
                 <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
-                  className="text-sm text-primary-600 dark:text-primary-300 hover:underline">
+                  className="text-sm text-primary-600 dark:text-primary-200 hover:underline">
                   {mode === 'login' ? 'אין לך חשבון? הירשם' : 'יש לך חשבון? היכנס'}
                 </button>
 
@@ -414,16 +414,16 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="text-center text-primary-200 text-xs mt-4">
+        <p className="text-center text-white/90 text-xs mt-4">
           בהצטרפות תתבקשו לאשר את{' '}
-          <Link to="/legal/privacy" className="underline hover:text-white">מדיניות הפרטיות</Link>
+          <Link to="/legal/privacy" className="underline hover:text-white font-medium">מדיניות הפרטיות</Link>
           {' ואת '}
-          <Link to="/legal/terms" className="underline hover:text-white">תנאי השימוש</Link>
+          <Link to="/legal/terms" className="underline hover:text-white font-medium">תנאי השימוש</Link>
         </p>
-        <p className="text-center text-primary-200 text-xs mt-2">
-          <Link to="/legal/accessibility" className="underline hover:text-white">הצהרת נגישות</Link>
+        <p className="text-center text-white/90 text-xs mt-2">
+          <Link to="/legal/accessibility" className="underline hover:text-white font-medium">הצהרת נגישות</Link>
         </p>
-        <p className="text-center text-primary-200 text-xs mt-2">
+        <p className="text-center text-white/90 text-xs mt-2">
           שחף+ © {new Date().getFullYear()}
         </p>
       </div>
