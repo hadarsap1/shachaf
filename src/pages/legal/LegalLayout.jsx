@@ -17,7 +17,7 @@ function P({ children }) {
 
 function Ul({ items }) {
   return (
-    <ul className="list-disc list-inside space-y-1 text-gray-700 leading-relaxed marker:text-gray-400 dark:text-gray-200">
+    <ul className="list-disc list-inside space-y-1 text-gray-700 leading-relaxed marker:text-gray-500 dark:marker:text-gray-400 dark:text-gray-200">
       {items.map((item, i) => <li key={i}>{item}</li>)}
     </ul>
   )
@@ -33,19 +33,19 @@ export default function LegalLayout({ title, children }) {
     return () => { document.title = 'שחף+' }
   }, [title])
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 dark:text-gray-400"
+          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-6 dark:text-gray-300 dark:hover:text-gray-100"
         >
           <ChevronRight size={16} />
           חזרה
         </button>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 sm:p-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1 dark:text-gray-100">{title}</h1>
-          <p className="text-xs text-gray-400 mb-6 pb-6 border-b border-gray-100">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
             עודכן לאחרונה: יוני 2026
           </p>
           <div className="space-y-7 text-sm">
@@ -53,14 +53,14 @@ export default function LegalLayout({ title, children }) {
           </div>
         </div>
 
-        <div className="flex justify-center gap-4 mt-6 text-xs text-gray-400">
-          <Link to="/legal/terms" className="hover:text-gray-600 dark:text-gray-300">תנאי שימוש</Link>
+        <div className="flex justify-center gap-4 mt-6 text-xs text-gray-600 dark:text-gray-400">
+          <Link to="/legal/terms" className="hover:text-gray-900 dark:hover:text-gray-100">תנאי שימוש</Link>
           <span>·</span>
-          <Link to="/legal/privacy" className="hover:text-gray-600 dark:text-gray-300">מדיניות פרטיות</Link>
+          <Link to="/legal/privacy" className="hover:text-gray-900 dark:hover:text-gray-100">מדיניות פרטיות</Link>
           <span>·</span>
-          <Link to="/legal/accessibility" className="hover:text-gray-600 dark:text-gray-300">הצהרת נגישות</Link>
+          <Link to="/legal/accessibility" className="hover:text-gray-900 dark:hover:text-gray-100">הצהרת נגישות</Link>
         </div>
-        <p className="text-center text-gray-400 text-xs mt-2">
+        <p className="text-center text-gray-600 dark:text-gray-400 text-xs mt-2">
           שחף+ © {new Date().getFullYear()}
         </p>
       </div>
