@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'logo.png'],
+      includeAssets: ['favicon-32.png', 'favicon-64.png', 'apple-touch-icon.png', 'logo.png', 'mark.png'],
       manifest: {
         name: 'שחף+',
         short_name: 'שחף+',
