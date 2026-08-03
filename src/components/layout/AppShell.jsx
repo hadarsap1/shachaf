@@ -263,7 +263,7 @@ function SidebarContent({ links, unreadMessages, unreadFeedback, openTaskCount, 
       {/* Logo */}
       <div className="px-4 py-3 border-b border-white/10 flex-shrink-0">
         <div className="bg-white/95 rounded-2xl px-3 py-2">
-          <img src="/logo.png" alt="קהילת שחף" className="h-14 w-auto mx-auto object-contain" />
+          <img src="/logo.png" alt="שחף+" className="h-14 w-auto mx-auto object-contain" />
         </div>
       </div>
 
@@ -440,7 +440,7 @@ export default function AppShell() {
 
   // Descriptive per-page document title (WCAG 2.4.2)
   useEffect(() => {
-    document.title = pageTitle ? `${pageTitle} — קהילת שחף` : 'קהילת שחף'
+    document.title = pageTitle ? `${pageTitle} — שחף+` : 'שחף+'
   }, [pageTitle])
 
   const sidebarBg = 'bg-[#0d1b35]'
@@ -488,7 +488,7 @@ export default function AppShell() {
                 <X size={20} />
               </button>
               <div className="bg-white/95 rounded-xl px-3 py-2">
-                <img src="/logo.png" alt="קהילת שחף" className="h-12 w-auto object-contain" />
+                <img src="/logo.png" alt="שחף+" className="h-12 w-auto object-contain" />
               </div>
             </div>
             <nav aria-label="ניווט ראשי" className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
@@ -543,7 +543,7 @@ export default function AppShell() {
           {pageTitle ? (
             <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">{pageTitle}</span>
           ) : (
-            <img src="/logo.png" alt="שחף" className="h-8 w-auto" />
+            <img src="/logo.png" alt="שחף+" className="h-8 w-auto" />
           )}
           <button
             onClick={toggleTheme}

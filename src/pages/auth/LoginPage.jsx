@@ -43,8 +43,8 @@ export default function LoginPage() {
 
   // Descriptive page title (WCAG 2.4.2)
   useEffect(() => {
-    document.title = 'התחברות — קהילת שחף'
-    return () => { document.title = 'קהילת שחף' }
+    document.title = 'התחברות — שחף+'
+    return () => { document.title = 'שחף+' }
   }, [])
 
   // Redirect when user becomes authenticated (handles iOS redirect return)
@@ -182,7 +182,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="bg-white rounded-3xl shadow-modal px-8 py-5 inline-block mb-3 dark:bg-gray-800">
-            <img src="/logo.png" alt="שחף" className="h-20 w-auto mx-auto" />
+            <img src="/logo.png" alt="שחף+" className="h-20 w-auto mx-auto" />
           </div>
           <p className="text-primary-100 text-sm">הפלטפורמה הקהילתית שלנו</p>
         </div>
@@ -261,7 +261,7 @@ export default function LoginPage() {
                 {mode === 'register' ? 'יצירת חשבון' : 'כניסה לחשבון'}
               </h2>
               <p className="text-sm text-gray-500 text-center mb-6 dark:text-gray-400">
-                {mode === 'register' ? 'הצטרפו לקהילת שחף' : 'ברוכים הבאים לשחף'}
+                {mode === 'register' ? 'הצטרפו לשחף+' : 'ברוכים הבאים לשחף+'}
               </p>
 
               {/* Google */}
@@ -424,7 +424,7 @@ export default function LoginPage() {
           <Link to="/legal/accessibility" className="underline hover:text-white">הצהרת נגישות</Link>
         </p>
         <p className="text-center text-primary-200 text-xs mt-2">
-          קהילת שחף © {new Date().getFullYear()}
+          שחף+ © {new Date().getFullYear()}
         </p>
       </div>
     </div>

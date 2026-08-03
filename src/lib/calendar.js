@@ -26,7 +26,7 @@ function buildDescription(event) {
   if (tbd.includes('location')) parts.push('מיקום יפורסם בהמשך')
   if (event.isRequired) parts.push('כולם מוזמנים')
 
-  parts.push('נשלח מקהילת שחף')
+  parts.push('נשלח משחף+')
   return parts.join('\n')
 }
 
@@ -137,7 +137,7 @@ export function buildICSContent({ title, start, end, location, description = '' 
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//קהילת שחף//events//HE',
+    'PRODID:-//שחף+//events//HE',
     'CALSCALE:GREGORIAN',
     ...VTIMEZONE,
     'BEGIN:VEVENT',

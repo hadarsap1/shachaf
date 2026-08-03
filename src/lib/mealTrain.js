@@ -229,7 +229,7 @@ export function mealTrainInviteMessage(train, url) {
   }
 
   lines.push('')
-  lines.push('לשריון תאריך באפליקציה:')
+  lines.push('לשריון תאריך בשחף+:')
   if (url) lines.push(url)
   if (train.contactPhone) {
     lines.push('')

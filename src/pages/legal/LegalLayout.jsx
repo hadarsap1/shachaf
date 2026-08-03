@@ -29,8 +29,8 @@ export default function LegalLayout({ title, children }) {
   const navigate = useNavigate()
   // Descriptive per-page document title (WCAG 2.4.2)
   useEffect(() => {
-    document.title = `${title} — קהילת שחף`
-    return () => { document.title = 'קהילת שחף' }
+    document.title = `${title} — שחף+`
+    return () => { document.title = 'שחף+' }
   }, [title])
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -61,7 +61,7 @@ export default function LegalLayout({ title, children }) {
           <Link to="/legal/accessibility" className="hover:text-gray-600 dark:text-gray-300">הצהרת נגישות</Link>
         </div>
         <p className="text-center text-gray-400 text-xs mt-2">
-          קהילת שחף © {new Date().getFullYear()}
+          שחף+ © {new Date().getFullYear()}
         </p>
       </div>
     </div>

@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'logo.png'],
       manifest: {
-        name: 'קהילת שחף',
-        short_name: 'שחף',
-        description: 'הפלטפורמה הקהילתית של קהילת שחף',
+        name: 'שחף+',
+        short_name: 'שחף+',
+        description: 'שחף+ — הפלטפורמה הקהילתית של קהילת שחף',
         theme_color: '#2563EB',
         background_color: '#ffffff',
         display: 'standalone',

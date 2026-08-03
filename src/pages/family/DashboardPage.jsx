@@ -527,7 +527,7 @@ export default function DashboardPage() {
           <div className="flex-1">
             <p className="text-primary-100 text-sm font-medium">{timeGreeting()}</p>
             <h1 className="text-2xl font-black mt-0.5">{user?.name}</h1>
-            <p className="text-primary-100 text-sm mt-1">ברוכים הבאים לקהילת שחף!</p>
+            <p className="text-primary-100 text-sm mt-1">ברוכים הבאים לשחף+!</p>
             <div className="mt-3 flex items-center gap-4">
               <div className="text-center">
                 <div className="text-xl font-black">{events.length}</div>

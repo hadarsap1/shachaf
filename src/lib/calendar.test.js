@@ -137,7 +137,7 @@ describe('buildCalendarData — details that would otherwise be lost', () => {
   it('marks a community-wide event and signs the source', () => {
     const d = buildCalendarData({ title: 'x', date: '2026-09-01', isRequired: true })
     expect(d.description).toContain('כולם מוזמנים')
-    expect(d.description).toContain('קהילת שחף')
+    expect(d.description).toContain('שחף+')
   })
 })
 
