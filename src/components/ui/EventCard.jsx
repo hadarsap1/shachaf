@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Clock, Plus } from 'lucide-react'
+import { Calendar, MapPin, Clock, CalendarPlus, Download } from 'lucide-react'
 import clsx from 'clsx'
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent, isEventPast } from '../../lib/calendar'
 import DietaryBadges from './DietaryBadges'
@@ -93,15 +93,15 @@ export default function EventCard({ event, onCardClick }) {
               onClick={e => { e.stopPropagation(); handleAddToCalendar() }}
               className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium dark:bg-primary-900/30 dark:hover:bg-primary-900/50 dark:border-primary-800"
             >
-              <Plus size={13} />
-              Google Calendar
+              <CalendarPlus size={13} />
+              הוספה ליומן Google
             </button>
             <button
               onClick={e => { e.stopPropagation(); handleDownloadICS() }}
               className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg transition-[background-color,scale] duration-150 active:scale-[0.96] font-medium dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
             >
-              <Calendar size={13} />
-              יומן (.ics)
+              <Download size={13} />
+              הורדה ליומן (.ics)
             </button>
           </div>
         )}

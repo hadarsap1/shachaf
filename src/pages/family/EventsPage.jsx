@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees, getMealTrains } from '../../lib/db'
 import { myMealTrainEvents } from '../../lib/mealTrain'
 import { isEventVisibleTo } from '../../lib/eventVisibility'
+import { isEventPast } from '../../lib/calendar'
 import EventCard from '../../components/ui/EventCard'
 import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
 import QuickEventModal from '../../components/QuickEventModal'
 import { useAuth } from '../../context/AuthContext'
-import { Calendar, List, Loader2, Plus } from 'lucide-react'
+import { Calendar, List, Loader2, Plus, History } from 'lucide-react'
 import clsx from 'clsx'
 
 const BASE_FILTERS = [
@@ -49,6 +50,8 @@ export default function EventsPage() {
   const [loading, setLoading]         = useState(true)
   const [displayMode, setDisplayMode] = useState('calendar')
   const [filterValue, setFilterValue] = useState('all')
+  // Finished events are out of the way by default — still one click away
+  const [showPast, setShowPast] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [birthdays, setBirthdays] = useState([])
   // group/committee ids the user belongs to — used to show members-only events
@@ -124,10 +127,12 @@ export default function EventsPage() {
   const entityIds = [...myEntityIds]
   // Your own meal-train commitments always ride along — they're personal, so no
   // audience filter applies to them; clicking one opens the pot itself.
-  const filteredEvents = [
+  const visibleEvents = [
     ...events.filter(ev => matchesFilter(ev, filterValue, entityIds)),
     ...mealTrainEvents,
   ]
+  const pastCount = visibleEvents.filter(ev => isEventPast(ev)).length
+  const filteredEvents = showPast ? visibleEvents : visibleEvents.filter(ev => !isEventPast(ev))
 
   const openEvent = (ev) => {
     if (ev.mealTrainId) navigate(`/meal-trains?train=${ev.mealTrainId}`)
@@ -182,13 +187,30 @@ export default function EventsPage() {
             <span className="text-2xl leading-none">📅</span>
             אירועים קרובים
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">{filteredEvents.filter(e => e.date >= new Date().toISOString().slice(0,10)).length} אירועים מתוכננים</p>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">
+            {visibleEvents.filter(e => !isEventPast(e)).length} אירועים מתוכננים
+          </p>
         </div>
       </div>
 
       {/* ── Filter chips ── */}
       {!loading && (
         <div className="flex gap-2 mb-5 flex-wrap">
+          {pastCount > 0 && (
+            <button
+              onClick={() => setShowPast(p => !p)}
+              aria-pressed={showPast}
+              className={clsx(
+                'px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0 flex items-center gap-1.5',
+                showPast
+                  ? 'bg-gray-700 text-white dark:bg-gray-600'
+                  : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+              )}
+            >
+              <History size={13} />
+              {showPast ? 'הסתר אירועים שהסתיימו' : `אירועי עבר (${pastCount})`}
+            </button>
+          )}
           {filterOptions.map(opt => (
             <button
               key={opt.value}
@@ -239,7 +261,13 @@ export default function EventsPage() {
               {filterValue === 'all' ? (
                 <>
                   <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
-                  <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+                  {pastCount > 0 && !showPast ? (
+                    <button onClick={() => setShowPast(true)} className="text-sm mt-1 text-primary-600 dark:text-primary-400 hover:underline">
+                      הצג {pastCount} אירועים שהסתיימו
+                    </button>
+                  ) : (
+                    <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+                  )}
                 </>
               ) : (
                 <>
@@ -259,7 +287,13 @@ export default function EventsPage() {
           {filterValue === 'all' ? (
             <>
               <p className="font-semibold text-gray-500 dark:text-gray-400">אין אירועים קרובים</p>
-              <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+              {pastCount > 0 && !showPast ? (
+                <button onClick={() => setShowPast(true)} className="text-sm mt-1 text-primary-600 dark:text-primary-400 hover:underline">
+                  הצג {pastCount} אירועים שהסתיימו
+                </button>
+              ) : (
+                <p className="text-sm mt-1">האירועים הקרובים יופיעו כאן</p>
+              )}
             </>
           ) : (
             <>
