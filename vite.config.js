@@ -3,6 +3,8 @@ import { configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const BUILD_ID = new Date().toISOString().slice(0, 16).replace('T', ' ')
+
 export default defineConfig(({ mode }) => ({
   // Vitest transforms JSX with esbuild (plugin-react's babel transform only
   // runs in serve/build) — use the automatic runtime so component tests work.
@@ -16,6 +18,10 @@ export default defineConfig(({ mode }) => ({
       // firestore-rules test needs the emulator — run via `npm run test:rules`
       'tests/**',
     ],
+  },
+  define: {
+    // Stamped into the bundle so a user can report which version they run
+    __APP_VERSION__: JSON.stringify(BUILD_ID),
   },
   plugins: [
     react(),

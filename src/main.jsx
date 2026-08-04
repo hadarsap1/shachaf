@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.jsx'
+import { startUpdateWatch } from './lib/appUpdate'
 
 // PWA: the service worker updates with skipWaiting+clientsClaim, so a new
 // deploy takes over a RUNNING page mid-session. That silently breaks the
@@ -16,6 +17,14 @@ if ('serviceWorker' in navigator) {
     if (hadController) window.location.reload()
     hadController = true
   })
+
+  // An installed app can stay open for days without ever checking for a new
+  // deploy — that is how a phone ends up on last week's build while the
+  // website is current. Ask the browser to look, every time the app comes back
+  // to the foreground and on a slow timer while it is open.
+  navigator.serviceWorker.ready
+    .then(reg => startUpdateWatch(reg))
+    .catch(() => {})
 }
 
 // Error monitoring — no-op unless a DSN is configured
