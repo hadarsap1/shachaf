@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent, getUsersByUids, logConsent } from '../../lib/db'
 import { CONSENT_VERSION, hasConsented } from '../../lib/consent'
+import { APP_VERSION } from '../../lib/appUpdate'
+import { clearAppCaches } from '../../lib/hardReload'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X, Calendar } from 'lucide-react'
@@ -456,6 +458,7 @@ function ChildProfileCard({ child, user }) {
 export default function SettingsPage() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const [updating, setUpdating] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -764,6 +767,36 @@ export default function SettingsPage() {
             {theme === 'dark' ? 'מצב כהה' : 'מצב בהיר'}
           </span>
         </div>
+      </section>
+
+      {/* Version + manual update — an installed app can otherwise sit on an old
+          build without the user having any way to tell, or to fix it. */}
+      <section className="card p-5 mb-6">
+        <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2 justify-end dark:text-gray-200">
+          <span className="text-base">🔄</span>
+          גרסה ועדכונים
+        </h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <button
+            onClick={async () => {
+              setUpdating(true)
+              await clearAppCaches()
+              window.location.reload()
+            }}
+            disabled={updating}
+            className="text-sm font-medium px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-primary-400 hover:text-primary-600 disabled:opacity-50"
+          >
+            {updating ? 'מעדכן…' : 'בדיקת עדכון עכשיו'}
+          </button>
+          <div className="text-right">
+            <p className="text-sm text-gray-700 dark:text-gray-200">גרסת האפליקציה</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400" dir="ltr">{APP_VERSION}</p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-3 text-right leading-relaxed">
+          האפליקציה מתעדכנת לבד כשפותחים אותה. אם משהו נראה תקוע או ישן —
+          הכפתור הזה מוריד את הגרסה העדכנית ומנקה את המטמון.
+        </p>
       </section>
     </div>
   )

@@ -23,6 +23,18 @@ export const GOOGLE_PENDING_KEY = 'shachaf_google_pending'
 
 const PROFILE_TIMEOUT_MS = 12000
 
+// Running as an installed app (Android WebAPK / iOS standalone) rather than in
+// a browser tab.
+export function isStandalone() {
+  return typeof window !== 'undefined' && (
+    window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
+    document.referrer.startsWith('android-app://')
+  )
+}
+
 // Firestore's channel can stall without ever rejecting — every await that gates
 // the loading state needs a deadline of its own.
 function withTimeout(promise, ms) {
@@ -191,19 +203,29 @@ export function AuthProvider({ children }) {
     return cred
   }
 
-  // Google sign-in — popup first, everywhere.
+  // Google sign-in — the method depends on where the app is running, not on
+  // which OS it is.
   //
-  // We used to send every iOS device down signInWithRedirect. That path is the
-  // fragile one: browsers that partition third-party storage can drop the
-  // pending redirect, and the user lands back on the login screen signed out,
-  // with nothing to explain it. A popup keeps the whole exchange on this page.
+  // Installed on Android, `window.open` hands the page to a Custom Tab, and a
+  // Custom Tab cannot message the opener back. signInWithPopup then waits for a
+  // reply that can never arrive: the button spins forever, and the same account
+  // signs in fine from the browser. That is the bug users hit. Anything running
+  // standalone therefore uses the full-page redirect, which a WebAPK completes
+  // in-app.
   //
-  // Redirect stays as the fallback for the environments that genuinely cannot
-  // open one (in-app webviews, standalone PWAs). `redirected: true` tells the
-  // caller the page is about to navigate away.
+  // In a normal browser tab the popup is the better path: it keeps the exchange
+  // on this page instead of relying on a redirect that browsers with partitioned
+  // storage can drop.
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider()
     provider.setCustomParameters({ prompt: 'select_account' })
+
+    if (isStandalone()) {
+      try { localStorage.setItem(GOOGLE_PENDING_KEY, String(Date.now())) } catch {}
+      await signInWithRedirect(auth, provider)
+      return { redirected: true }
+    }
+
     try {
       return await signInWithPopup(auth, provider)
     } catch (err) {

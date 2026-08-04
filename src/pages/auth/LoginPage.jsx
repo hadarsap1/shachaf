@@ -329,9 +329,10 @@ export default function LoginPage() {
                     ביטול
                   </button>
                 </div>
-              ) : isStandalone() ? (
-                // window.open is blocked in standalone WKWebView.
-                // A real <a target="_blank"> tap IS honored by iOS and opens in Safari.
+              ) : (isIOS() && isStandalone()) ? (
+                // Only iOS needs this. A standalone WKWebView cannot finish the
+                // redirect, but a real <a target="_blank"> tap opens Safari,
+                // which shares this origin's auth storage with the app.
                 <a
                   href={`${window.location.origin}/login?google=1`}
                   target="_blank"
