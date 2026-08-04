@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
 import AppShell from './components/layout/AppShell'
+import Spinner from './components/ui/AppSpinner'
 import AccessibilityWidget from './components/AccessibilityWidget'
 import ConsentModal from './components/ConsentModal'
 import { needsConsent } from './lib/consent'
@@ -54,15 +55,6 @@ const AdminResourcesPage        = lazy(() => import('./pages/admin/AdminResource
 const AdminEmergencyPage        = lazy(() => import('./pages/admin/AdminEmergencyPage'))
 const AdminCommunityGroupsPage  = lazy(() => import('./pages/admin/AdminCommunityGroupsPage'))
 const OnboardingPage             = lazy(() => import('./pages/family/OnboardingPage'))
-
-const Spinner = () => (
-  <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
-    <div className="bg-white/95 rounded-2xl px-5 py-3 mb-6 shadow-sm">
-      <img src="/logo.png" alt="שחף+" className="h-14 w-auto" />
-    </div>
-    <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-  </div>
-)
 
 // Routes alumni (graduated families) may still use — business directory,
 // their own settings, help, and contact. Everything else redirects.

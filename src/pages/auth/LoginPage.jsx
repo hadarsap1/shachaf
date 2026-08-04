@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth, GOOGLE_PENDING_KEY } from '../../context/AuthContext'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -13,8 +13,10 @@ const DEMO_ROLES = [
 
 const ROLE_PATH = { newFamily: '/dashboard', hostFamily: '/dashboard', admin: '/admin', superAdmin: '/admin' }
 
-const GOOGLE_PENDING_KEY = 'shachaf_google_pending'
-const GOOGLE_PENDING_TTL = 2 * 60 * 1000 // 2 minutes
+const GOOGLE_PENDING_TTL = 2 * 60 * 1000   // a redirect that takes longer than this is gone
+const GOOGLE_WAIT_GIVEUP_MS = 30 * 1000    // stop waiting for a redirect and say so
+const GOOGLE_CALL_TIMEOUT_MS = 90 * 1000   // generous: the user may be typing a password
+const RELOAD_GUARD_KEY = 'shachaf_google_reloaded'
 
 function isIOS() {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -38,7 +40,7 @@ function consumeStaleGooglePending() {
 }
 
 export default function LoginPage() {
-  const { user, loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword } = useAuth()
+  const { user, authError, clearAuthError, loginDemo, loginWithEmail, loginWithGoogle, registerWithEmail, resetPassword } = useAuth()
   const navigate = useNavigate()
 
   // Descriptive page title (WCAG 2.4.2)
@@ -51,6 +53,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
       localStorage.removeItem(GOOGLE_PENDING_KEY)
+      sessionStorage.removeItem(RELOAD_GUARD_KEY)
       setAwaitingGoogleReturn(false)
       navigate(
         user.role === 'admin' || user.role === 'super_admin' ? '/admin' : '/dashboard',
@@ -66,7 +69,12 @@ export default function LoginPage() {
   useEffect(() => {
     if (!isIOS() || !localStorage.getItem(GOOGLE_PENDING_KEY)) return
     const onVisible = () => {
-      if (!document.hidden) window.location.reload()
+      if (document.hidden) return
+      // Reload at most once per attempt. Reloading on every return turned a
+      // failed sign-in into an endless refresh loop that reads as "stuck".
+      if (sessionStorage.getItem(RELOAD_GUARD_KEY)) return
+      sessionStorage.setItem(RELOAD_GUARD_KEY, '1')
+      window.location.reload()
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
@@ -86,6 +94,29 @@ export default function LoginPage() {
     () => isIOS() && consumeStaleGooglePending()
   )
 
+  // Never wait forever. If the session has not arrived by now it is not coming,
+  // and the user needs to be told rather than left watching a spinner.
+  useEffect(() => {
+    if (!awaitingGoogleReturn) return
+    const t = setTimeout(() => {
+      localStorage.removeItem(GOOGLE_PENDING_KEY)
+      sessionStorage.removeItem(RELOAD_GUARD_KEY)
+      setAwaitingGoogleReturn(false)
+      setError('לא הצלחנו להשלים את הכניסה עם Google. נסו שוב, או היכנסו עם מייל וסיסמה.')
+    }, GOOGLE_WAIT_GIVEUP_MS)
+    return () => clearTimeout(t)
+  }, [awaitingGoogleReturn])
+
+  // Opened from the installed app ("המשך עם Google" hands off to the browser):
+  // start the Google flow immediately instead of showing the same login screen
+  // again and expecting the user to find the button a second time.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get('google')) return
+    window.history.replaceState({}, '', '/login')
+    handleGoogle()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Called by the standalone anchor tag's onClick — sets state but lets the
   // default anchor navigation open Safari (window.open is blocked in WKWebView)
   const handleGoogleStandaloneClick = () => {
@@ -95,16 +126,24 @@ export default function LoginPage() {
 
   const handleGoogle = async () => {
     setError('')
+    clearAuthError?.()
     setGoogleLoading(true)
     try {
-      if (isIOS()) {
-        localStorage.setItem(GOOGLE_PENDING_KEY, String(Date.now()))
-        setAwaitingGoogleReturn(true)
-      }
-      await loginWithGoogle()
-      // useEffect on user handles navigation (admin → /admin, others → /dashboard)
+      // signInWithPopup never settles if the popup is swallowed by an in-app
+      // browser, or if the device cannot reach Google. Without a deadline the
+      // button just spins — which is exactly what "it loads forever" looks like.
+      const res = await Promise.race([
+        loginWithGoogle(),
+        new Promise((_, reject) => setTimeout(
+          () => reject(Object.assign(new Error('timeout'), { code: 'app/google-timeout' })),
+          GOOGLE_CALL_TIMEOUT_MS)),
+      ])
+      // Only a redirect leaves this page; a popup resolves right here and the
+      // effect on `user` does the navigating.
+      if (res?.redirected) setAwaitingGoogleReturn(true)
     } catch (err) {
       localStorage.removeItem(GOOGLE_PENDING_KEY)
+      sessionStorage.removeItem(RELOAD_GUARD_KEY)
       setAwaitingGoogleReturn(false)
       const msg = firebaseError(err.code)
       if (msg) setError(msg)
@@ -264,6 +303,12 @@ export default function LoginPage() {
                 {mode === 'register' ? 'הצטרפו לשחף+' : 'ברוכים הבאים לשחף+'}
               </p>
 
+              {authError && (
+                <p className="text-sm text-red-600 dark:text-red-300 text-right mb-3 bg-red-50 dark:bg-red-900/30 rounded-xl px-3 py-2">
+                  {authError}
+                </p>
+              )}
+
               {/* Google */}
               {awaitingGoogleReturn ? (
                 <div className="w-full flex flex-col items-center gap-2 border border-primary-200 bg-primary-50 rounded-xl py-3 px-4 text-sm text-primary-700 mb-4 dark:text-primary-300 dark:bg-primary-900/30">
@@ -288,7 +333,7 @@ export default function LoginPage() {
                 // window.open is blocked in standalone WKWebView.
                 // A real <a target="_blank"> tap IS honored by iOS and opens in Safari.
                 <a
-                  href={window.location.href}
+                  href={`${window.location.origin}/login?google=1`}
                   target="_blank"
                   rel="noreferrer"
                   onClick={handleGoogleStandaloneClick}
@@ -299,14 +344,23 @@ export default function LoginPage() {
                 </a>
               ) : (
                 <button type="button" onClick={handleGoogle} disabled={googleLoading || loading !== null}
-                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700/50">
+                  className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 mb-4 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700/50 disabled:opacity-70">
                   {googleLoading
                     ? <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                     : <GoogleIcon />
                   }
-                  המשך עם Google
+                  {googleLoading ? 'ממתין לחלון Google…' : 'המשך עם Google'}
                 </button>
               )}
+              {googleLoading ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-4">
+                  השלימו את הכניסה בחלון של Google.{' '}
+                  <button type="button" onClick={() => setGoogleLoading(false)}
+                    className="underline hover:text-gray-700 dark:hover:text-gray-200">
+                    לא נפתח חלון? חזרה לכניסה עם מייל
+                  </button>
+                </p>
+              ) : null}
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
@@ -453,7 +507,14 @@ function firebaseError(code) {
     'auth/too-many-requests':     'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
     'auth/popup-blocked':         'הדפדפן חסם את חלון Google — אפשר חלונות קופצים ונסה שוב',
     'auth/unauthorized-domain':   'הדומיין לא מורשה ב-Firebase — פנה למנהל',
-    'auth/cancelled-popup-request': null, // silently ignore
+    'auth/cancelled-popup-request': null,  // a second click — ignore
+    'auth/popup-closed-by-user':  'חלון Google נסגר לפני סיום הכניסה — נסו שוב',
+    'auth/user-cancelled':        null,
+    'auth/account-exists-with-different-credential':
+      'קיים כבר חשבון עם כתובת המייל הזו. היכנסו עם מייל וסיסמה.',
+    'app/google-timeout':
+      'הכניסה עם Google לא הסתיימה. בדקו שהדפדפן לא חוסם חלונות קופצים, ' +
+      'או היכנסו עם מייל וסיסמה.',
     'auth/network-request-failed': 'בעיית רשת — בדוק את החיבור לאינטרנט',
   }
   if (code in map) return map[code]  // null = silent
