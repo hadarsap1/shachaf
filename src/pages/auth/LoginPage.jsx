@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth, GOOGLE_PENDING_KEY } from '../../context/AuthContext'
+import LoginHelpButton from '../../components/LoginHelpButton'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -478,6 +479,13 @@ export default function LoginPage() {
         <p className="text-center text-white/90 text-xs mt-2">
           <Link to="/legal/accessibility" className="underline hover:text-white font-medium">הצהרת נגישות</Link>
         </p>
+
+        {/* The only report channel for someone who cannot get past this screen.
+            Carries whatever error they just hit, so the report arrives with the
+            actual failure instead of "it doesn't work". */}
+        <div className="mt-4">
+          <LoginHelpButton context="login" lastError={error || authError || ''} />
+        </div>
         <p className="text-center text-white/90 text-xs mt-2">
           שחף+ © {new Date().getFullYear()}
         </p>

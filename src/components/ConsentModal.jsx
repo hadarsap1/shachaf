@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ShieldCheck, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../context/AuthContext'
+import LoginHelpButton from './LoginHelpButton'
 import { recordConsent } from '../lib/db'
 import {
   CONSENT_VERSION, CONSENT_PURPOSES, CONSENT_EXPOSURE,
@@ -104,6 +105,11 @@ export default function ConsentModal() {
               className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 border border-gray-200 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700">
               לא מאשר/ת
             </button>
+          </div>
+          {/* This dialog replaces the app shell, so the usual feedback button
+              is not on screen — anyone stuck here would have no way to say so. */}
+          <div className="pt-1 [&_button]:text-gray-400 [&_button]:hover:text-gray-600 dark:[&_button]:text-gray-500">
+            <LoginHelpButton context="consent" />
           </div>
         </div>
       </div>

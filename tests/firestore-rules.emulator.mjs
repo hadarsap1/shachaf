@@ -367,6 +367,42 @@ await check('a family CANNOT wipe another family\'s completion',
 await check('a family CAN add itself next to another family\'s completion',
   updateDoc(doc(parent, 'tasks', 'taskProgressShared'), { doneBy: ['stranger1', 'parent1'] }), 'allow')
 
+console.log('\n— login-screen bug reports (the only unauthenticated write) —')
+{
+  const anon = env.unauthenticatedContext().firestore()
+  const report = (over = {}) => ({
+    text: 'לחצתי כניסה עם Google והמסך נתקע',
+    submittedBy: { uid: '', name: 'דיווח ממסך הכניסה', email: 'stuck@x.com' },
+    source: 'login', diagnostics: 'login · דפדפן · Chrome', screenshotUrl: null,
+    status: 'new', createdAt: new Date(), ...over,
+  })
+  await check('someone who cannot sign in CAN file a report',
+    setDoc(doc(anon, 'feedback', 'rep1'), report()), 'allow')
+  await check('an anonymous caller CANNOT read the feedback inbox',
+    getDocs(collection(anon, 'feedback')), 'deny')
+  await check('an anonymous caller CANNOT read a single report',
+    getDoc(doc(anon, 'feedback', 'rep1')), 'deny')
+  await check('an anonymous report CANNOT impersonate a member',
+    setDoc(doc(anon, 'feedback', 'rep2'),
+      report({ submittedBy: { uid: 'parent1', name: 'Parent', email: 'parent@x.com' } })), 'deny')
+  await check('an anonymous report CANNOT arrive pre-resolved',
+    setDoc(doc(anon, 'feedback', 'rep3'), report({ status: 'resolved' })), 'deny')
+  await check('an anonymous report CANNOT carry an oversized body',
+    setDoc(doc(anon, 'feedback', 'rep4'), report({ text: 'א'.repeat(1001) })), 'deny')
+  await check('an anonymous report CANNOT be empty',
+    setDoc(doc(anon, 'feedback', 'rep5'), report({ text: '' })), 'deny')
+  await check('an anonymous report CANNOT smuggle extra fields',
+    setDoc(doc(anon, 'feedback', 'rep6'), report({ adminReply: 'הוזרק' })), 'deny')
+  await check('an anonymous report CANNOT point a screenshot anywhere',
+    setDoc(doc(anon, 'feedback', 'rep7'), report({ screenshotUrl: 'https://evil.test/x.png' })), 'deny')
+  await check('an anonymous caller CANNOT edit a report after filing it',
+    updateDoc(doc(anon, 'feedback', 'rep1'), { text: 'שונה' }), 'deny')
+  await check('an anonymous caller CANNOT write anywhere else',
+    setDoc(doc(anon, 'events', 'evAnon'), { title: 'מזויף', date: '2030-01-01' }), 'deny')
+  await check('an admin CAN read the reports that came in',
+    getDocs(collection(admin, 'feedback')), 'allow')
+}
+
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
   getDocs(query(collection(stranger, 'children'), where('parentEmails', 'array-contains', 'parent@x.com'))), 'deny')

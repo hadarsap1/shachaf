@@ -35,6 +35,11 @@ let currentConsole = []
 // ── Harness ───────────────────────────────────────────────────────────────────
 async function step(name, fn) {
   const started = Date.now()
+  // Start each step with empty buckets. Closing a browser context cancels
+  // whatever it still had in flight, and those aborted requests would
+  // otherwise be blamed on whichever step ran next.
+  currentConsole = []
+  currentFailedRequests = []
   try {
     await fn()
     results.push({ name, status: 'pass', ms: Date.now() - started })
@@ -276,6 +281,20 @@ async function main() {
           assertClean(path)
         })
       }
+
+      // The one report channel available to someone who cannot get in at all.
+      await step('מי שלא מצליח להתחבר יכול לשלוח דיווח ממסך הכניסה', async () => {
+        await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' })
+        await page.getByRole('button', { name: /לא מצליחים להיכנס/ }).click()
+        const dialog = page.getByRole('dialog', { name: 'דיווח על בעיית התחברות' })
+        await dialog.waitFor({ timeout: 10000 })
+        await dialog.getByLabel('מה קרה?').fill('לחצתי על כניסה עם Google והמסך נתקע בטעינה')
+        await dialog.getByLabel(/מייל או טלפון לחזרה/).fill('stuck@e2e.test')
+        await dialog.getByRole('button', { name: 'שליחת הדיווח' }).click()
+        await page.getByText('הדיווח נשלח').waitFor({ timeout: 15000 })
+        await shoot(page, 'login-report')
+        assertClean('דיווח ממסך הכניסה')
+      })
 
       await step('נתיב לא מוכר מפנה למסך הכניסה', async () => {
         await page.goto(`${BASE}/no-such-page`, { waitUntil: 'domcontentloaded' })
@@ -525,6 +544,19 @@ async function main() {
         await page.goto(`${BASE}/admin/users`, { waitUntil: 'domcontentloaded' })
         await expectText(page, ACCOUNTS.parent.name)
         await shoot(page, 'admin-users')
+      })
+
+      // The report filed from the login screen has to actually land somewhere
+      // a human looks — a report nobody reads is worse than no report.
+      await step('הדיווח ממסך הכניסה מגיע לתיבת המשוב של המנהל הראשי', async () => {
+        const su = await newPage({ width: 1440, height: 900 })
+        await login(su, ACCOUNTS.super)
+        await su.waitForURL(/\/admin/, { timeout: 25000 })
+        await su.goto(`${BASE}/super/feedback`, { waitUntil: 'domcontentloaded' })
+        await expectText(su, 'לחצתי על כניסה עם Google')
+        await expectText(su, 'לא הצליח להתחבר')
+        await shoot(su, 'admin-feedback-login-report')
+        await su.context().close()
       })
       await page.context().close()
     }

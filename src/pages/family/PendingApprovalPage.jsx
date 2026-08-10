@@ -1,5 +1,6 @@
 import { Clock3, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import LoginHelpButton from '../../components/LoginHelpButton'
 
 export default function PendingApprovalPage() {
   const { logout } = useAuth()
@@ -19,6 +20,11 @@ export default function PendingApprovalPage() {
         <LogOut size={15} />
         התנתקות
       </button>
+      {/* Rendered outside the app shell, so the feedback button is unreachable
+          from here — and "my approval never came" is exactly the report we want. */}
+      <div className="mt-6 [&_button]:text-gray-400 [&_button]:hover:text-gray-600 dark:[&_button]:text-gray-500">
+        <LoginHelpButton context="pending-approval" />
+      </div>
     </div>
   )
 }
