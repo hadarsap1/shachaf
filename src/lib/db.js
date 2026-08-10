@@ -244,6 +244,16 @@ export async function getAuditLog(max = 200) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
+// Closes the onboarding flag for families that already have everything on file
+// and simply never pressed the wizard's last button (admin-only by rules).
+// Only ever called with the subset `closableOnboarding` returned — a family
+// that is genuinely missing something must stay on the health list.
+async function _markOnboardingComplete(uids) {
+  const batch = writeBatch(db)
+  uids.forEach(uid => batch.update(doc(db, 'users', uid), { onboardingComplete: true }))
+  await batch.commit()
+}
+
 // Backfill for pre-2026-07 imported families — lets them browse the
 // unlinked-children roster during onboarding (admin-only by rules)
 async function _markUsersImported(uids) {
@@ -1446,6 +1456,7 @@ export async function deleteForm(...args) { const r = await _deleteForm(...args)
 export async function updateUserProfile(...args) { const r = await _updateUserProfile(...args); invalidate('users'); return r }
 export async function createMember(...args) { const r = await _createMember(...args); invalidate('users'); return r }
 export async function markUsersImported(...args) { const r = await _markUsersImported(...args); invalidate('users'); return r }
+export async function markOnboardingComplete(...args) { const r = await _markOnboardingComplete(...args); invalidate('users'); return r }
 export async function syncUserClassIds(...args) { const r = await _syncUserClassIds(...args); invalidate('users'); return r }
 export async function deleteUserCompletely(...args) { const r = await _deleteUserCompletely(...args); invalidate('users', 'children', 'childrenBy'); return r }
 export async function saveChild(...args) { const r = await _saveChild(...args); invalidate('children', 'childrenBy'); return r }

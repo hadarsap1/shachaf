@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { onboardingGaps, computeHealthAnomalies } from './health'
+import { onboardingGaps, computeHealthAnomalies, closableOnboarding } from './health'
 import { CONSENT_VERSION } from './consent'
 
 const consented = { consentVersion: CONSENT_VERSION }
@@ -88,5 +88,24 @@ describe('computeHealthAnomalies — onboardingIncomplete', () => {
       users: [{ uid: 'u1', role: 'community', status: 'active' }],
     })
     expect(onboardingIncomplete).toEqual([])
+  })
+})
+
+describe('closableOnboarding', () => {
+  const complete = { uid: 'done', phone: '050-1', ...consented }
+  const missing  = { uid: 'gap' }
+  const children = [{ id: 'c1', classId: 'class-1', parentUids: ['done'] }]
+
+  it('offers only the families with nothing missing', () => {
+    expect(closableOnboarding([complete, missing], children).map(u => u.uid)).toEqual(['done'])
+  })
+
+  it('never offers a family that is genuinely missing something', () => {
+    expect(closableOnboarding([missing], children)).toEqual([])
+  })
+
+  it('is empty when there is nothing to close', () => {
+    expect(closableOnboarding([], children)).toEqual([])
+    expect(closableOnboarding()).toEqual([])
   })
 })

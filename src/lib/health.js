@@ -34,6 +34,14 @@ export function onboardingGaps(user, { children = [] } = {}) {
   }
 }
 
+// The families an admin can close in one action: flagged as unfinished, but
+// with every detail already on file. Closing them only stops the wizard
+// redirect and clears the flag — it never hides a family that is missing
+// something.
+export function closableOnboarding(onboardingIncomplete = [], children = []) {
+  return onboardingIncomplete.filter(u => onboardingGaps(u, { children }).onlyFinalStep)
+}
+
 export function computeHealthAnomalies({ users = [], children = [], classes = [], pending = [] }) {
   // Alumni are intentionally detached (no children/classes) — not anomalies
   const members = users.filter(u => u.role !== 'admin' && u.role !== 'super_admin' && u.status !== 'alumni')
