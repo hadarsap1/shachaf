@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth, GOOGLE_PENDING_KEY } from '../../context/AuthContext'
 import LoginHelpButton from '../../components/LoginHelpButton'
+import { hebrewNameError, normalizeName } from '../../lib/hebrewName'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -177,7 +178,8 @@ export default function LoginPage() {
   const handleRegister = async (e) => {
     e.preventDefault()
     setError('')
-    if (!name.trim()) { setError('נא להזין שם'); return }
+    const nameError = hebrewNameError(name)
+    if (nameError) { setError(nameError); return }
     setLoading('register')
     // Persist role selection so fetchUserProfile can pick it up after auth state change
     if (regRoles.size > 0) {
@@ -187,7 +189,7 @@ export default function LoginPage() {
       try { localStorage.setItem('shachaf_reg_role', JSON.stringify({ role: primary, roles: extras })) } catch {}
     }
     try {
-      await registerWithEmail(email, password, name.trim())
+      await registerWithEmail(email, password, normalizeName(name))
       // useEffect on user handles navigation
     } catch (err) {
       localStorage.removeItem('shachaf_reg_role')
@@ -376,7 +378,8 @@ export default function LoginPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 text-right mb-1 dark:text-gray-200">שם מלא</label>
                       <input value={name} onChange={e => setName(e.target.value)} required
-                        placeholder="שם מלא" className="input w-full text-right" />
+                        placeholder="שם מלא בעברית" className="input w-full text-right" />
+                      <p className="text-xs text-gray-400 mt-1 text-right">בעברית — כך חברי הקהילה יזהו אתכם</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 text-right mb-2 dark:text-gray-200">

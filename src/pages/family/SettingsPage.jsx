@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { hebrewNameError, normalizeName, isHebrewName } from '../../lib/hebrewName'
 import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPhoto, uploadUserAvatar, deleteUserAvatar, registerCoParent, getChildrenByParent, getUsersByUids, logConsent } from '../../lib/db'
 import { CONSENT_VERSION, hasConsented } from '../../lib/consent'
 import { APP_VERSION } from '../../lib/appUpdate'
@@ -168,10 +169,12 @@ function CoParentSection({ currentUser, onRegistered }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) return
+    const nameError = hebrewNameError(form.name)
+    if (nameError) { setError(nameError); return }
     setSaving(true)
     setError('')
     try {
-      const result = await registerCoParent(currentUser, form)
+      const result = await registerCoParent(currentUser, { ...form, name: normalizeName(form.name) })
       setDone(true)
       onRegistered(result)
     } catch (err) {
@@ -251,7 +254,7 @@ function CoParentSection({ currentUser, onRegistered }) {
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
             maxLength={100}
             className="input w-full text-right"
-            placeholder="שם פרטי ומשפחה"
+            placeholder="שם פרטי ומשפחה בעברית"
             required
           />
         </div>
@@ -509,12 +512,16 @@ export default function SettingsPage() {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    // Names are shown to the whole community, so they have to be in Hebrew —
+    // the Firestore rule enforces the same thing on any name change.
+    const nameError = hebrewNameError(form.name)
+    if (nameError) { setSaveError(nameError); return }
     setSaving(true)
     setSaveError('')
     let avatarFailed = false
     try {
       await updateUserProfile(user.uid, {
-        name: form.name,
+        name: normalizeName(form.name),
         phone: form.phone,
         address: form.address,
         workplace: form.workplace,
@@ -564,6 +571,15 @@ export default function SettingsPage() {
           <User size={16} className="text-primary-600" />
           פרטים אישיים
         </h2>
+        {/* Sign-in with Google brings the name from the Google account, which
+            may well be in Latin letters. Nothing breaks, but the roster reads
+            badly — so ask, rather than silently leaving it. */}
+        {user?.name && !isHebrewName(user.name) && (
+          <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 text-right">
+            השם שלכם מופיע כ"{user.name}". בקהילה מציגים שמות בעברית — נשמח
+            שתעדכנו אותו כאן.
+          </div>
+        )}
         <form onSubmit={handleSave} className="space-y-4">
           {/* Avatar upload */}
           <div className="flex justify-center">
@@ -587,8 +603,9 @@ export default function SettingsPage() {
               onChange={e => handleChange('name', e.target.value)}
               maxLength={100}
               className="input w-full text-right"
-              placeholder="שם מלא"
+              placeholder="שם מלא בעברית"
             />
+            <p className="text-xs text-gray-400 mt-1 text-right">בעברית — כך חברי הקהילה יזהו אתכם</p>
           </div>
           <div>
             <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">

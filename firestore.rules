@@ -3,6 +3,27 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId} {
+      // Member names are shown across the community — class roster, contact
+      // sheet, committee lists — so they must be Hebrew: at least one Hebrew
+      // letter, and nothing beyond Hebrew letters, space, hyphen and
+      // apostrophe/geresh (בן-גוריון, ג'ורג').
+      function isHebrewName(n) {
+        return n is string
+               && n.size() > 0
+               && n.size() <= 100
+               && n.matches('^[\\x{05D0}-\\x{05EA}\\x{05F0}-\\x{05F4}\\x{05BE} \'"-]+$')
+               && n.matches('.*[\\x{05D0}-\\x{05EA}].*');
+      }
+
+      // Guards a WRITE, not a document: a name only has to be Hebrew when it is
+      // actually being changed. Automatic writes that never touch it — the
+      // classIds sync on every login, avatar paths, consent stamps — keep
+      // working for members whose name predates this rule.
+      function nameUnchangedOrHebrew() {
+        return request.resource.data.get('name', '') == resource.data.get('name', '')
+               || isHebrewName(request.resource.data.get('name', ''));
+      }
+
       // Any authenticated user can read their own profile
       allow read: if request.auth != null && request.auth.uid == userId;
 
@@ -54,6 +75,7 @@ service cloud.firestore {
       // classIds update can share a batch).
       allow update: if request.auth != null
                     && request.auth.uid == userId
+                    && nameUnchangedOrHebrew()
                     && request.resource.data.role == resource.data.role
                     && request.resource.data.get('roles', []) == resource.data.get('roles', [])
                     && request.resource.data.get('classAdminFor', []) == resource.data.get('classAdminFor', [])
@@ -75,6 +97,7 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                        in ['admin', 'super_admin']
+                    && nameUnchangedOrHebrew()
                     && (
                       request.resource.data.role != 'super_admin'
                       || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
