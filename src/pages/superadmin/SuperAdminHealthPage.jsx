@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { getUsers, getChildren, getClasses, getPendingFamilies, markUsersImported } from '../../lib/db'
-import { computeHealthAnomalies } from '../../lib/health'
+import { computeHealthAnomalies, onboardingGaps } from '../../lib/health'
 import { RefreshCw, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -132,6 +132,30 @@ export default function SuperAdminHealthPage() {
     </div>
   )
 
+  // "Did not finish onboarding" only means the wizard's last button was never
+  // pressed — on its own it does not say whether anything is actually missing.
+  // Spell that out per family, so the list can be acted on instead of guessed at.
+  const onboardingLine = (u) => {
+    const { gaps, onlyFinalStep } = onboardingGaps(u, { children })
+    return (
+      <div className="space-y-1.5">
+        {userLine(u)}
+        <div className="flex flex-wrap gap-1.5 justify-end">
+          {onlyFinalStep ? (
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/25 dark:text-green-300 dark:border-green-800">
+              ✓ כל הפרטים קיימים — רק לא לחצו "סיום" באשף
+            </span>
+          ) : gaps.map(gap => (
+            <span key={gap}
+              className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/25 dark:text-amber-300 dark:border-amber-800">
+              {gap}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="page-container rtl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
@@ -191,9 +215,9 @@ export default function SuperAdminHealthPage() {
       <AnomalySection
         emoji="🚪" severity="amber"
         title="לא השלימו את תהליך הקליטה"
-        hint="נרשמו אך לא סיימו את שלבי ההצטרפות"
+        hint="לא נלחץ הכפתור האחרון באשף הקליטה — התגיות מראות מה חסר בפועל"
         items={onboardingIncomplete}
-        renderItem={(u) => userLine(u)}
+        renderItem={onboardingLine}
         linkTo="/admin/users" linkLabel="לניהול חברים"
       />
 

@@ -81,7 +81,12 @@ function attachConsole(page) {
   page.on('pageerror', (err) => currentConsole.push({ type: 'pageerror', text: err.message }))
   page.on('requestfailed', (req) => {
     const url = req.url()
-    if (url.startsWith(BASE)) currentFailedRequests.push(url)
+    if (!url.startsWith(BASE)) return
+    // Navigating while an image is still loading cancels it, and that is not a
+    // broken asset. Only genuine transport failures count — a missing file
+    // returns a 404 response and never lands here anyway.
+    if (req.failure()?.errorText === 'net::ERR_ABORTED') return
+    currentFailedRequests.push(`${url} (${req.failure()?.errorText})`)
   })
 }
 
@@ -559,6 +564,31 @@ async function main() {
 
       // The report filed from the login screen has to actually land somewhere
       // a human looks — a report nobody reads is worse than no report.
+      // "Did not finish onboarding" was unactionable without this: the page
+      // has to say whether anything is actually missing.
+      await step('בקרת התקינות מסבירה מה חסר לכל משפחה שלא סיימה קליטה', async () => {
+        const su = await newPage({ width: 1440, height: 900 })
+        await login(su, ACCOUNTS.super)
+        await su.waitForURL(/\/admin/, { timeout: 25000 })
+        await su.goto(`${BASE}/super/health`, { waitUntil: 'domcontentloaded' })
+        await su.getByText('לא השלימו את תהליך הקליטה').first().click()
+
+        // The family that has everything on file — nothing to chase.
+        const complete = su.locator('li', { hasText: 'מיכל שלמה' }).first()
+        await complete.waitFor({ timeout: 15000 })
+        await complete.getByText(/כל הפרטים קיימים/).waitFor({ timeout: 10000 })
+
+        // The family that stopped right after registering.
+        const empty = su.locator('li', { hasText: 'רון חסר' }).first()
+        await empty.getByText('לא שויכו ילדים').waitFor({ timeout: 10000 })
+        await empty.getByText('אין טלפון').waitFor({ timeout: 10000 })
+        await empty.getByText('לא אישרו את התקנון').waitFor({ timeout: 10000 })
+
+        await shoot(su, 'health-onboarding-reasons')
+        assertClean('בקרת תקינות')
+        await su.context().close()
+      })
+
       await step('הדיווח ממסך הכניסה מגיע לתיבת המשוב של המנהל הראשי', async () => {
         const su = await newPage({ width: 1440, height: 900 })
         await login(su, ACCOUNTS.super)

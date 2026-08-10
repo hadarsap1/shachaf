@@ -99,6 +99,20 @@ export async function seed() {
       consentVersion: '1.2', consentAt: new Date(),
     })
 
+    // Two families flagged as "did not finish onboarding" for opposite
+    // reasons — the health page has to tell them apart.
+    // 1) Everything on file; only the wizard's last button was never pressed.
+    await set('users', 'stalled-complete', {
+      uid: 'stalled-complete', email: 'stalled1@e2e.test', name: 'מיכל שלמה',
+      role: 'new_family', roles: [], status: 'active', phone: '050-9999999',
+      classIds: [SEED.classId], consentVersion: '1.2', consentAt: new Date(),
+    })
+    // 2) Registered and stopped: no children, no phone, no consent.
+    await set('users', 'stalled-empty', {
+      uid: 'stalled-empty', email: 'stalled2@e2e.test', name: 'רון חסר',
+      role: 'new_family', roles: [], status: 'active',
+    })
+
     // ── Class + children ─────────────────────────────────────────────────────
     await set('classes', SEED.classId, {
       name: SEED.className, grade: 'ג', adminUids: [], teacherName: 'המורה רותי',
@@ -107,6 +121,11 @@ export async function seed() {
       name: 'נועה כהן', classId: SEED.classId, parentUids: [uids.parent],
       parents: [{ name: ACCOUNTS.parent.name, email: ACCOUNTS.parent.email, phone: '050-2222222' }],
       parentEmails: [ACCOUNTS.parent.email],
+    })
+    await set('children', 'child-stalled', {
+      name: 'ילד של מיכל', classId: SEED.classId, parentUids: ['stalled-complete'],
+      parents: [{ name: 'מיכל שלמה', email: 'stalled1@e2e.test' }],
+      parentEmails: ['stalled1@e2e.test'],
     })
     await set('children', 'child-2', {
       name: 'איתי לוי', classId: SEED.classId, parentUids: [],
