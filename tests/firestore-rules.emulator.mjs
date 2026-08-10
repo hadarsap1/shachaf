@@ -41,6 +41,12 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'tasks', 'taskBroadcast'), {
     title: 'למלא טופס בריאות', targetGroups: ['all'], classIds: [], status: 'pending',
   })
+  // same task, already completed by another family — per-family progress must
+  // not let one family disturb another's
+  await setDoc(doc(db, 'tasks', 'taskProgressShared'), {
+    title: 'להביא תמונת משפחה', targetGroups: ['all'], classIds: [], status: 'pending',
+    doneBy: ['stranger1'], inProgressBy: [],
+  })
   // hobby group with parent1 as a member — for groupLinks URL-scheme tests
   await setDoc(doc(db, 'hobbyGroups', 'groupX'), { name: 'Group X', memberUids: ['parent1'] })
   // committee with parent1 as a member — for committee-event create tests
@@ -332,7 +338,7 @@ await check('a family CAN list the task board',
   getDocs(collection(parent, 'tasks')), 'allow')
 await check('a family CAN read a broadcast task with no assignedTo',
   getDoc(doc(parent, 'tasks', 'taskBroadcast')), 'allow')
-await check('a family CANNOT edit a task',
+await check('a family CANNOT edit the shared status field',
   updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { status: 'done' }), 'deny')
 await check('a family CANNOT create a task',
   setDoc(doc(parent, 'tasks', 'taskForged'), { title: 'מזויף', targetGroups: ['all'] }), 'deny')
@@ -340,6 +346,26 @@ await check('an admin CAN create a broadcast task',
   setDoc(doc(admin, 'tasks', 'taskFromAdmin'), {
     title: 'משימה חדשה', targetGroups: ['all'], classIds: [], status: 'pending',
   }), 'allow')
+
+console.log('\n— each family records its own progress on a shared task —')
+// Order matters: these walk one task document through a real family's flow.
+await check('a family CAN mark itself in progress',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { inProgressBy: ['parent1'] }), 'allow')
+await check('a family CAN move itself from in-progress to done',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { inProgressBy: [], doneBy: ['parent1'] }), 'allow')
+await check('a family CAN reopen its own task',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { doneBy: [] }), 'allow')
+await check('a family CANNOT mark a task done for someone else',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { doneBy: ['stranger1'] }), 'deny')
+await check('a family CANNOT complete for several families in one write',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { doneBy: ['parent1', 'stranger1'] }), 'deny')
+await check('a family CANNOT smuggle another field alongside its progress',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { doneBy: ['parent1'], title: 'נחטף' }), 'deny')
+// taskProgressShared already carries stranger1 in doneBy
+await check('a family CANNOT wipe another family\'s completion',
+  updateDoc(doc(parent, 'tasks', 'taskProgressShared'), { doneBy: [] }), 'deny')
+await check('a family CAN add itself next to another family\'s completion',
+  updateDoc(doc(parent, 'tasks', 'taskProgressShared'), { doneBy: ['stranger1', 'parent1'] }), 'allow')
 
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
