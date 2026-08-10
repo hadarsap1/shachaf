@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, saveTask, getChildrenByParent, getForms, getSubmissionsForFamily, MILESTONES } from '../../lib/db'
+import { getTasks, setTaskProgress, getChildrenByParent, getForms, getSubmissionsForFamily, MILESTONES } from '../../lib/db'
+import { tasksForFamily } from '../../lib/tasks'
 import TaskCard from '../../components/ui/TaskCard'
 import ProgressRing from '../../components/ui/ProgressRing'
 import { CheckSquare, Loader2, FileText, CheckCircle2 } from 'lucide-react'
@@ -39,12 +40,9 @@ export default function TasksPage() {
         const submissions = subsRes.status     === 'fulfilled' ? subsRes.value     : []
         const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
         const role = user.role
-        setTasks(allTasks.filter(t => {
-          const tg = t.targetGroups || ['all']
-          if (tg.includes('all') || tg.includes(role)) return true
-          if (tg.includes('class')) return (t.classIds || []).some(id => myClassIds.includes(id))
-          return false
-        }))
+        // Each task arrives with THIS family's own status already resolved from
+        // doneBy/inProgressBy — the shared `status` field belongs to the admin.
+        setTasks(tasksForFamily(allTasks, { uid: user.uid, role, classIds: myClassIds }))
         setForms(allForms.filter(f => f.status === 'published' && (
           f.targetRole === 'all' || f.targetRole === role ||
           (f.targetRole === 'class' && (f.classIds || []).some(id => myClassIds.includes(id)))
@@ -64,10 +62,9 @@ export default function TasksPage() {
   const handleStatusChange = async (taskId, newStatus) => {
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
-    const updated = { ...task, status: newStatus }
-    setTasks(prev => prev.map(t => t.id === taskId ? updated : t))
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
     try {
-      await saveTask(updated)
+      await setTaskProgress(taskId, user.uid, newStatus)
     } catch (err) {
       console.error('status update failed:', err)
       setTasks(prev => prev.map(t => t.id === taskId ? task : t))

@@ -8,6 +8,7 @@ import { initializeApp, deleteApp } from 'firebase/app'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { compressImage } from './image'
 import { claimerUidsOf } from './mealTrain'
+import { taskProgressUpdate } from './tasks'
 
 // ── Read cache ────────────────────────────────────────────────────────────────
 // Pages remount (and refetch) on every navigation; with hundreds of users that
@@ -127,6 +128,13 @@ export async function saveTask(task) {
 
 export async function deleteTask(id) {
   await deleteDoc(doc(db, 'tasks', id))
+}
+
+// A family's own progress on a broadcast task. Families may not write anything
+// else on the document (see the tasks rule) — `status` there is the admin's
+// field, and writing it would complete the task for the whole school.
+export async function setTaskProgress(taskId, uid, status) {
+  await updateDoc(doc(db, 'tasks', taskId), taskProgressUpdate(status, uid, { arrayUnion, arrayRemove }))
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────

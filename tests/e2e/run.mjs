@@ -381,6 +381,36 @@ async function main() {
         assertClean('דף משימות')
       })
 
+      await step('סימון משימה כבוצעה נשמר למשפחה ושורד רענון', async () => {
+        const card = page.locator('.card', { hasText: SEED.taskTitle }).first()
+        // pending → בתהליך → הושלם
+        await card.getByRole('button', { name: 'לחץ לעדכון סטטוס' }).click()
+        await card.getByText('בתהליך').first().waitFor({ timeout: 10000 })
+        await card.getByRole('button', { name: 'לחץ לעדכון סטטוס' }).click()
+        await card.getByText('הושלם').first().waitFor({ timeout: 10000 })
+        await page.reload({ waitUntil: 'domcontentloaded' })
+        await page.locator('.card', { hasText: SEED.taskTitle }).first()
+          .getByText('הושלם').first().waitFor({ timeout: 15000 })
+        await shoot(page, 'task-done')
+        assertClean('סימון משימה')
+      })
+
+      // The whole point of per-family progress: one family's tick is invisible
+      // to the next family looking at the same task document.
+      await step('משפחה אחרת עדיין רואה את אותה משימה כפתוחה', async () => {
+        const other = await newPage({ width: 1280, height: 900 })
+        await login(other, ACCOUNTS.fresh)
+        await other.waitForURL(/\/dashboard/, { timeout: 25000 })
+        await dismissTutorial(other)
+        await other.goto(`${BASE}/tasks`, { waitUntil: 'domcontentloaded' })
+        const card = other.locator('.card', { hasText: SEED.taskTitle }).first()
+        await card.waitFor({ timeout: 15000 })
+        await card.getByText('ממתין').first().waitFor({ timeout: 10000 })
+        assert(await card.getByText('הושלם').count() === 0,
+          'הסימון של משפחה אחת דלף למשפחה אחרת')
+        await other.context().close()
+      })
+
       await step('דף האירועים מציג אירוע עתידי ולא אירוע שחלף', async () => {
         await page.goto(`${BASE}/events`, { waitUntil: 'domcontentloaded' })
         await expectText(page, SEED.eventTitle)

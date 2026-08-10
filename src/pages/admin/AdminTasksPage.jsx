@@ -441,6 +441,11 @@ export default function AdminTasksPage() {
                     </span>
                     {task.dueDate && <span>{new Date(task.dueDate).toLocaleDateString('he-IL')}</span>}
                     {task.milestone && <span className="text-primary-400">{task.milestone}</span>}
+                    {(task.doneBy || []).length > 0 && (
+                      <span className="text-green-600 dark:text-green-400">
+                        ✓ {task.doneBy.length} משפחות סיימו
+                      </span>
+                    )}
                   </div>
                 </div>
 

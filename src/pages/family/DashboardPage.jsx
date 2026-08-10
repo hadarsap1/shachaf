@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  getTasks, saveTask, getEvents, getForms, getSubmissionsForFamily,
+  getTasks, setTaskProgress, getEvents, getForms, getSubmissionsForFamily,
   getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
   getMealTrains, claimedAddresses,
 } from '../../lib/db'
+import { tasksForFamily } from '../../lib/tasks'
 import { classLabel, membersOfLabel } from '../../lib/grades'
 import { isEventVisibleTo, isUpcoming, todayKey } from '../../lib/eventVisibility'
 import { myMealTrainEvents } from '../../lib/mealTrain'
@@ -253,7 +254,7 @@ export default function DashboardPage() {
     // tomorrow, which used to drop today's events off the dashboard.
     const today = todayKey()
     Promise.all([
-      isFamily ? getTasks(user.uid) : Promise.resolve([]),
+      isFamily ? getTasks() : Promise.resolve([]),
       getEvents(),
       isFamily ? getForms() : Promise.resolve([]),
       isFamily ? getSubmissionsForFamily(user.uid) : Promise.resolve([]),
@@ -263,7 +264,6 @@ export default function DashboardPage() {
       getClasses(),
       getMealTrains().catch(() => []),
     ]).then(async ([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains]) => {
-      setTasks(taskData)
       setGroups(groupData)
       setCommittees(committeeData)
       // Derive classIds from children — don't rely on user.classIds which may be stale
@@ -272,6 +272,10 @@ export default function DashboardPage() {
       if (effectiveClassIds.length > 0) {
         setMyClasses(allClasses.filter(c => effectiveClassIds.includes(c.id)))
       }
+      // Tasks are broadcast to an audience, so the class list has to be known
+      // before we can tell which ones are this family's — and each one carries
+      // this family's own progress, not the task's shared status.
+      setTasks(tasksForFamily(taskData, { uid: user.uid, role: user.role, classIds: effectiveClassIds }))
       // group/committee ids the user belongs to — members-only events surface
       // on the dashboard for their own entities' members (and for admins)
       const myEntityIds = new Set([
@@ -311,9 +315,8 @@ export default function DashboardPage() {
   const handleStatusChange = async (taskId, newStatus) => {
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
-    const updated = { ...task, status: newStatus }
-    setTasks(prev => prev.map(t => t.id === taskId ? updated : t))
-    try { await saveTask(updated) } catch {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+    try { await setTaskProgress(taskId, user.uid, newStatus) } catch {
       setTasks(prev => prev.map(t => t.id === taskId ? task : t))
     }
   }

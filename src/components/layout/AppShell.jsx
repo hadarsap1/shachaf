@@ -3,6 +3,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies, getMyMessages, getCommittees, getHobbyGroups } from '../../lib/db'
+import { tasksForFamily } from '../../lib/tasks'
 import { computeHealthAnomalies } from '../../lib/health'
 import InstallBanner from '../ui/InstallBanner'
 import FeedbackButton from '../ui/FeedbackButton'
@@ -415,12 +416,19 @@ export default function AppShell() {
       .catch(() => {})
   }, [isSuperAdmin])
 
+  // Joined so the effect re-runs when the parent's classes actually change,
+  // not on every render that hands back a fresh array with the same contents.
+  const myClassKey = (user?.classIds || []).join(',')
+
   useEffect(() => {
     if (!user?.uid || isAdmin) return
-    getTasks(user.uid).then(tasks =>
-      setOpenTaskCount(tasks.filter(t => t.status !== 'done' && t.status !== 'completed').length)
-    ).catch(() => {})
-  }, [user?.uid, isAdmin])
+    // Same audience + own-progress resolution the tasks page uses, so the badge
+    // can never disagree with the list it points at.
+    getTasks().then(tasks => setOpenTaskCount(
+      tasksForFamily(tasks, { uid: user.uid, role: user.role, classIds: myClassKey ? myClassKey.split(',') : [] })
+        .filter(t => t.status !== 'done').length
+    )).catch(() => {})
+  }, [user?.uid, user?.role, myClassKey, isAdmin])
 
   // Hide tutorial for admins, alumni, or users who already saw it
   useEffect(() => {
