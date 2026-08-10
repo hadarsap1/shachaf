@@ -679,6 +679,27 @@ service cloud.firestore {
       allow read, update: if request.auth != null
                           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                              in ['admin', 'super_admin'];
+
+      // A report from someone who could NOT sign in — the one person who can't
+      // use any of the above. Deliberately the only unauthenticated write in
+      // this database, so it is fenced in hard: an exact field list, hard size
+      // caps, `source` pinned to 'login', and an empty submittedBy.uid so it
+      // can never impersonate a member. There is no read here — an anonymous
+      // caller can drop a report and learn nothing.
+      allow create: if request.auth == null
+                    && request.resource.data.keys().hasOnly(
+                         ['text', 'submittedBy', 'source', 'diagnostics', 'screenshotUrl', 'status', 'createdAt'])
+                    && request.resource.data.source == 'login'
+                    && request.resource.data.status == 'new'
+                    && request.resource.data.screenshotUrl == null
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 1000
+                    && request.resource.data.submittedBy.keys().hasOnly(['uid', 'name', 'email'])
+                    && request.resource.data.submittedBy.uid == ''
+                    && request.resource.data.submittedBy.get('email', '').size() <= 200
+                    && request.resource.data.submittedBy.get('name', '').size() <= 100
+                    && request.resource.data.get('diagnostics', '').size() <= 500;
     }
 
     // Community businesses — all auth can read; owner creates/updates own; admin/owner delete

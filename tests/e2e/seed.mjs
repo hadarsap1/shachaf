@@ -16,6 +16,8 @@ const day = (offset) => {
 
 export const ACCOUNTS = {
   admin:    { email: 'admin@e2e.test',   password: 'Test123456', name: 'ועד ההורים' },
+  // The feedback inbox is super-admin only, so the suite needs both roles.
+  super:    { email: 'super@e2e.test',   password: 'Test123456', name: 'מנהל ראשי' },
   parent:   { email: 'parent@e2e.test',  password: 'Test123456', name: 'הורה קיים' },
   imported: { email: 'imported@e2e.test', password: 'Test123456', name: 'הורה מיובא' },
   // Registered through the UI during the run — no account here on purpose.
@@ -78,6 +80,11 @@ export async function seed() {
     })
     // A family that finished onboarding: `new_family` in `roles` is what gates
     // the task board and the forms list on the dashboard.
+    await set('users', uids.super, {
+      uid: uids.super, email: ACCOUNTS.super.email, name: ACCOUNTS.super.name,
+      role: 'super_admin', roles: [], status: 'active',
+      consentVersion: '1.2', consentAt: new Date(),
+    })
     await set('users', uids.parent, {
       uid: uids.parent, email: ACCOUNTS.parent.email, name: ACCOUNTS.parent.name,
       role: 'new_family', roles: [], status: 'active', phone: '050-2222222',

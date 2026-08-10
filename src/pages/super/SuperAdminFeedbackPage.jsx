@@ -52,7 +52,14 @@ function FeedbackItem({ item, onStatusChange }) {
           </select>
         </div>
         <div className="text-right flex-1 min-w-0">
-          <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{item.submittedBy?.name || 'אנונימי'}</div>
+          <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-1.5 justify-end">
+            {item.source === 'login' && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                לא הצליח להתחבר
+              </span>
+            )}
+            {item.submittedBy?.name || 'אנונימי'}
+          </div>
           <div className="text-xs text-gray-400 truncate">{item.submittedBy?.email}</div>
           {ts && <div className="text-xs text-gray-300 mt-0.5">{ts.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
         </div>
@@ -61,6 +68,11 @@ function FeedbackItem({ item, onStatusChange }) {
       {expanded && (
         <div className="border-t border-gray-50 dark:border-gray-700 px-4 pb-4 pt-3 space-y-3">
           <p className="text-sm text-gray-700 dark:text-gray-300 text-right whitespace-pre-wrap leading-relaxed">{item.text}</p>
+          {item.diagnostics && (
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 text-right break-words font-mono leading-relaxed">
+              {item.diagnostics}
+            </p>
+          )}
           {item.screenshotUrl && (
             <img src={item.screenshotUrl} alt="צילום מסך"
               className="rounded-xl max-h-64 object-contain border border-gray-100 dark:border-gray-700 ms-auto block" />

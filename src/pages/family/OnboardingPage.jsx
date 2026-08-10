@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
+import LoginHelpButton from '../../components/LoginHelpButton'
 import {
   getUnlinkedChildren,
   linkChildToParent,
@@ -328,6 +329,11 @@ export default function OnboardingPage() {
             </button>
           </div>
         )}
+      </div>
+      {/* The wizard runs before the app shell exists — a family that gets stuck
+          identifying its children has no other way to reach us. */}
+      <div className="mt-6 [&_button]:text-gray-400 [&_button]:hover:text-gray-600 dark:[&_button]:text-gray-500">
+        <LoginHelpButton context="onboarding" />
       </div>
     </div>
   )

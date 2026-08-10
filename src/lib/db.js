@@ -1323,6 +1323,24 @@ export async function saveFeedback({ text, screenshotUrl, submittedBy }) {
   return docRef.id
 }
 
+// Bug report from the login screen — the reporter has no account, or has one
+// and cannot get into it. Lands in the same feedback inbox as everything else
+// (marked `source: 'login'`), because a report nobody reads is worse than no
+// report. The diagnostics line is the whole point: "לא מצליח להיכנס" is
+// unactionable, the same message plus browser, display mode, app version and
+// the Firebase error code usually is.
+export async function saveLoginReport({ text, email, diagnostics }) {
+  await addDoc(collection(db, 'feedback'), {
+    text: String(text).slice(0, 1000),
+    submittedBy: { uid: '', name: 'דיווח ממסך הכניסה', email: String(email || '').slice(0, 200) },
+    source: 'login',
+    diagnostics: String(diagnostics || '').slice(0, 500),
+    screenshotUrl: null,
+    status: 'new',
+    createdAt: serverTimestamp(),
+  })
+}
+
 export async function uploadFeedbackScreenshot(feedbackId, file) {
   file = await compressImage(file)
   const path = `feedback/${feedbackId}.${safeExt(file)}`
