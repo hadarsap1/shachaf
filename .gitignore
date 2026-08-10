@@ -7,3 +7,6 @@ dist/
 .vercel/
 firestore-debug.log
 firebase-debug.log
+
+tests/e2e/screenshots/
+tests/e2e/last-run.json

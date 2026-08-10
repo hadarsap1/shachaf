@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rules": "npx --yes firebase-tools emulators:exec --only firestore --project shachaf-rules-test \"node tests/firestore-rules.emulator.mjs\""
+    "test:rules": "npx --yes firebase-tools emulators:exec --only firestore --project shachaf-rules-test \"node tests/firestore-rules.emulator.mjs\"",
+    "test:e2e": "npx --yes firebase-tools emulators:exec --only auth,firestore --project shachaf-e2e \"node tests/e2e/run.mjs\""
   },
   "dependencies": {
     "@sentry/react": "^10.63.0",

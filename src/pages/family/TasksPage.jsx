@@ -21,11 +21,22 @@ export default function TasksPage() {
   const [submittedFormIds, setSubmittedFormIds] = useState(new Set())
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     if (!user?.uid) return
-    Promise.all([getTasks(), getChildrenByParent(user.uid), getForms(), getSubmissionsForFamily(user.uid)])
-      .then(([allTasks, children, allForms, submissions]) => {
+    // allSettled, not all: one rejected query (a rules change, a dropped
+    // connection) used to reject the whole batch and render an empty page —
+    // no tasks AND no forms — with nothing but a console line to show for it.
+    Promise.allSettled([getTasks(), getChildrenByParent(user.uid), getForms(), getSubmissionsForFamily(user.uid)])
+      .then(([tasksRes, childrenRes, formsRes, subsRes]) => {
+        const failures = [tasksRes, childrenRes, formsRes, subsRes].filter(r => r.status === 'rejected')
+        failures.forEach(r => console.error('tasks page load failed:', r.reason))
+        setLoadError(failures.length > 0)
+        const allTasks    = tasksRes.status    === 'fulfilled' ? tasksRes.value    : []
+        const children    = childrenRes.status === 'fulfilled' ? childrenRes.value : []
+        const allForms    = formsRes.status    === 'fulfilled' ? formsRes.value    : []
+        const submissions = subsRes.status     === 'fulfilled' ? subsRes.value     : []
         const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
         const role = user.role
         setTasks(allTasks.filter(t => {
@@ -84,6 +95,12 @@ export default function TasksPage() {
         </div>
         <ProgressRing percent={progress} size={64} strokeWidth={6} />
       </div>
+
+      {loadError && (
+        <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+          חלק מהתוכן לא נטען. נסו לרענן את הדף — ואם זה חוזר, פנו לצוות.
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="progress-bar mb-6">

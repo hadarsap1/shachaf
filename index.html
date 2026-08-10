@@ -8,6 +8,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>שחף+</title>
 
+    <!-- The stylesheet pulls Heebo/Inter from Google Fonts, which blocks first
+         paint until that third party answers. Opening the connections early
+         takes the DNS+TLS round trips off the critical path. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
     <!-- PWA -->
     <meta name="theme-color" content="#2563EB" />
     <meta name="description" content="שחף+ — הפלטפורמה הקהילתית של קהילת שחף" />

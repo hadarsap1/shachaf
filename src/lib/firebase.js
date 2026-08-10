@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
 
 export const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,3 +16,12 @@ const app  = initializeApp(firebaseConfig)
 export const auth    = getAuth(app)
 export const db      = getFirestore(app)
 export const storage = getStorage(app)
+
+// ── Local emulators (E2E only) ───────────────────────────────────────────────
+// Enabled by `VITE_USE_EMULATORS=1` in a dev server only. The `DEV` guard means
+// a production bundle can never point at localhost, whatever the env holds.
+if (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === '1') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  connectStorageEmulator(storage, '127.0.0.1', 9199)
+}
