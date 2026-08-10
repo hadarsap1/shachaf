@@ -367,6 +367,49 @@ await check('a family CANNOT wipe another family\'s completion',
 await check('a family CAN add itself next to another family\'s completion',
   updateDoc(doc(parent, 'tasks', 'taskProgressShared'), { doneBy: ['stranger1', 'parent1'] }), 'allow')
 
+console.log('\n— member names must be Hebrew —')
+await check('a member CAN set a Hebrew name',
+  updateDoc(doc(parent, 'users', 'parent1'), { name: 'דוד כהן' }), 'allow')
+await check('a member CAN use a hyphen and a geresh',
+  updateDoc(doc(parent, 'users', 'parent1'), { name: "ג'ורג' בן-גוריון" }), 'allow')
+await check('a member CANNOT set a Latin name',
+  updateDoc(doc(parent, 'users', 'parent1'), { name: 'David Cohen' }), 'deny')
+await check('a member CANNOT mix Hebrew and Latin',
+  updateDoc(doc(parent, 'users', 'parent1'), { name: 'דוד Cohen' }), 'deny')
+await check('a member CANNOT set a name with digits',
+  updateDoc(doc(parent, 'users', 'parent1'), { name: 'דוד 2' }), 'deny')
+await check('a member CANNOT blank their name',
+  updateDoc(doc(parent, 'users', 'parent1'), { name: '' }), 'deny')
+await check('an admin CANNOT rename a member to Latin either',
+  updateDoc(doc(admin, 'users', 'parent1'), { name: 'David' }), 'deny')
+await check('an admin CAN rename a member in Hebrew',
+  updateDoc(doc(admin, 'users', 'parent1'), { name: 'דוד לוי' }), 'allow')
+// The rule guards the write, not the document: a member whose name predates it
+// must not be locked out of the app's automatic writes.
+{
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'users', 'legacyUser'),
+      { role: 'community', name: 'David Cohen', email: 'legacy@x.com', classIds: [] })
+  })
+  const legacy = env.authenticatedContext('legacyUser', { email: 'legacy@x.com' }).firestore()
+  await check('a member with a legacy Latin name CAN still update their phone',
+    updateDoc(doc(legacy, 'users', 'legacyUser'), { phone: '050-1234567' }), 'allow')
+  await check('a member with a legacy Latin name CAN still record consent',
+    updateDoc(doc(legacy, 'users', 'legacyUser'), { consentVersion: '1.2', consentAt: new Date() }), 'allow')
+  await check('a member with a legacy Latin name CANNOT change it to another Latin one',
+    updateDoc(doc(legacy, 'users', 'legacyUser'), { name: 'Dave Cohen' }), 'deny')
+  await check('a member with a legacy Latin name CAN fix it to Hebrew',
+    updateDoc(doc(legacy, 'users', 'legacyUser'), { name: 'דוד כהן' }), 'allow')
+}
+// Sign-up must never be blocked: a Google account whose display name is Latin
+// has to be able to create a profile, or the user simply cannot log in.
+{
+  const newcomer = env.authenticatedContext('googleUser', { email: 'google@x.com' }).firestore()
+  await check('a Google sign-in with a Latin display name CAN still create a profile',
+    setDoc(doc(newcomer, 'users', 'googleUser'),
+      { role: 'community', name: 'David Cohen', email: 'google@x.com' }), 'allow')
+}
+
 console.log('\n— login-screen bug reports (the only unauthenticated write) —')
 {
   const anon = env.unauthenticatedContext().firestore()

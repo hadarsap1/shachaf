@@ -6,6 +6,7 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 import { hasConsented } from '../../lib/consent'
+import { hebrewNameError, normalizeName } from '../../lib/hebrewName'
 import { classLabel } from '../../lib/grades'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import {
@@ -213,11 +214,13 @@ function AddMemberPanel({ onClose, onCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!name.trim() || !email.trim()) return
+    const nameError = hebrewNameError(name)
+    if (nameError) { setError(nameError); return }
     setSaving(true)
     setError('')
     const { role, roles } = deriveRoles(selectedRoles)
     try {
-      const newUser = await createMember({ name: name.trim(), email: email.trim(), phone: phone.trim(), role, roles })
+      const newUser = await createMember({ name: normalizeName(name), email: email.trim(), phone: phone.trim(), role, roles })
       setDone(true)
       onCreated(newUser)
     } catch (err) {
@@ -295,6 +298,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   const [draft, setDraft] = useState({ name: user.name || '', phone: user.phone || '', address: user.address || '' })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+  const [profileError, setProfileError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [kids, setKids] = useState(null)
@@ -385,9 +389,14 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
   }
 
   const handleSaveProfile = async () => {
+    // Same Hebrew-name requirement the member sees on their own profile — an
+    // admin edit goes through the identical Firestore rule.
+    const nameError = hebrewNameError(draft.name)
+    if (nameError) { setProfileError(nameError); return }
+    setProfileError('')
     setProfileSaving(true)
     try {
-      await updateUserProfile(user.uid, { name: draft.name.trim(), phone: draft.phone.trim(), address: draft.address.trim() })
+      await updateUserProfile(user.uid, { name: normalizeName(draft.name), phone: draft.phone.trim(), address: draft.address.trim() })
       setProfileSaved(true)
       setEditing(false)
       onProfileSaved({ ...user, ...draft })
@@ -434,8 +443,9 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
                   value={draft.name}
                   onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
                   className="input w-full text-right text-sm"
-                  placeholder="שם מלא"
+                  placeholder="שם מלא בעברית"
                 />
+                {profileError && <p className="text-xs text-red-500 mt-1 text-right">{profileError}</p>}
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 block mb-1 text-right flex items-center gap-1.5 justify-end dark:text-gray-400">

@@ -314,6 +314,13 @@ async function main() {
     group('הרשמה של משתמש חדש')
     {
       const page = await newPage({ width: 1280, height: 900 })
+      await step('הרשמה עם שם באנגלית נחסמת עם הסבר', async () => {
+        await registerViaUi(page, { ...ACCOUNTS.fresh, name: 'David Cohen' })
+        await expectText(page, 'יש להזין את השם בעברית')
+        assert(!page.url().includes('/dashboard'), 'ההרשמה נמשכה למרות שם באנגלית')
+        assertClean('חסימת שם באנגלית')
+      })
+
       await step('הרשמה עם מייל וסיסמה מגיעה למסך ההסכמה', async () => {
         await registerViaUi(page, ACCOUNTS.fresh)
         await page.getByRole('button', { name: /מאשר\/ת — המשך/ }).waitFor({ timeout: 25000 })
@@ -407,6 +414,10 @@ async function main() {
         await card.getByText('בתהליך').first().waitFor({ timeout: 10000 })
         await card.getByRole('button', { name: 'לחץ לעדכון סטטוס' }).click()
         await card.getByText('הושלם').first().waitFor({ timeout: 10000 })
+        // The card flips optimistically, before the write is acknowledged —
+        // reloading the instant it turns green would cancel the request in
+        // flight and test nothing.
+        await page.waitForTimeout(2000)
         await page.reload({ waitUntil: 'domcontentloaded' })
         await page.locator('.card', { hasText: SEED.taskTitle }).first()
           .getByText('הושלם').first().waitFor({ timeout: 15000 })

@@ -4,6 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 import LoginHelpButton from '../../components/LoginHelpButton'
+import { hebrewNameError, normalizeName } from '../../lib/hebrewName'
 import {
   getUnlinkedChildren,
   linkChildToParent,
@@ -25,6 +26,7 @@ export default function OnboardingPage() {
   // Step 0
   const [name, setName]   = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.phone || '')
+  const [nameError, setNameError] = useState('')
 
   // Step 1
   const [unlinked, setUnlinked]             = useState([])
@@ -43,9 +45,12 @@ export default function OnboardingPage() {
 
   // ── Step 0 → 1 ────────────────────────────────────────────────────────────
   const goStep1 = async () => {
+    const nameError = hebrewNameError(name)
+    if (nameError) { setNameError(nameError); return }
+    setNameError('')
     setBusy(true)
     try {
-      const trimmed = { name: name.trim(), phone: phone.trim() }
+      const trimmed = { name: normalizeName(name), phone: phone.trim() }
       await updateDoc(doc(db, 'users', user.uid), trimmed)
       updateUserState(trimmed)
       setStep(1)
@@ -80,10 +85,12 @@ export default function OnboardingPage() {
 
   // ── Step 2 co-parent ──────────────────────────────────────────────────────
   const inviteCoParent = async () => {
+    const coNameError = hebrewNameError(coName)
+    if (coNameError) { setCoError(coNameError); return }
     setBusy(true)
     setCoError('')
     try {
-      await registerCoParent(user, { name: coName.trim(), phone: coPhone.trim(), email: coEmail.trim() })
+      await registerCoParent(user, { name: normalizeName(coName), phone: coPhone.trim(), email: coEmail.trim() })
       setCoDone(true)
     } catch (err) {
       setCoError(err.message || 'שגיאה ביצירת חשבון')
@@ -150,9 +157,12 @@ export default function OnboardingPage() {
               className="input-field mb-4"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="שם פרטי ומשפחה"
+              placeholder="שם פרטי ומשפחה בעברית"
               dir="rtl"
             />
+            {nameError
+              ? <p className="text-xs text-red-500 mb-4 -mt-3">{nameError}</p>
+              : <p className="text-xs text-gray-400 mb-4 -mt-3">בעברית — כך חברי הקהילה יזהו אתכם</p>}
 
             <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">טלפון</label>
             <input
