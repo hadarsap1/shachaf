@@ -36,6 +36,11 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'children', 'childC'), {
     name: 'Child C', classId: 'class-3', parentUids: ['someuid'], parentEmails: ['nobody@x.com'],
   })
+  // broadcast onboarding task exactly as the admin panel writes it — no
+  // assignedTo field, audience expressed through targetGroups
+  await setDoc(doc(db, 'tasks', 'taskBroadcast'), {
+    title: 'למלא טופס בריאות', targetGroups: ['all'], classIds: [], status: 'pending',
+  })
   // hobby group with parent1 as a member — for groupLinks URL-scheme tests
   await setDoc(doc(db, 'hobbyGroups', 'groupX'), { name: 'Group X', memberUids: ['parent1'] })
   // committee with parent1 as a member — for committee-event create tests
@@ -317,6 +322,23 @@ await check('the pot creator CAN update the private address',
 await check('an admin CAN open a meal train without a committee',
   setDoc(doc(admin, 'mealTrains', 'trainAdmin'), {
     familyName: 'משפחה', committeeId: '', createdBy: 'admin1', claimerUids: [], slots: [],
+  }), 'allow')
+
+console.log('\n— onboarding tasks reach the families they target —')
+// Tasks are broadcast (targetGroups), never per-uid: the admin panel writes no
+// assignedTo at all. The list query the tasks page runs must therefore be
+// allowed, and writing must stay with admins.
+await check('a family CAN list the task board',
+  getDocs(collection(parent, 'tasks')), 'allow')
+await check('a family CAN read a broadcast task with no assignedTo',
+  getDoc(doc(parent, 'tasks', 'taskBroadcast')), 'allow')
+await check('a family CANNOT edit a task',
+  updateDoc(doc(parent, 'tasks', 'taskBroadcast'), { status: 'done' }), 'deny')
+await check('a family CANNOT create a task',
+  setDoc(doc(parent, 'tasks', 'taskForged'), { title: 'מזויף', targetGroups: ['all'] }), 'deny')
+await check('an admin CAN create a broadcast task',
+  setDoc(doc(admin, 'tasks', 'taskFromAdmin'), {
+    title: 'משימה חדשה', targetGroups: ['all'], classIds: [], status: 'pending',
   }), 'allow')
 
 console.log('\n— escalation guards stay closed —')

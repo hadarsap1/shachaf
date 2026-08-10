@@ -93,12 +93,16 @@ service cloud.firestore {
                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
     }
 
-    // Tasks — admins read/write all; families read their assigned tasks
+    // Tasks — admins write; every signed-in user reads.
+    // Tasks are BROADCAST content: the admin panel creates them with
+    // `targetGroups` (all / role / class) and no `assignedTo` field at all, and
+    // the client filters by target on read. The old rule required
+    // `resource.data.assignedTo == uid`, which denied the whole /tasks list
+    // query (an unfiltered list can't be proven safe) and made every family's
+    // task page come up empty. Task docs carry school content only — title,
+    // description, due date, target — no family data.
     match /tasks/{taskId} {
-      allow read: if request.auth != null
-                  && (resource.data.assignedTo == request.auth.uid
-                      || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-                         in ['admin', 'super_admin']);
+      allow read: if request.auth != null;
       allow write: if request.auth != null
                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                       in ['admin', 'super_admin'];
