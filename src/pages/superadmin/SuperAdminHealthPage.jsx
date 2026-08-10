@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { getUsers, getChildren, getClasses, getPendingFamilies, markUsersImported } from '../../lib/db'
-import { computeHealthAnomalies, onboardingGaps } from '../../lib/health'
+import { getUsers, getChildren, getClasses, getPendingFamilies, markUsersImported, markOnboardingComplete } from '../../lib/db'
+import { computeHealthAnomalies, onboardingGaps, closableOnboarding } from '../../lib/health'
 import { RefreshCw, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -105,7 +105,11 @@ export default function SuperAdminHealthPage() {
 
   useEffect(() => { load() }, [load])
 
-  if (loading) {
+  // Only the very first load blanks the page. A refresh — including the one
+  // that follows a bulk action — keeps the current view, so the sections the
+  // admin opened stay open and the result of the action is visible instead of
+  // the panel snapping shut. The spinning refresh icon signals the reload.
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 size={32} className="animate-spin text-primary-400" />
@@ -121,6 +125,9 @@ export default function SuperAdminHealthPage() {
     parentsNoChildren, unlinkedChildren, childrenNoClass,
     classesNoAdmin, staleClassIds, missingImportedFlag, total,
   } = computeHealthAnomalies({ users, children, classes, pending })
+
+  // Only the families with nothing actually missing can be closed in bulk.
+  const closable = closableOnboarding(onboardingIncomplete, children)
 
   const userLine = (u, extra = '') => (
     <div className="flex items-center justify-between gap-2">
@@ -219,6 +226,10 @@ export default function SuperAdminHealthPage() {
         items={onboardingIncomplete}
         renderItem={onboardingLine}
         linkTo="/admin/users" linkLabel="לניהול חברים"
+        action={closable.length > 0 ? {
+          label: `סמן כהושלם את ${closable.length} המשפחות שלא חסר להן כלום`,
+          run: async () => { await markOnboardingComplete(closable.map(u => u.uid)); load() },
+        } : undefined}
       />
 
       <AnomalySection

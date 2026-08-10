@@ -585,6 +585,12 @@ async function main() {
         await empty.getByText('לא אישרו את התקנון').waitFor({ timeout: 10000 })
 
         await shoot(su, 'health-onboarding-reasons')
+
+        // One click closes only the family with nothing missing; the one with
+        // real gaps has to stay on the list.
+        await su.getByRole('button', { name: /סמן כהושלם את 1 המשפחות/ }).click()
+        await su.getByText('מיכל שלמה').first().waitFor({ state: 'detached', timeout: 15000 })
+        await su.getByText('רון חסר').first().waitFor({ timeout: 10000 })
         assertClean('בקרת תקינות')
         await su.context().close()
       })

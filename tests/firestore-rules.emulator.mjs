@@ -367,6 +367,12 @@ await check('a family CANNOT wipe another family\'s completion',
 await check('a family CAN add itself next to another family\'s completion',
   updateDoc(doc(parent, 'tasks', 'taskProgressShared'), { doneBy: ['stranger1', 'parent1'] }), 'allow')
 
+console.log('\n— closing the onboarding flag from the health page —')
+await check('an admin CAN close another member\'s onboarding flag',
+  updateDoc(doc(admin, 'users', 'stranger1'), { onboardingComplete: true }), 'allow')
+await check('a member CANNOT close it for someone else',
+  updateDoc(doc(parent, 'users', 'stranger1'), { onboardingComplete: true }), 'deny')
+
 console.log('\n— member names must be Hebrew —')
 await check('a member CAN set a Hebrew name',
   updateDoc(doc(parent, 'users', 'parent1'), { name: 'דוד כהן' }), 'allow')
