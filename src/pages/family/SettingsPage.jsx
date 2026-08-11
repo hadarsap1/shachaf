@@ -481,6 +481,8 @@ export default function SettingsPage() {
     profession: '',
     hobbies: '',
     temporaryStatus: '',
+    birthDate: '',
+    birthdayShared: false,
   })
 
   useEffect(() => {
@@ -495,6 +497,8 @@ export default function SettingsPage() {
           profession: data.profession || '',
           hobbies: (data.hobbies || []).join(', '),
           temporaryStatus: data.temporaryStatus || '',
+          birthDate: data.birthDate || '',
+          birthdayShared: !!data.birthdayShared,
         }))
       }
     })
@@ -527,11 +531,22 @@ export default function SettingsPage() {
         name: normalizeName(form.name),
         phone: form.phone,
         address: form.address,
+        birthDate: form.birthDate,
+        // Sharing is off unless a date was actually entered — a stray tick on
+        // an empty field must not publish anything.
+        birthdayShared: !!form.birthDate && form.birthdayShared,
         workplace: form.workplace,
         profession: form.profession,
         hobbies: form.hobbies.split(',').map(h => h.trim()).filter(Boolean),
         temporaryStatus: form.temporaryStatus,
       })
+      // Every consent checkbox is recorded (see CLAUDE.md privacy rules).
+      if (form.birthDate && form.birthdayShared && !user.birthdayShared) {
+        logConsent(user.uid, 'share_birthday', {
+          label: 'שיתוף יום ההולדת בלוח השנה הקהילתי (יום וחודש בלבד)',
+          version: CONSENT_VERSION,
+        })
+      }
       if (avatarFile) {
         try {
           if (user.avatarPath) await deleteUserAvatar(user.avatarPath)
@@ -651,6 +666,36 @@ export default function SettingsPage() {
               className="input w-full text-right"
               placeholder="רחוב, עיר"
             />
+          </div>
+          <div>
+            <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">
+              <Calendar size={13} className="text-gray-400" />
+              תאריך לידה
+            </label>
+            <input
+              type="date"
+              value={form.birthDate}
+              onChange={e => handleChange('birthDate', e.target.value)}
+              className="input w-full text-right"
+              dir="ltr"
+            />
+            {/* Opt-in, never a default: nothing about this date is visible to
+                anyone until the box is ticked, and the tick is recorded in the
+                consent log like every other consent in the app. */}
+            <label className="flex items-start gap-2 mt-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.birthdayShared}
+                disabled={!form.birthDate}
+                onChange={e => handleChange('birthdayShared', e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-primary-600 flex-shrink-0 disabled:opacity-40"
+              />
+              <span className={clsx('text-xs leading-relaxed text-right',
+                form.birthDate ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400')}>
+                שתפו את יום ההולדת שלי בלוח השנה של הקהילה (יוצגו היום והחודש בלבד,
+                בלי שנת הלידה, ורק להורי הכיתה)
+              </span>
+            </label>
           </div>
           <div>
             <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">

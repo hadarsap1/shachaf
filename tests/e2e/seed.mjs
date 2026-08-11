@@ -3,6 +3,9 @@
 // emulator. Imported by run.mjs; not meant to be executed on its own.
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import { doc, setDoc } from 'firebase/firestore'
+// Imported, not hardcoded: bumping CONSENT_VERSION would otherwise re-prompt
+// every seeded user and quietly break half the suite.
+import { CONSENT_VERSION } from '../../src/lib/consent.js'
 
 export const PROJECT_ID = 'shachaf-e2e'
 const AUTH_HOST = '127.0.0.1:9099'
@@ -34,6 +37,10 @@ export const SEED = {
   groupName: 'חוג ריצה',
   announcement: 'ברוכים הבאים לשנה החדשה',
   resourceTitle: 'מדריך למשפחה חדשה',
+  // Birthdays are matched on MM-DD, so pin them to today for the calendar test.
+  childBirthday:  'נועה כהן',
+  parentBirthday: ACCOUNTS.parent.name,
+  hiddenBirthday: 'מיכל שלמה',
   today: day(0),
   soon: day(7),
   past: day(-30),
@@ -76,27 +83,28 @@ export async function seed() {
     await set('users', uids.admin, {
       uid: uids.admin, email: ACCOUNTS.admin.email, name: ACCOUNTS.admin.name,
       role: 'admin', roles: [], status: 'active', phone: '050-1111111',
-      consentVersion: '1.2', consentAt: new Date(),
+      consentVersion: CONSENT_VERSION, consentAt: new Date(),
     })
     // A family that finished onboarding: `new_family` in `roles` is what gates
     // the task board and the forms list on the dashboard.
     await set('users', uids.super, {
       uid: uids.super, email: ACCOUNTS.super.email, name: ACCOUNTS.super.name,
       role: 'super_admin', roles: [], status: 'active',
-      consentVersion: '1.2', consentAt: new Date(),
+      consentVersion: CONSENT_VERSION, consentAt: new Date(),
     })
     await set('users', uids.parent, {
       uid: uids.parent, email: ACCOUNTS.parent.email, name: ACCOUNTS.parent.name,
       role: 'new_family', roles: [], status: 'active', phone: '050-2222222',
       classIds: [SEED.classId], childIds: ['child-1'],
       onboardingComplete: true, tutorialSeen: true,
-      consentVersion: '1.2', consentAt: new Date(),
+      birthDate: `1985-${day(0).slice(5)}`, birthdayShared: true,
+      consentVersion: CONSENT_VERSION, consentAt: new Date(),
     })
     // Matched against an admin import → lands on the pending-approval screen.
     await set('users', uids.imported, {
       uid: uids.imported, email: ACCOUNTS.imported.email, name: ACCOUNTS.imported.name,
       role: 'community', roles: [], status: 'pending', imported: true,
-      consentVersion: '1.2', consentAt: new Date(),
+      consentVersion: CONSENT_VERSION, consentAt: new Date(),
     })
 
     // Two families flagged as "did not finish onboarding" for opposite
@@ -105,7 +113,10 @@ export async function seed() {
     await set('users', 'stalled-complete', {
       uid: 'stalled-complete', email: 'stalled1@e2e.test', name: 'מיכל שלמה',
       role: 'new_family', roles: [], status: 'active', phone: '050-9999999',
-      classIds: [SEED.classId], consentVersion: '1.2', consentAt: new Date(),
+      classIds: [SEED.classId],
+      // Has a birth date but never ticked the box — must stay invisible.
+      birthDate: `1983-${day(0).slice(5)}`, birthdayShared: false,
+      consentVersion: CONSENT_VERSION, consentAt: new Date(),
     })
     // 2) Registered and stopped: no children, no phone, no consent.
     await set('users', 'stalled-empty', {
@@ -119,6 +130,7 @@ export async function seed() {
     })
     await set('children', 'child-1', {
       name: 'נועה כהן', classId: SEED.classId, parentUids: [uids.parent],
+      birthDate: `2016-${day(0).slice(5)}`,
       parents: [{ name: ACCOUNTS.parent.name, email: ACCOUNTS.parent.email, phone: '050-2222222' }],
       parentEmails: [ACCOUNTS.parent.email],
     })

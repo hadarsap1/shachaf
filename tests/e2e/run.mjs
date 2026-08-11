@@ -490,6 +490,27 @@ async function main() {
         })
       }
 
+      await step('לוח השנה מציג יום הולדת של ילד ושל הורה, בצבעים שונים', async () => {
+        await page.goto(`${BASE}/events`, { waitUntil: 'domcontentloaded' })
+        await page.getByRole('button', { name: 'לוח שנה' }).click()
+        const child  = page.getByText(`🎂 ${SEED.childBirthday}`).first()
+        const parent = page.getByText(`🎈 ${SEED.parentBirthday}`).first()
+        await child.waitFor({ timeout: 15000 })
+        await parent.waitFor({ timeout: 15000 })
+        const childColor  = await child.evaluate(el => getComputedStyle(el).color)
+        const parentColor = await parent.evaluate(el => getComputedStyle(el).color)
+        assert(childColor !== parentColor,
+          `ילד והורה מוצגים באותו צבע (${childColor})`)
+        await shoot(page, 'calendar-birthdays')
+        assertClean('ימי הולדת בלוח השנה')
+      })
+
+      await step('יום הולדת של הורה שלא שיתף אינו מוצג לאיש', async () => {
+        const body = await page.locator('body').innerText()
+        assert(!body.includes(SEED.hiddenBirthday),
+          'יום הולדת של הורה שלא סימן שיתוף דלף ללוח השנה')
+      })
+
       await step('מתג מצב התצוגה יושב בתוך המסגרת שלו ומחליף ערכת נושא', async () => {
         await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded' })
         const toggle = page.getByRole('switch')
