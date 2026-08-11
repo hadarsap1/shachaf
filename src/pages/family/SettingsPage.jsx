@@ -124,13 +124,16 @@ function TutorialItem({ tutorial }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between p-4 text-right hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
       >
-        <span className="text-gray-400">
-          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </span>
+        {/* Title first, chevron last. In an RTL row the FIRST flex child sits
+            on the right — with the chevron first it took the right edge and
+            pushed the title over to the left, mirroring the whole row. */}
         <div className="flex items-center gap-3">
           <span className="text-xl">{tutorial.icon}</span>
           <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{tutorial.title}</span>
         </div>
+        <span className="text-gray-400 flex-shrink-0">
+          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </span>
       </button>
       {open && (
         <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
