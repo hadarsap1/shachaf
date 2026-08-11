@@ -24,17 +24,19 @@ function AnomalySection({ emoji, title, hint, severity, items, renderItem, linkT
 
   return (
     <div className={clsx('card border overflow-hidden mb-3', sev.border)}>
+      {/* RTL order: the first flex child takes the RIGHT edge. Emoji + title
+          lead on the right; the count and the chevron trail on the left. */}
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 text-right">
-        <div className="flex items-center gap-2">
-          <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', sev.chip)}>{items.length}</span>
-          <ChevronDown size={15} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
-        </div>
         <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xl leading-none flex-shrink-0">{emoji}</span>
           <div className="text-right min-w-0">
             <div className="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">{title}</div>
             <div className="text-xs text-gray-400 truncate">{hint}</div>
           </div>
-          <span className="text-xl leading-none flex-shrink-0">{emoji}</span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', sev.chip)}>{items.length}</span>
+          <ChevronDown size={15} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
         </div>
       </button>
 

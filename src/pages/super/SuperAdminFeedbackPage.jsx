@@ -40,17 +40,6 @@ function FeedbackItem({ item, onStatusChange }) {
       (!item.status || item.status === 'new') ? 'border-amber-300 dark:border-amber-700' : 'border-gray-100 dark:border-gray-700'
     )}>
       <div className="flex items-start justify-between gap-3 p-4 cursor-pointer" onClick={() => setExpanded(e => !e)}>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-          <select
-            value={item.status || 'new'}
-            onClick={e => e.stopPropagation()}
-            onChange={e => { e.stopPropagation(); onStatusChange(item.id, e.target.value) }}
-            className={clsx('text-xs px-2.5 py-1.5 rounded-lg border font-medium cursor-pointer', STATUS_STYLE[item.status] || STATUS_STYLE.new)}
-          >
-            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-        </div>
         <div className="text-right flex-1 min-w-0">
           <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-1.5 justify-end">
             {item.source === 'login' && (
@@ -62,6 +51,18 @@ function FeedbackItem({ item, onStatusChange }) {
           </div>
           <div className="text-xs text-gray-400 truncate">{item.submittedBy?.email}</div>
           {ts && <div className="text-xs text-gray-300 mt-0.5">{ts.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
+        </div>
+        {/* Trailing controls: last child, so RTL puts them on the left. */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <select
+            value={item.status || 'new'}
+            onClick={e => e.stopPropagation()}
+            onChange={e => { e.stopPropagation(); onStatusChange(item.id, e.target.value) }}
+            className={clsx('text-xs px-2.5 py-1.5 rounded-lg border font-medium cursor-pointer', STATUS_STYLE[item.status] || STATUS_STYLE.new)}
+          >
+            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+          {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
         </div>
       </div>
 
