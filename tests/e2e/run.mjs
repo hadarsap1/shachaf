@@ -245,7 +245,9 @@ async function main() {
   })
 
   const newPage = async (viewport) => {
-    const ctx = await browser.newContext({ viewport, locale: 'he-IL' })
+    // colorScheme is pinned: the app seeds its theme from prefers-color-scheme,
+    // so without this the theme assertions would depend on the host.
+    const ctx = await browser.newContext({ viewport, locale: 'he-IL', colorScheme: 'light' })
     // Third-party requests (Google Fonts) are cut off: the suite is about this
     // app's own behaviour, and a network that may or may not reach fonts.google
     // otherwise turns every navigation into a 30s stall on `networkidle`.
@@ -487,6 +489,35 @@ async function main() {
           assertClean(path)
         })
       }
+
+      await step('מתג מצב התצוגה יושב בתוך המסגרת שלו ומחליף ערכת נושא', async () => {
+        await page.goto(`${BASE}/settings`, { waitUntil: 'domcontentloaded' })
+        const toggle = page.getByRole('switch')
+        await toggle.waitFor({ timeout: 15000 })
+        // The knob must stay inside the track — the RTL bug pushed it out.
+        const fits = await toggle.evaluate((btn) => {
+          const track = btn.getBoundingClientRect()
+          const knob = btn.firstElementChild.getBoundingClientRect()
+          return knob.left >= track.left - 0.5 && knob.right <= track.right + 0.5
+        })
+        assert(fits, 'ידית המתג חורגת מהמסגרת')
+        assert(await toggle.getAttribute('aria-checked') === 'false', 'המתג לא התחיל במצב בהיר')
+        await toggle.click()
+        await page.waitForFunction(() => document.documentElement.classList.contains('dark'), null, { timeout: 5000 })
+        await shoot(page, 'settings-theme-toggle')
+        await toggle.click()
+        assertClean('מתג מצב תצוגה')
+      })
+
+      await step('קרדיט הבנייה מופיע בתחתית ההגדרות ומקושר לאתר', async () => {
+        const credit = page.getByRole('link', { name: 'hadarsap.online' })
+        await credit.waitFor({ timeout: 10000 })
+        assert(await credit.getAttribute('href') === 'https://hadarsap.online/',
+          'הקישור לא מצביע לאתר הנכון')
+        assert((await credit.getAttribute('rel') || '').includes('noopener'),
+          'קישור חיצוני בלי rel="noopener"')
+        await expectText(page, 'האתר נבנה ע״י')
+      })
 
       await step('בקשת הצטרפות לוועדה נרשמת ומופיעה מיד', async () => {
         await page.goto(`${BASE}/committees`, { waitUntil: 'domcontentloaded' })
