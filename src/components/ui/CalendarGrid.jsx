@@ -8,6 +8,17 @@ const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמיש
 
 const SCHOOL_COLOR = '#1B3B70'
 
+// Birthdays are colour-coded by who they belong to: children stay pink (as
+// they always were), parents get their own violet so the two never blur
+// together on a busy day. The emoji differs too, for anyone who cannot rely
+// on colour alone.
+const BIRTHDAY_TEXT = {
+  child:  'text-pink-600 dark:text-pink-400',
+  parent: 'text-violet-600 dark:text-violet-400',
+}
+const BIRTHDAY_ICON  = { child: '🎂', parent: '🎈' }
+const BIRTHDAY_LABEL = { child: 'יום הולדת של ילד/ה', parent: 'יום הולדת של הורה' }
+
 function getEventColor(event, classColorMap) {
   if (!event.classIds?.length) return SCHOOL_COLOR
   for (const cid of event.classIds) {
@@ -212,11 +223,14 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                   const shown = dayBirthdays.slice(0, 2)
                   return (
                     <>
-                      {shown.map(name => (
-                        <div key={name} className="text-[10px] px-1 leading-snug text-pink-600 dark:text-pink-400 truncate">🎂 {name}</div>
+                      {shown.map(b => (
+                        <div key={`${b.kind}-${b.name}`}
+                          className={clsx('text-[10px] px-1 leading-snug truncate', BIRTHDAY_TEXT[b.kind])}>
+                          {BIRTHDAY_ICON[b.kind]} {b.name}
+                        </div>
                       ))}
                       {dayBirthdays.length > 2 && (
-                        <div className="text-[10px] px-1 text-pink-500 dark:text-pink-400">+{dayBirthdays.length - 2} נוספים</div>
+                        <div className="text-[10px] px-1 text-gray-500 dark:text-gray-400">+{dayBirthdays.length - 2} נוספים</div>
                       )}
                     </>
                   )
@@ -229,9 +243,11 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                   <EventDot key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                     isConflict={conflictEventIds.has(ev.id)} />
                 ))}
-                {(birthdaysByMonthDay[cell.key.slice(5)] || []).length > 0 && (
-                  <span className="text-[10px]" title={(birthdaysByMonthDay[cell.key.slice(5)] || []).join(', ')}>🎂</span>
-                )}
+                {(birthdaysByMonthDay[cell.key.slice(5)] || []).map(b => (
+                  <span key={`${b.kind}-${b.name}`} className="text-[10px]" title={`${b.name} — ${BIRTHDAY_LABEL[b.kind]}`}>
+                    {BIRTHDAY_ICON[b.kind]}
+                  </span>
+                ))}
               </div>
             </div>
           )
@@ -274,8 +290,10 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                   <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                     isConflict={conflictEventIds.has(ev.id)} />
                 ))}
-                {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
-                  <div key={name} className="text-xs px-2 py-1 text-pink-600 dark:text-pink-400">🎂 {name}</div>
+                {(birthdaysByMonthDay[day.key.slice(5)] || []).map(b => (
+                  <div key={`${b.kind}-${b.name}`} className={clsx('text-xs px-2 py-1', BIRTHDAY_TEXT[b.kind])}>
+                    {BIRTHDAY_ICON[b.kind]} {b.name}
+                  </div>
                 ))}
               </div>
             </div>
@@ -309,14 +327,18 @@ function WeekView({ weekDays, eventsByDay, onEventClick, today, classColorMap, c
                     <WeekEventCard key={ev.id} event={ev} onClick={onEventClick} classColorMap={classColorMap}
                       isConflict={conflictEventIds.has(ev.id)} />
                   ))}
-                  {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
-                    <div key={name} className="text-xs px-2 py-1 text-pink-600 dark:text-pink-400">🎂 {name}</div>
+                  {(birthdaysByMonthDay[day.key.slice(5)] || []).map(b => (
+                    <div key={`${b.kind}-${b.name}`} className={clsx('text-xs px-2 py-1', BIRTHDAY_TEXT[b.kind])}>
+                      {BIRTHDAY_ICON[b.kind]} {b.name}
+                    </div>
                   ))}
                 </div>
               ) : (birthdaysByMonthDay[day.key.slice(5)] || []).length > 0 ? (
                 <div className="space-y-1">
-                  {(birthdaysByMonthDay[day.key.slice(5)] || []).map(name => (
-                    <div key={name} className="text-xs px-2 py-1 text-pink-600 dark:text-pink-400">🎂 {name}</div>
+                  {(birthdaysByMonthDay[day.key.slice(5)] || []).map(b => (
+                    <div key={`${b.kind}-${b.name}`} className={clsx('text-xs px-2 py-1', BIRTHDAY_TEXT[b.kind])}>
+                      {BIRTHDAY_ICON[b.kind]} {b.name}
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -338,13 +360,15 @@ export default function CalendarGrid({ events = [], filterRole, classColorMap = 
 
   const today = todayKey()
 
-  // Index birthdays by MM-DD (year-agnostic)
+  // Index birthdays by MM-DD (year-agnostic — the year is never displayed).
+  // Each entry keeps who it belongs to so children and parents can be told
+  // apart by colour in every view.
   const birthdaysByMonthDay = {}
-  birthdays.forEach(child => {
-    if (!child.birthDate) return
-    const key = child.birthDate.slice(5)
+  birthdays.forEach(person => {
+    if (!person.birthDate) return
+    const key = person.birthDate.slice(5)
     if (!birthdaysByMonthDay[key]) birthdaysByMonthDay[key] = []
-    birthdaysByMonthDay[key].push(child.name)
+    birthdaysByMonthDay[key].push({ name: person.name, kind: person.kind === 'parent' ? 'parent' : 'child' })
   })
 
   // Filter events by role

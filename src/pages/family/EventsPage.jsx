@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees,
-  getMealTrains, claimedAddresses,
+  getMealTrains, claimedAddresses, getUsersByUids,
 } from '../../lib/db'
+import { hasConsented, childHasConsentedParent } from '../../lib/consent'
 import { myMealTrainEvents } from '../../lib/mealTrain'
 import { isEventVisibleTo } from '../../lib/eventVisibility'
 import { isEventPast } from '../../lib/calendar'
@@ -120,7 +121,22 @@ export default function EventsPage() {
       setEvents(allEvents)
       if (myClassIds.length > 0) {
         const classKids = (await Promise.all(myClassIds.map(id => getChildren(id)))).flat()
-        setBirthdays(classKids.filter(c => c.birthDate))
+        // The parents of this class — needed both for the children's privacy
+        // check and for the parents' own birthdays.
+        const parentUids = [...new Set(classKids.flatMap(k => k.parentUids || []))]
+        const parents = parentUids.length > 0 ? await getUsersByUids(parentUids) : []
+        const byUid = Object.fromEntries(parents.map(u => [u.uid, u]))
+        setBirthdays([
+          // Same privacy rule the class roster uses: a child shows only once a
+          // linked parent approved the current policy.
+          ...classKids
+            .filter(c => c.birthDate && childHasConsentedParent(c, byUid))
+            .map(c => ({ name: c.name, birthDate: c.birthDate, kind: 'child' })),
+          // A parent shows only if they ticked the box themselves.
+          ...parents
+            .filter(u => u.birthDate && u.birthdayShared && hasConsented(u))
+            .map(u => ({ name: u.name, birthDate: u.birthDate, kind: 'parent' })),
+        ])
       }
       setLoading(false)
     }

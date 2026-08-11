@@ -20,6 +20,19 @@ html {
   direction: rtl;
 }
 
+/* iOS Safari gives date/time inputs an intrinsic width of their own and
+   ignores the container, so a birth-date field spilled past the edge of its
+   card on a phone. Resetting the native appearance lets width:100% actually
+   apply, and min-width:0 stops the field from forcing its parent wider. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   font-family: 'Heebo', 'Inter', system-ui, sans-serif;

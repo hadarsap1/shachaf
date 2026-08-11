@@ -7,7 +7,7 @@
 // consent on their next visit. users/{uid}.consentVersion + consentAt are
 // the stored evidence of consent.
 
-export const CONSENT_VERSION = '1.2'
+export const CONSENT_VERSION = '1.3'
 
 export const CONSENT_PURPOSES = [
   'הפקת דף קשר כיתתי וקהילתי לחברי הקהילה',
@@ -15,6 +15,7 @@ export const CONSENT_PURPOSES = [
   'תיאום אירועים ופעילויות קהילתיות (כולל רישום הגעה)',
   'תקשורת קהילתית — ועדות, קבוצות עניין והודעות',
   'תיאום סירי לידה — שיבוץ מתנדבים לימי בישול והעברת פרטי מסירה למי שנרשם',
+  'הצגת ימי הולדת בלוח השנה המשותף — של ילדים, ושל הורים שבחרו לשתף',
 ]
 
 export const CONSENT_EXPOSURE =
@@ -22,7 +23,9 @@ export const CONSENT_EXPOSURE =
   'ומשפחה קולטת שהוקצתה לך. שם ילדך וכיתתו יוצגו להורי הכיתה; ' +
   'תמונת ילד תוצג רק אם העלית אותה מרצונך. ' +
   'פתחת סיר לידה? כתובת המסירה וקוד הכניסה שתמסור יוצגו אך ורק למי ' +
-  'שנרשם לתאריך בישול בסיר שלך (ולצוות הניהול), ולא לשאר חברי הקהילה.'
+  'שנרשם לתאריך בישול בסיר שלך (ולצוות הניהול), ולא לשאר חברי הקהילה. ' +
+  'תאריך הלידה שלך אינו מוצג לאיש, אלא אם סימנת במפורש בהגדרות שברצונך ' +
+  'שיופיע בלוח השנה — ואז יוצגו רק היום והחודש להורי הכיתה, בלי שנת הלידה.'
 
 // Where the data physically lives — required disclosure (transfer-of-data
 // regulations). Referenced by the consent dialog, the privacy policy and the

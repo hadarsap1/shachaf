@@ -185,6 +185,9 @@ export async function getNewFamilies() {
 const ALLOWED_PROFILE_FIELDS = [
   'name', 'phone', 'address', 'avatar', 'avatarPath',
   'workplace', 'profession', 'hobbies', 'temporaryStatus',
+  // Birthday: the date is stored on the profile, but nothing shows it unless
+  // `birthdayShared` was ticked. Only day+month are ever rendered.
+  'birthDate', 'birthdayShared',
 ]
 
 // Record the user's informed consent — consentVersion + consentAt on the
