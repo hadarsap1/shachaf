@@ -747,7 +747,7 @@ export default function SettingsPage() {
       )}
 
       {/* Tutorials section */}
-      <section>
+      <section className="mb-6">
         <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2 justify-end dark:text-gray-200">
           <span className="text-base">📖</span>
           מדריכי שימוש
@@ -766,18 +766,25 @@ export default function SettingsPage() {
           מצב תצוגה
         </h2>
         <div className="flex items-center justify-between">
+          {/* dir="ltr" on the switch itself: translate-x is not direction
+              aware, so inside the RTL page the knob started at the track's
+              right edge and a positive translate pushed it clean out of the
+              track. Pinning the switch to LTR makes the two positions the
+              4px inset each side that the track was sized for. */}
           <button
             onClick={toggleTheme}
+            dir="ltr"
             className={clsx(
-              'relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none',
+              'relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
               theme === 'dark' ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
             )}
             role="switch"
             aria-checked={theme === 'dark'}
+            aria-label={theme === 'dark' ? 'מצב כהה — לחצו למעבר למצב בהיר' : 'מצב בהיר — לחצו למעבר למצב כהה'}
           >
             <span className={clsx(
               'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200',
-              theme === 'dark' ? 'translate-x-1' : 'translate-x-6'
+              theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
             )} />
           </button>
           <span className="text-sm text-gray-700 dark:text-gray-200">
@@ -815,6 +822,18 @@ export default function SettingsPage() {
           הכפתור הזה מוריד את הגרסה העדכנית ומנקה את המטמון.
         </p>
       </section>
+
+      <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-2 mb-4">
+        האתר נבנה ע״י{' '}
+        <a
+          href="https://hadarsap.online/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+        >
+          hadarsap.online
+        </a>
+      </p>
     </div>
   )
 }
