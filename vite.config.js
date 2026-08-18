@@ -66,6 +66,12 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        // /__/auth/* is Firebase's sign-in handler, proxied through our own host
+        // (vercel.json) so an installed app can finish a Google sign-in without
+        // being sent to the browser. The navigation fallback would answer those
+        // requests with our cached index.html — the app shell instead of the
+        // handler — and the sign-in would die inside the service worker.
+        navigateFallbackDenylist: [/^\/__\//],
         // Firestore/Auth use a real-time WebChannel — a service worker intercepting
         // those requests (even with NetworkFirst) can silently break the channel.
         // Never cache or intercept them; only cache static Google Fonts.

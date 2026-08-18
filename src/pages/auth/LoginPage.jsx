@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth, GOOGLE_PENDING_KEY } from '../../context/AuthContext'
+import { AUTH_HANDLER_IS_FIRST_PARTY } from '../../lib/firebase'
 import LoginHelpButton from '../../components/LoginHelpButton'
 import { hebrewNameError, normalizeName } from '../../lib/hebrewName'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
@@ -92,9 +93,15 @@ export default function LoginPage() {
   const [error, setError]         = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  // Coming back from a Google redirect: any installed app, not just iOS. On
+  // Android the redirect state used to be lost on return, so a failed sign-in
+  // simply redrew the login screen with no explanation and no way forward.
   const [awaitingGoogleReturn, setAwaitingGoogleReturn] = useState(
-    () => isIOS() && consumeStaleGooglePending()
+    () => isStandalone() && consumeStaleGooglePending()
   )
+  // Sign-in gave up inside the installed app — offer the browser as a way in
+  // rather than leaving the user staring at the same screen.
+  const [offerBrowserFallback, setOfferBrowserFallback] = useState(false)
 
   // Never wait forever. If the session has not arrived by now it is not coming,
   // and the user needs to be told rather than left watching a spinner.
@@ -104,6 +111,7 @@ export default function LoginPage() {
       localStorage.removeItem(GOOGLE_PENDING_KEY)
       sessionStorage.removeItem(RELOAD_GUARD_KEY)
       setAwaitingGoogleReturn(false)
+      setOfferBrowserFallback(isStandalone())
       setError('לא הצלחנו להשלים את הכניסה עם Google. נסו שוב, או היכנסו עם מייל וסיסמה.')
     }, GOOGLE_WAIT_GIVEUP_MS)
     return () => clearTimeout(t)
@@ -147,6 +155,7 @@ export default function LoginPage() {
       localStorage.removeItem(GOOGLE_PENDING_KEY)
       sessionStorage.removeItem(RELOAD_GUARD_KEY)
       setAwaitingGoogleReturn(false)
+      setOfferBrowserFallback(isStandalone())
       const msg = firebaseError(err.code)
       if (msg) setError(msg)
     } finally {
@@ -320,9 +329,11 @@ export default function LoginPage() {
                     <span className="font-medium">ממתין לכניסה ב-Google...</span>
                   </div>
                   <p className="text-xs text-primary-500 text-center">
-                    {isStandalone()
-                      ? 'השלם כניסה עם Google בדפדפן שנפתח — לאחר מכן חזור לאפליקציה'
-                      : 'חזור לאפליקציה לאחר הכניסה בדפדפן'}
+                    {AUTH_HANDLER_IS_FIRST_PARTY
+                      ? 'משלימים את הכניסה מול Google — זה ייקח רגע'
+                      : isStandalone()
+                        ? 'השלם כניסה עם Google בדפדפן שנפתח — לאחר מכן חזור לאפליקציה'
+                        : 'חזור לאפליקציה לאחר הכניסה בדפדפן'}
                   </p>
                   <button
                     type="button"
@@ -332,10 +343,13 @@ export default function LoginPage() {
                     ביטול
                   </button>
                 </div>
-              ) : (isIOS() && isStandalone()) ? (
-                // Only iOS needs this. A standalone WKWebView cannot finish the
-                // redirect, but a real <a target="_blank"> tap opens Safari,
-                // which shares this origin's auth storage with the app.
+              ) : (isIOS() && isStandalone() && !AUTH_HANDLER_IS_FIRST_PARTY) ? (
+                // Last resort, and only while the sign-in handler is served by
+                // firebaseapp.com: a standalone WKWebView cannot finish a
+                // cross-site redirect, but a real <a target="_blank"> tap opens
+                // Safari, which shares this origin's auth storage with the app.
+                // Once /__/auth is proxied through our own host the redirect
+                // completes inside the app and this detour disappears.
                 <a
                   href={`${window.location.origin}/login?google=1`}
                   target="_blank"
@@ -433,6 +447,22 @@ export default function LoginPage() {
                 </div>
 
                 {error && <p className="text-sm text-red-500 text-right">{error}</p>}
+
+                {/* Installed app, sign-in did not complete: the browser shares
+                    this origin's auth storage, so finishing there gets the user
+                    in. A dead end otherwise. */}
+                {offerBrowserFallback && (
+                  <a
+                    href={`${window.location.origin}/login?google=1`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={handleGoogleStandaloneClick}
+                    className="w-full flex items-center justify-center gap-2 border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/30 rounded-xl py-2.5 px-4 text-sm font-medium text-primary-700 dark:text-primary-300 no-underline"
+                  >
+                    <GoogleIcon />
+                    המשך את הכניסה בדפדפן
+                  </a>
+                )}
 
                 {mode === 'login' && (
                   <button

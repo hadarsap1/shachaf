@@ -53,6 +53,7 @@
 | `VITE_FIREBASE_STORAGE_BUCKET` | Firebase Storage |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase config |
 | `VITE_FIREBASE_APP_ID` | Firebase config |
+| `VITE_AUTH_SELF_HOSTED` | `1` = Firebase's sign-in handler is served from our own domain through the `/__/auth/*` proxy in `vercel.json`, so an installed PWA can finish a Google sign-in in-app. Requires `https://<domain>/__/auth/handler` in the Google OAuth client's authorized redirect URIs. |
 
 ## Google Drive / Sheets
 
