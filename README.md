@@ -133,6 +133,10 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 
+# Sign-in handler served from our own domain — see "Google sign-in in the
+# installed app (PWA)" below. Empty/0 = off.
+VITE_AUTH_SELF_HOSTED=
+
 # Google Gemini — server-side only, never exposed to the browser (no VITE_ prefix)
 GEMINI_API_KEY=
 ```
