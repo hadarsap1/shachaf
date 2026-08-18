@@ -738,6 +738,17 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && resource.data.submittedBy.uid == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screenshotUrl']);
+
+      // A member can read the reports THEY filed. Without this an admin could
+      // answer a bug report and the answer would reach nobody — the reporter
+      // had no way to see it, which is how "נשלח לתהום" felt from the outside.
+      allow read: if request.auth != null
+                  && resource.data.submittedBy.uid == request.auth.uid;
+
+      // …and clear their own "new answer" flag once they have read it.
+      allow update: if request.auth != null
+                    && resource.data.submittedBy.uid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userUnread']);
       allow read, update: if request.auth != null
                           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
                              in ['admin', 'super_admin'];

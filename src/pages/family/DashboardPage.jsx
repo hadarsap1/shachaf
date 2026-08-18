@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext'
 import {
   getTasks, setTaskProgress, getEvents, getForms, getSubmissionsForFamily,
   getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
-  getMealTrains, claimedAddresses,
+  getMealTrains, claimedAddresses, getMyMessages, getMyFeedback,
 } from '../../lib/db'
 import { tasksForFamily } from '../../lib/tasks'
 import { classLabel, membersOfLabel } from '../../lib/grades'
 import { isEventVisibleTo, isUpcoming, todayKey } from '../../lib/eventVisibility'
+import { unreadReplyCount, replyBannerText } from '../../lib/replies'
 import { myMealTrainEvents } from '../../lib/mealTrain'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
@@ -230,6 +231,10 @@ export default function DashboardPage() {
   const [committees, setCommittees] = useState([])
   const [myClasses, setMyClasses]   = useState([])
   const [pendingForms, setPendingForms] = useState(0)
+  // Answers waiting for this family — a reply to a message, or an answer to a
+  // bug report. "צור קשר" is not in the phone's bottom bar, so without a line
+  // here an answered parent had no way to know they were answered.
+  const [replyCount, setReplyCount] = useState(0)
   const [loading, setLoading]       = useState(true)
   const [selectedEvent, setSelectedEvent] = useState(null)
   // A meal-train commitment opens its pot, not an event dialog
@@ -263,7 +268,10 @@ export default function DashboardPage() {
       getCommittees(),
       getClasses(),
       getMealTrains().catch(() => []),
-    ]).then(async ([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains]) => {
+      getMyMessages(user.uid).catch(() => []),
+      getMyFeedback(user.uid).catch(() => []),
+    ]).then(async ([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains, myMessages, myReports]) => {
+      setReplyCount(unreadReplyCount({ messages: myMessages, reports: myReports }))
       setGroups(groupData)
       setCommittees(committeeData)
       // Derive classIds from children — don't rely on user.classIds which may be stale
@@ -523,6 +531,21 @@ export default function DashboardPage() {
             <div className="text-xs text-red-500 mt-0.5">לחצו לצפייה בלוח השיעורים</div>
           </div>
           <ArrowLeft size={16} className="text-red-400 flex-shrink-0" />
+        </Link>
+      )}
+
+      {/* An answer is waiting — messages and bug reports both land here */}
+      {replyCount > 0 && (
+        <Link to="/contact"
+          className="flex items-center gap-3 bg-primary-50 border border-primary-200 dark:border-primary-800 rounded-2xl p-4 mb-5 hover:shadow-card-hover transition-[box-shadow] duration-200 dark:bg-primary-900/20">
+          <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0 dark:bg-primary-900/40">
+            <MessageCircle size={18} className="text-primary-600 dark:text-primary-300" />
+          </div>
+          <div className="flex-1 text-right">
+            <div className="font-bold text-primary-800 dark:text-primary-200 text-sm">{replyBannerText(replyCount)}</div>
+            <div className="text-xs text-primary-600 dark:text-primary-300 mt-0.5">לחצו לקריאת התשובה</div>
+          </div>
+          <ArrowLeft size={16} className="text-primary-400 flex-shrink-0" />
         </Link>
       )}
 
