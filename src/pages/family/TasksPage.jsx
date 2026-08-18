@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getTasks, setTaskProgress, getChildrenByParent, getForms, getSubmissionsForFamily, MILESTONES } from '../../lib/db'
+import { getTasks, setTaskProgress, getChildrenByParent, getForms, getSubmissionsForFamily, MILESTONES, invalidateCache } from '../../lib/db'
+import { withTimeout, isTimeout } from '../../lib/withTimeout'
+import PageLoader from '../../components/ui/PageLoader'
 import { tasksForFamily } from '../../lib/tasks'
 import TaskCard from '../../components/ui/TaskCard'
 import ProgressRing from '../../components/ui/ProgressRing'
-import { CheckSquare, Loader2, FileText, CheckCircle2 } from 'lucide-react'
+import { CheckSquare, FileText, CheckCircle2, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
 
 const FILTERS = [
@@ -23,14 +25,25 @@ export default function TasksPage() {
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
+
+  const retryLoad = () => {
+    invalidateCache('tasks', 'childrenBy', 'forms')
+    setLoadError(false)
+    setLoading(true)
+    setRetryKey(k => k + 1)
+  }
 
   useEffect(() => {
     if (!user?.uid) return
     // allSettled, not all: one rejected query (a rules change, a dropped
     // connection) used to reject the whole batch and render an empty page —
     // no tasks AND no forms — with nothing but a console line to show for it.
-    Promise.allSettled([getTasks(), getChildrenByParent(user.uid), getForms(), getSubmissionsForFamily(user.uid)])
-      .then(([tasksRes, childrenRes, formsRes, subsRes]) => {
+    // A deadline on top of allSettled: a query that HANGS never settles at all,
+    // so allSettled alone still leaves the spinner turning forever.
+    withTimeout(Promise.allSettled([
+      getTasks(), getChildrenByParent(user.uid), getForms(), getSubmissionsForFamily(user.uid),
+    ])).then(([tasksRes, childrenRes, formsRes, subsRes]) => {
         const failures = [tasksRes, childrenRes, formsRes, subsRes].filter(r => r.status === 'rejected')
         failures.forEach(r => console.error('tasks page load failed:', r.reason))
         setLoadError(failures.length > 0)
@@ -50,8 +63,12 @@ export default function TasksPage() {
         setSubmittedFormIds(new Set(submissions.map(s => s.formId)))
         setLoading(false)
       })
-      .catch(err => { console.error('tasks load failed:', err); setLoading(false) })
-  }, [user])
+      .catch(err => {
+        console.error(isTimeout(err) ? 'tasks load timed out' : 'tasks load failed:', err)
+        setLoadError(true)
+        setLoading(false)
+      })
+  }, [user, retryKey])
 
   const myTasks = tasks
   const doneTasks = myTasks.filter(t => t.status === 'done')
@@ -71,13 +88,7 @@ export default function TasksPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin" size={32} />
-      </div>
-    )
-  }
+  if (loading) return <PageLoader onRetry={retryLoad} />
 
   return (
     <div className="page-container rtl" dir="rtl">
@@ -94,8 +105,13 @@ export default function TasksPage() {
       </div>
 
       {loadError && (
-        <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-          חלק מהתוכן לא נטען. נסו לרענן את הדף — ואם זה חוזר, פנו לצוות.
+        <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3">
+          <button onClick={retryLoad}
+            className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700">
+            <RefreshCw size={13} />
+            נסו שוב
+          </button>
+          <span className="text-right">חלק מהתוכן לא נטען — ייתכן שהחיבור נקטע.</span>
         </div>
       )}
 

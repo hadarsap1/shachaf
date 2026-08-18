@@ -4,19 +4,21 @@ import { useAuth } from '../../context/AuthContext'
 import {
   getTasks, setTaskProgress, getEvents, getForms, getSubmissionsForFamily,
   getChildrenByParent, getEmergencyMode, getHobbyGroups, getCommittees, getClasses,
-  getMealTrains, claimedAddresses, getMyMessages, getMyFeedback,
+  getMealTrains, claimedAddresses, getMyMessages, getMyFeedback, invalidateCache,
 } from '../../lib/db'
 import { tasksForFamily } from '../../lib/tasks'
 import { classLabel, membersOfLabel } from '../../lib/grades'
 import { isEventVisibleTo, isUpcoming, todayKey } from '../../lib/eventVisibility'
 import { unreadReplyCount, replyBannerText } from '../../lib/replies'
+import { withTimeout, isTimeout } from '../../lib/withTimeout'
+import PageLoader from '../../components/ui/PageLoader'
 import { myMealTrainEvents } from '../../lib/mealTrain'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
 import {
   CheckSquare, Calendar, MessageCircle, ArrowLeft, ClipboardList,
-  Loader2, AlertTriangle, Heart, Network, Users, Settings2, GripVertical,
+  AlertTriangle, Heart, Network, Users, Settings2, GripVertical,
   Eye, EyeOff, ChevronUp, ChevronDown, X, GraduationCap,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -246,6 +248,16 @@ export default function DashboardPage() {
   const [widgetConfig, setWidgetConfig] = useState(loadWidgetConfig)
   const [showCustomize, setShowCustomize] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  // Bumped by "נסו שוב": re-runs the effect after dropping the read cache, so a
+  // retry cannot end up awaiting the very promise that hung.
+  const [retryKey, setRetryKey] = useState(0)
+
+  const retryLoad = () => {
+    invalidateCache('tasks', 'events', 'forms', 'childrenBy', 'hobbyGroups', 'committees', 'classes', 'mealTrains')
+    setLoadError(false)
+    setLoading(true)
+    setRetryKey(k => k + 1)
+  }
 
   const isFamily = allRoles?.has('new_family') || allRoles?.has('host_family')
 
@@ -258,7 +270,9 @@ export default function DashboardPage() {
     // Local date, not UTC: after 21:00 Israel time toISOString() already reads
     // tomorrow, which used to drop today's events off the dashboard.
     const today = todayKey()
-    Promise.all([
+    // A deadline, not just a catch: a stalled Firestore read never rejects, and
+    // without this the page waits on a spinner that no longer means anything.
+    withTimeout(Promise.all([
       isFamily ? getTasks() : Promise.resolve([]),
       getEvents(),
       isFamily ? getForms() : Promise.resolve([]),
@@ -270,7 +284,7 @@ export default function DashboardPage() {
       getMealTrains().catch(() => []),
       getMyMessages(user.uid).catch(() => []),
       getMyFeedback(user.uid).catch(() => []),
-    ]).then(async ([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains, myMessages, myReports]) => {
+    ])).then(async ([taskData, eventData, allForms, allSubs, children, groupData, committeeData, allClasses, mealTrains, myMessages, myReports]) => {
       setReplyCount(unreadReplyCount({ messages: myMessages, reports: myReports }))
       setGroups(groupData)
       setCommittees(committeeData)
@@ -312,9 +326,11 @@ export default function DashboardPage() {
         )
         setPendingForms(myForms.filter(f => !allSubs.find(s => s.formId === f.id)).length)
       }
-    }).catch(err => { console.error('Dashboard load failed:', err); setLoadError(true) })
-      .finally(() => setLoading(false))
-  }, [user])
+    }).catch(err => {
+      console.error(isTimeout(err) ? 'Dashboard load timed out' : 'Dashboard load failed:', err)
+      setLoadError(true)
+    }).finally(() => setLoading(false))
+  }, [user, retryKey])
 
   const handleWidgetChange = useCallback((cfg) => {
     setWidgetConfig(cfg)
@@ -332,13 +348,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={32} className="animate-spin text-primary-400" />
-      </div>
-    )
-  }
+  if (loading) return <PageLoader onRetry={retryLoad} />
 
   if (loadError) {
     return (
@@ -346,7 +356,7 @@ export default function DashboardPage() {
         <AlertTriangle size={36} className="mx-auto text-amber-500 mb-3" />
         <h2 className="font-bold text-gray-800 dark:text-gray-100 mb-1">לא הצלחנו לטעון את הנתונים</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">בדקו את החיבור לאינטרנט ונסו שוב</p>
-        <button onClick={() => window.location.reload()} className="btn-primary px-8 py-2.5">נסו שוב</button>
+        <button onClick={retryLoad} className="btn-primary px-8 py-2.5">נסו שוב</button>
       </div>
     )
   }
