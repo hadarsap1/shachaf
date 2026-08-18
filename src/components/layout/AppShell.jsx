@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from '
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies, getMyMessages, getCommittees, getHobbyGroups } from '../../lib/db'
+import { getMessages, getClasses, getChildrenByParent, getTasks, getFeedback, getUsers, getChildren, getPendingFamilies, getMyMessages, getMyFeedback, getCommittees, getHobbyGroups } from '../../lib/db'
+import { unreadReplyCount } from '../../lib/replies'
 import { tasksForFamily } from '../../lib/tasks'
 import { computeHealthAnomalies } from '../../lib/health'
 import InstallBanner from '../ui/InstallBanner'
@@ -408,10 +409,15 @@ export default function AppShell() {
     getHobbyGroups().then(gs => setPendingGroups(gs.filter(g => g.status === 'pending').length)).catch(() => {})
   }, [isAdmin, pathname])
 
-  // Parent's own unread admin replies — badge on "צור קשר"
+  // Parent's own unread answers — badge on "צור קשר". Both channels count:
+  // a reply to a message and an answer to a bug report land in the same place.
   useEffect(() => {
     if (isAdmin || !user?.uid) return
-    getMyMessages(user.uid).then(msgs => setMyUnreadReplies(msgs.filter(m => m.userUnread).length)).catch(() => {})
+    Promise.all([
+      getMyMessages(user.uid).catch(() => []),
+      getMyFeedback(user.uid).catch(() => []),
+    ]).then(([messages, reports]) => setMyUnreadReplies(unreadReplyCount({ messages, reports })))
+      .catch(() => {})
   }, [isAdmin, user?.uid, pathname])
 
   // Health-anomaly badge — super admin only

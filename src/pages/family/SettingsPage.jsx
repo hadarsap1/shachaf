@@ -771,8 +771,14 @@ export default function SettingsPage() {
         </form>
       </section>
 
-      {/* Co-parent section */}
-      {(user?.role === 'new_family' || user?.role === 'host_family') && (
+      {/* Co-parent section — for anyone who is a PARENT here, whatever their
+          role says. Gating it on role hid it from every parent whose role is
+          'community' (or admin), which is most of the school: the help page
+          told them to scroll to "הוסף הורה שני" and there was nothing there. */}
+      {(children.length > 0
+        || (user?.classIds || []).length > 0
+        || user?.role === 'new_family'
+        || user?.role === 'host_family') && (
         <CoParentSection
           currentUser={{ ...user, coParent: coParent }}
           onRegistered={(result) => setCoParent(result)}

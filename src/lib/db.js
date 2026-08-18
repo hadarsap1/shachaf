@@ -830,19 +830,34 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
     await updateFBProfile(cred.user, { displayName: name })
     const newUid = cred.user.uid
 
+    // The children to share. Derived from the child documents themselves rather
+    // than trusting currentUser.childIds, which can lag behind an admin-side
+    // link — a co-parent who arrives to an empty account is worse than none.
+    const linkedKids = await _getChildrenByParent(currentUser.uid).catch(() => [])
+    const childIds = [...new Set([
+      ...(currentUser.childIds || []),
+      ...linkedKids.map(k => k.id),
+    ])]
+
+    // A co-parent inherits the FAMILY role, never a privileged one: an admin
+    // adding their spouse must not mint another admin — and the users create
+    // rule rejects a privileged role anyway, which would fail the whole flow.
+    const coParentRole = ['new_family', 'host_family'].includes(currentUser.role)
+      ? currentUser.role
+      : 'community'
+
     // Create Firestore profile under secondary auth (request.auth.uid === newUid) ✓
     // classIds must start empty (create rule forbids seeding it) — it syncs from
     // the linked children on the co-parent's first login (syncUserClassIds).
     await setDoc(doc(secondaryDb, 'users', newUid), {
       name, email, phone: phone || '',
-      role: currentUser.role,
-      childIds: currentUser.childIds || [],
+      role: coParentRole,
+      childIds,
       classIds: [],
       createdAt: serverTimestamp(),
     })
 
     // Link co-parent to every child already linked to current user
-    const childIds = currentUser.childIds || []
     if (childIds.length > 0) {
       const batch = writeBatch(db)
       for (const childId of childIds) {
@@ -1379,8 +1394,30 @@ export async function updateFeedbackScreenshot(id, screenshotUrl) {
   await updateDoc(doc(db, 'feedback', id), { screenshotUrl })
 }
 
+// An answer the reporter is meant to SEE: userUnread is what turns it into a
+// badge on "צור קשר" and a line on the dashboard, the same way an admin reply
+// to a message does. Without it the answer sat in the admin inbox only.
 export async function replyToFeedback(id, reply) {
-  await updateDoc(doc(db, 'feedback', id), { adminReply: reply, repliedAt: serverTimestamp(), status: 'resolved' })
+  await updateDoc(doc(db, 'feedback', id), {
+    adminReply: reply, repliedAt: serverTimestamp(), status: 'resolved', userUnread: true,
+  })
+}
+
+// The reports this member filed, newest first — backed by the feedback read
+// rule (submittedBy.uid == the caller), so the query is provably their own.
+export async function getMyFeedback(uid) {
+  if (!uid) return []
+  const q = query(collection(db, 'feedback'), where('submittedBy.uid', '==', uid))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+}
+
+// Clear the "new answer" flag once the reporter has seen it. Fire-and-forget:
+// failing to clear a badge must never break the page that shows the answer.
+export async function markMyFeedbackRead(ids = []) {
+  await Promise.all(ids.map(id =>
+    updateDoc(doc(db, 'feedback', id), { userUnread: false }).catch(() => {})))
 }
 
 // ── Community businesses ──────────────────────────────────────────────────────

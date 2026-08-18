@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { sendMessage, getMyMessages, addMessageReply, markMyMessagesReadByUser } from '../../lib/db'
-import { MessageSquare, Send, CheckCircle2, Loader2 } from 'lucide-react'
+import {
+  sendMessage, getMyMessages, addMessageReply, markMyMessagesReadByUser,
+  getMyFeedback, markMyFeedbackRead,
+} from '../../lib/db'
+import { hasAdminReply, unreadIds } from '../../lib/replies'
+import { MessageSquare, Send, CheckCircle2, Loader2, Bug, Clock3 } from 'lucide-react'
 import clsx from 'clsx'
 
 function formatDate(ts) {
@@ -57,6 +61,38 @@ function MessageThread({ msg, onReply }) {
   )
 }
 
+// A bug report the member filed, with the team's answer if one arrived. Same
+// shape as a message thread, minus the reply box: a report is answered, not
+// argued — a follow-up belongs in a message.
+function ReportCard({ report }) {
+  const answered = hasAdminReply(report)
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-gray-400">{formatDate(report.createdAt)}</span>
+        <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-1.5 dark:text-gray-100">
+          <Bug size={13} className="text-accent-500" />
+          דיווח על תקלה
+        </h3>
+      </div>
+      <div className="bg-gray-100 text-gray-800 rounded-2xl px-3.5 py-2 max-w-[85%] dark:bg-gray-700 dark:text-gray-100">
+        <p className="text-sm whitespace-pre-wrap leading-relaxed">{report.text}</p>
+      </div>
+      {answered ? (
+        <div className="mt-2 max-w-[85%] ms-auto rounded-2xl px-3.5 py-2 bg-primary-600 text-white">
+          <p className="text-sm whitespace-pre-wrap leading-relaxed">{report.adminReply}</p>
+          <div className="text-[10px] mt-0.5 text-primary-100">צוות שחף</div>
+        </div>
+      ) : (
+        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5 justify-end">
+          <Clock3 size={12} />
+          הדיווח התקבל — נעדכן אותך כאן כשנטפל בו
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function ContactPage() {
   const { user } = useAuth()
   const [subject, setSubject] = useState('')
@@ -65,15 +101,24 @@ export default function ContactPage() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [myMessages, setMyMessages] = useState([])
+  const [myReports, setMyReports] = useState([])
 
   const loadMine = async () => {
     if (!user?.uid) return
+    // Opening this page IS reading the answers — both channels clear here, so
+    // the badge and the dashboard banner cannot outlive what the member saw.
     try {
       const msgs = await getMyMessages(user.uid)
       setMyMessages(msgs)
-      const unread = msgs.filter(m => m.userUnread).map(m => m.id)
+      const unread = unreadIds(msgs)
       if (unread.length) markMyMessagesReadByUser(unread)
     } catch (e) { /* first-time users have none */ }
+    try {
+      const reports = await getMyFeedback(user.uid)
+      setMyReports(reports)
+      const unread = unreadIds(reports)
+      if (unread.length) markMyFeedbackRead(unread)
+    } catch (e) { /* no reports filed */ }
   }
 
   useEffect(() => { loadMine() }, [user?.uid])
@@ -151,6 +196,16 @@ export default function ContactPage() {
           <h2 className="font-bold text-gray-700 text-sm dark:text-gray-200">ההודעות שלי</h2>
           {myMessages.map(msg => (
             <MessageThread key={msg.id} msg={msg} onReply={handleReply} />
+          ))}
+        </div>
+      )}
+
+      {/* Bug reports I filed, and what the team answered */}
+      {myReports.length > 0 && (
+        <div className="space-y-3 mt-6">
+          <h2 className="font-bold text-gray-700 text-sm dark:text-gray-200">הדיווחים שלי</h2>
+          {myReports.map(report => (
+            <ReportCard key={report.id} report={report} />
           ))}
         </div>
       )}

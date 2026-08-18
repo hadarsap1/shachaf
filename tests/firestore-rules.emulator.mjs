@@ -498,6 +498,31 @@ console.log('\n— login-screen bug reports (the only unauthenticated write) —
     getDocs(collection(admin, 'feedback')), 'allow')
 }
 
+console.log('\n— a member can see the answer to their own report —')
+await check('a member can file a report',
+  setDoc(doc(parent, 'feedback', 'fbMine'), {
+    text: 'הכפתור לא נלחץ', submittedBy: { uid: 'parent1', name: 'Parent', email: 'parent@x.com' },
+    status: 'new',
+  }), 'allow')
+await check('a member can read back the report they filed',
+  getDoc(doc(parent, 'feedback', 'fbMine')), 'allow')
+await check('a member can query their own reports',
+  getDocs(query(collection(parent, 'feedback'), where('submittedBy.uid', '==', 'parent1'))), 'allow')
+await check('a member CANNOT read someone else\'s report',
+  getDoc(doc(stranger, 'feedback', 'fbMine')), 'deny')
+await check('a member CANNOT list the whole feedback inbox',
+  getDocs(collection(parent, 'feedback')), 'deny')
+await check('a member can clear the "new answer" flag on their own report',
+  updateDoc(doc(parent, 'feedback', 'fbMine'), { userUnread: false }), 'allow')
+await check('a member CANNOT write themselves an answer',
+  updateDoc(doc(parent, 'feedback', 'fbMine'), { adminReply: 'טופל, סמכו עליי' }), 'deny')
+await check('a member CANNOT resolve their own report',
+  updateDoc(doc(parent, 'feedback', 'fbMine'), { status: 'resolved' }), 'deny')
+await check('a member CANNOT clear the flag on someone else\'s report',
+  updateDoc(doc(stranger, 'feedback', 'fbMine'), { userUnread: false }), 'deny')
+await check('an admin CAN answer it',
+  updateDoc(doc(admin, 'feedback', 'fbMine'), { adminReply: 'תוקן, תודה', status: 'resolved', userUnread: true }), 'allow')
+
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
   getDocs(query(collection(stranger, 'children'), where('parentEmails', 'array-contains', 'parent@x.com'))), 'deny')
