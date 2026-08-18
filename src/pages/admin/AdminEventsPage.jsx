@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getEvents, saveEvent, deleteEvent, getClasses, getCommittees, uploadEventImage, deleteEventImage, logConsent } from '../../lib/db'
+import { EVENT_TYPE_OPTIONS as TYPE_OPTIONS, isEventForEveryone } from '../../lib/eventFields'
 import { CONSENT_VERSION } from '../../lib/consent'
 import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, CalendarPlus, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
@@ -17,12 +18,6 @@ const FAMILY_CARDS = [
   { value: 'host_family', label: 'משפחות קולטות', color: '#065f46', bg: '#d1fae5' },
 ]
 
-const TYPE_OPTIONS = [
-  { value: 'social',      label: 'חברתי' },
-  { value: 'orientation', label: 'אוריינטציה' },
-  { value: 'ceremony',    label: 'טקס' },
-  { value: 'community',   label: 'קהילתי' },
-]
 
 const TYPE_COLOR = {
   social:      'badge-primary',
@@ -52,6 +47,9 @@ const blankEvent = () => ({
   time: '',
   location: '',
   type: 'social',
+  isRequired: false,
+  // written alongside isRequired so an event saved before the rename can be
+  // un-flagged here (isEventForEveryone reads both)
   required: false,
   targetGroups: ['all'],
   classIds: [],
@@ -340,8 +338,8 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
           )}
 
           <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 dark:bg-gray-900">
-            <input type="checkbox" id="required-toggle" checked={!!draft.required}
-              onChange={e => set('required', e.target.checked)}
+            <input type="checkbox" id="required-toggle" checked={isEventForEveryone(draft)}
+              onChange={e => { set('isRequired', e.target.checked); set('required', e.target.checked) }}
               className="w-4 h-4 accent-primary-600" />
             <label htmlFor="required-toggle" className="text-sm text-gray-700 cursor-pointer dark:text-gray-200">כולם מוזמנים (סמן כאירוע לכולם)</label>
           </div>
@@ -684,7 +682,7 @@ export default function AdminEventsPage() {
                     <div className="flex items-center gap-2 justify-end flex-wrap mb-0.5">
                       <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{event.title}</span>
                       <span className={typeConf || 'badge'}>{typeLabel}</span>
-                      {event.required && (
+                      {isEventForEveryone(event) && (
                         <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium dark:bg-blue-900/20 dark:text-blue-400">כולם מוזמנים</span>
                       )}
                     </div>

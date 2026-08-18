@@ -283,11 +283,14 @@ export default function DashboardPage() {
         ...committeeData.filter(c => (c.memberUids || []).includes(user.uid)).map(c => c.id),
       ])
       // Same visibility rule the calendar uses (see lib/eventVisibility.js), so
-      // an event can never show in the calendar and be missing here.
+      // an event can never show in the calendar and be missing here — including
+      // class targeting, which keeps another class's event off this feed.
       // Meal-train slots you took ride along — they're personal commitments.
       const entityIds = [...myEntityIds]
       setEvents([
-        ...eventData.filter(ev => isUpcoming(ev, today) && isEventVisibleTo(ev, { entityIds })),
+        ...eventData.filter(ev =>
+          isUpcoming(ev, today)
+          && isEventVisibleTo(ev, { entityIds, classIds: effectiveClassIds, uid: user.uid })),
         ...myMealTrainEvents(mealTrains, user.uid, await claimedAddresses(mealTrains, user.uid))
           .filter(ev => isUpcoming(ev, today)),
       ].sort((a, b) => (a.date || '').localeCompare(b.date || '')))

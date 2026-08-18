@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { getCommittees, saveCommittee, deleteCommittee, getUsers, approveCommittee } from '../../lib/db'
+import {
+  getCommittees, saveCommittee, deleteCommittee, getUsers, approveCommittee,
+  approveCommitteeMember, denyCommitteeMember,
+} from '../../lib/db'
 import { COMMITTEE_ICONS, CLASS_COLORS } from '../../lib/classColors'
 import { isMealTrainCommittee } from '../../lib/mealTrain'
 import {
   Users, Plus, Edit2, Trash2, X, Check, Loader2,
   Heart, Star, Music, Book, Globe, Zap, Gift, Coffee,
-  Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Search, Clock3,
+  Briefcase, Camera, Sun, Leaf, Palette, Flag, Shield, Search, Clock3, UserPlus,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -312,6 +315,8 @@ export default function AdminCommitteesPage() {
   const [deleting, setDeleting]             = useState(null)
   const [error, setError]                   = useState('')
   const [communityUsers, setCommunityUsers] = useState([])
+  // uid currently being approved/denied — one join request at a time
+  const [handlingUid, setHandlingUid] = useState(null)
 
   useEffect(() => {
     Promise.all([getCommittees(), getUsers()])
@@ -352,6 +357,31 @@ export default function AdminCommitteesPage() {
       setError(e.message)
     } finally {
       setDeleting(null)
+    }
+  }
+
+  // Joining a committee waits for the committee's manager — but an admin is a
+  // manager of every committee (see CommitteesPage + firestore.rules), and a
+  // request nobody ever sees is a request nobody answers. So every pending
+  // joiner, from every committee, is listed here too.
+  const usersByUid = Object.fromEntries(communityUsers.map(u => [u.uid, u]))
+  const joinRequests = committees.flatMap(c =>
+    (c.pendingUids || []).map(uid => ({ committee: c, uid, user: usersByUid[uid] })))
+
+  const resolveJoin = async (committeeId, uid, approve) => {
+    setHandlingUid(`${committeeId}:${uid}`)
+    try {
+      if (approve) await approveCommitteeMember(committeeId, uid)
+      else await denyCommitteeMember(committeeId, uid)
+      setCommittees(prev => prev.map(c => c.id !== committeeId ? c : {
+        ...c,
+        pendingUids: (c.pendingUids || []).filter(u => u !== uid),
+        memberUids: approve ? [...new Set([...(c.memberUids || []), uid])] : (c.memberUids || []),
+      }))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setHandlingUid(null)
     }
   }
 
@@ -397,6 +427,37 @@ export default function AdminCommitteesPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {joinRequests.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-primary-700 dark:text-primary-300 flex items-center gap-1.5 mb-3">
+            <UserPlus size={14} />בקשות הצטרפות לוועדות ({joinRequests.length})
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {joinRequests.map(({ committee, uid, user }) => {
+              const busy = handlingUid === `${committee.id}:${uid}`
+              return (
+                <div key={`${committee.id}-${uid}`}
+                  className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl p-4">
+                  <div className="font-semibold text-gray-800 dark:text-gray-100">{user?.name || 'חבר קהילה'}</div>
+                  {user?.email && <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">{user.email}</p>}
+                  <p className="text-xs text-gray-400 mt-1">מבקש/ת להצטרף לוועדת {committee.name}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => resolveJoin(committee.id, uid, true)} disabled={busy}
+                      className="flex-1 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                      {busy ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'אשר'}
+                    </button>
+                    <button onClick={() => resolveJoin(committee.id, uid, false)} disabled={busy}
+                      className="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50">
+                      דחה
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

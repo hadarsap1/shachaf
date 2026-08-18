@@ -1021,24 +1021,41 @@ export async function getGroupEvents(groupId) {
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 }
 
-async function _createGroupEvent(groupId, uid, { title, date, time, location, description, targetGroups, classIds }) {
-  await addDoc(collection(db, 'events'), {
-    groupId,
+// The body of an event opened by a member (from a committee, a group, or the
+// calendar's quick form). Kept in one place so an event opened from the phone
+// carries the same fields as one opened in the admin panel — type, dietary
+// warnings, "to be announced" markers and the "everyone's invited" flag
+// included. Size caps mirror validEventContent() in firestore.rules.
+function memberEventBody(uid, {
+  title, date, time, location, description, targetGroups, classIds,
+  type, dietaryRestrictions, dietaryNote, tbdFields, isRequired,
+}) {
+  return {
     createdBy: uid,
     title: String(title).slice(0, 200),
     date,
     time: time || '',
     location: String(location || '').slice(0, 300),
     description: String(description || '').slice(0, 2000),
-    type: 'community',
+    type: type || 'community',
     // Display audience chosen by the creator (see EventAudienceFields). The
-    // event is anchored to the group via groupId regardless, so it always
-    // shows in the group's own events tab.
+    // event is anchored to its committee/group regardless, so it always shows
+    // in that entity's own events tab.
     targetGroups: targetGroups?.length ? targetGroups : ['all'],
     classIds: classIds || [],
+    dietaryRestrictions: (dietaryRestrictions || []).slice(0, 10),
+    dietaryNote: String(dietaryNote || '').slice(0, 100),
+    tbdFields: tbdFields || [],
+    isRequired: !!isRequired,
     attendeeUids: [],
     createdAt: serverTimestamp(),
-  })
+  }
+}
+
+// Returns the new event's id — the caller needs it to attach an image.
+async function _createGroupEvent(groupId, uid, fields) {
+  const ref = await addDoc(collection(db, 'events'), { groupId, ...memberEventBody(uid, fields) })
+  return ref.id
 }
 
 async function _deleteGroupEvent(id) {
@@ -1046,21 +1063,9 @@ async function _deleteGroupEvent(id) {
 }
 
 // ── Committee-scoped events (created by a committee member) ────────────────────
-async function _createCommitteeEvent(committeeId, uid, { title, date, time, location, description, targetGroups, classIds }) {
-  await addDoc(collection(db, 'events'), {
-    committeeId,
-    createdBy: uid,
-    title: String(title).slice(0, 200),
-    date,
-    time: time || '',
-    location: String(location || '').slice(0, 300),
-    description: String(description || '').slice(0, 2000),
-    type: 'community',
-    targetGroups: targetGroups?.length ? targetGroups : ['all'],
-    classIds: classIds || [],
-    attendeeUids: [],
-    createdAt: serverTimestamp(),
-  })
+async function _createCommitteeEvent(committeeId, uid, fields) {
+  const ref = await addDoc(collection(db, 'events'), { committeeId, ...memberEventBody(uid, fields) })
+  return ref.id
 }
 
 async function _deleteCommitteeEvent(id) {

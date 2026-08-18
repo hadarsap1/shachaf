@@ -25,8 +25,8 @@ const BASE_FILTERS = [
 // Audience CHIPS (הכל / משפחות חדשות / משפחות קולטות / כיתה) — a view filter on
 // top of the visibility rule in lib/eventVisibility.js, which both this page and
 // the dashboard share.
-function matchesFilter(ev, filterValue, entityIds) {
-  if (!isEventVisibleTo(ev, { entityIds })) return false
+function matchesFilter(ev, filterValue, { entityIds, classIds, uid }) {
+  if (!isEventVisibleTo(ev, { entityIds, classIds, uid })) return false
   // A members-only event isn't targeted to a family type or class, so it only
   // belongs under the "all" chip.
   if ((ev.targetGroups || []).includes('members')) return filterValue === 'all'
@@ -60,6 +60,9 @@ export default function EventsPage() {
   const [birthdays, setBirthdays] = useState([])
   // group/committee ids the user belongs to — used to show members-only events
   const [myEntityIds, setMyEntityIds] = useState(() => new Set())
+  // the classes this family belongs to — an event addressed to specific classes
+  // shows only to them (an admin outside "watch as parent" sees every class)
+  const [familyClassIds, setFamilyClassIds] = useState([])
   // The user's "hats" — entities they may open an event on behalf of:
   // committees/groups they're a member of + classes they administer
   // (all classes for a global admin). An event MUST be attributed to a hat.
@@ -94,6 +97,10 @@ export default function EventsPage() {
 
       const adminClassIds = effectiveAdmin ? classes.map(c => c.id) : (user.classAdminFor || [])
       setHats([
+        // An admin also opens events in the school's own name — that hat is what
+        // makes the full audience selector (כל הקהילה / כיתות מסוימות) available
+        // from the phone, exactly as in the admin panel.
+        ...(effectiveAdmin ? [{ type: 'admin', id: 'school', name: 'הנהלת שחף' }] : []),
         ...committees
           .filter(c => c.status !== 'pending' && (c.memberUids || []).includes(user.uid))
           .map(c => ({ type: 'committee', id: c.id, name: c.name })),
@@ -112,6 +119,8 @@ export default function EventsPage() {
       const myClassIds = effectiveAdmin
         ? classes.map(c => c.id)
         : [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
+
+      setFamilyClassIds(myClassIds)
 
       const classFilters = classes
         .filter(cls => effectiveAdmin || myClassIds.includes(cls.id))
@@ -147,7 +156,7 @@ export default function EventsPage() {
   // Your own meal-train commitments always ride along — they're personal, so no
   // audience filter applies to them; clicking one opens the pot itself.
   const visibleEvents = [
-    ...events.filter(ev => matchesFilter(ev, filterValue, entityIds)),
+    ...events.filter(ev => matchesFilter(ev, filterValue, { entityIds, classIds: familyClassIds, uid: user?.uid })),
     ...mealTrainEvents,
   ]
   const pastCount = visibleEvents.filter(ev => isEventPast(ev)).length
@@ -337,6 +346,8 @@ export default function EventsPage() {
           hats={hats}
           classes={allClasses}
           uid={user.uid}
+          isAdmin={effectiveAdmin}
+          classAdminIds={user.classAdminFor || []}
           onClose={() => setShowCreate(false)}
           onCreated={refreshEvents}
         />

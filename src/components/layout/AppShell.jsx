@@ -396,8 +396,15 @@ export default function AppShell() {
     if (!isAdmin) return
     getMessages().then(msgs => setUnreadMessages(msgs.filter(m => !m.read).length))
     getFeedback().then(items => setUnreadFeedback(items.filter(i => !i.status || i.status === 'new').length))
-    // Pending committee / community-group requests awaiting approval
-    getCommittees().then(cs => setPendingCommittees(cs.filter(c => c.status === 'pending').length)).catch(() => {})
+    // Everything on an admin's desk for committees: new committees awaiting
+    // approval PLUS people waiting to join an existing one — an admin manages
+    // every committee, so their join requests are the admin's queue too.
+    getCommittees().then(cs => setPendingCommittees(
+      cs.filter(c => c.status === 'pending').length
+      + cs.reduce((n, c) => n + (c.pendingUids || []).length, 0)
+    )).catch(() => {})
+    // Groups have no join queue — joining one is immediate — so only pending
+    // groups themselves count here.
     getHobbyGroups().then(gs => setPendingGroups(gs.filter(g => g.status === 'pending').length)).catch(() => {})
   }, [isAdmin, pathname])
 

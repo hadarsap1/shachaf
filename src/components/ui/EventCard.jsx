@@ -2,6 +2,7 @@ import { Calendar, MapPin, Clock, CalendarPlus, Download } from 'lucide-react'
 import clsx from 'clsx'
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent, isEventPast } from '../../lib/calendar'
 import DietaryBadges from './DietaryBadges'
+import { isEventForEveryone } from '../../lib/eventFields'
 
 const TYPE_CONFIG = {
   social:      { label: 'חברתי',     color: 'badge-primary' },
@@ -43,7 +44,7 @@ export default function EventCard({ event, onCardClick }) {
       ) : (
         <div className={clsx(
           'h-1.5',
-          event.isRequired ? 'bg-gradient-to-r from-accent-400 to-accent-500' : 'bg-gradient-to-r from-primary-400 to-secondary-400'
+          isEventForEveryone(event) ? 'bg-gradient-to-r from-accent-400 to-accent-500' : 'bg-gradient-to-r from-primary-400 to-secondary-400'
         )} />
       )}
 
@@ -51,7 +52,7 @@ export default function EventCard({ event, onCardClick }) {
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <h3 className="font-semibold text-gray-800 text-sm leading-tight dark:text-gray-100">{event.title}</h3>
-            {event.isRequired && (
+            {isEventForEveryone(event) && (
               <span className="badge bg-accent-50 text-accent-700 border border-accent-200 text-xs mt-1 dark:bg-accent-900/30">כולם מוזמנים</span>
             )}
           </div>

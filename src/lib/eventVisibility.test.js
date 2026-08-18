@@ -15,8 +15,23 @@ describe('isEventVisibleTo', () => {
     expect(isEventVisibleTo({ targetGroups: ['host_family'] }, { entityIds: [] })).toBe(true)
   })
 
-  it('shows a class event to the whole community, as the calendar does', () => {
-    expect(isEventVisibleTo({ targetGroups: ['class'], classIds: ['class-9'] }, { entityIds: [] })).toBe(true)
+  // "כיתות מסוימות" addresses those classes — a kindergarten meeting used to
+  // land on every family's dashboard, including third-graders'.
+  it('shows a class event only to a family of one of those classes', () => {
+    const ev = { targetGroups: ['class'], classIds: ['gan-1', 'gan-2'] }
+    expect(isEventVisibleTo(ev, { classIds: ['gan-2'] })).toBe(true)
+    expect(isEventVisibleTo(ev, { classIds: ['class-3'] })).toBe(false)
+    expect(isEventVisibleTo(ev, { classIds: [] })).toBe(false)
+  })
+
+  it('keeps a class event visible to whoever opened it', () => {
+    const ev = { targetGroups: ['class'], classIds: ['gan-1'], createdBy: 'u1' }
+    expect(isEventVisibleTo(ev, { classIds: [], uid: 'u1' })).toBe(true)
+    expect(isEventVisibleTo(ev, { classIds: [], uid: 'u2' })).toBe(false)
+  })
+
+  it('leaves a class event that names no class community-wide', () => {
+    expect(isEventVisibleTo({ targetGroups: ['class'], classIds: [] }, { classIds: [] })).toBe(true)
   })
 
   it('shows a members-only event only to a current member of that entity', () => {
