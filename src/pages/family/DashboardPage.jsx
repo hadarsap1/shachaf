@@ -565,7 +565,11 @@ export default function DashboardPage() {
       {visibleWidgets.map(w => renderWidget(w.id))}
 
       {selectedEvent && (
-        <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+        <EventDetailPanel
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onDeleted={(id) => setEvents(evts => evts.filter(e => e.id !== id))}
+        />
       )}
 
       {showCustomize && (

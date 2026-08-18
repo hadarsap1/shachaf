@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { X, Clock, MapPin, CalendarPlus, Download, Users, ChevronDown, Loader2, CheckCircle2, Maximize2 } from 'lucide-react'
+import { X, Clock, MapPin, CalendarPlus, Download, Users, ChevronDown, Loader2, CheckCircle2, Maximize2, Trash2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
-import { rsvpEvent, unrsvpEvent, getUsersByUids } from '../../lib/db'
+import { rsvpEvent, unrsvpEvent, getUsersByUids, deleteEvent } from '../../lib/db'
 import ContactModal from './ContactModal'
 import DietaryBadges from './DietaryBadges'
 // One shared implementation — the panel used to carry its own copy, which
@@ -24,7 +24,7 @@ const TYPE_BADGE = {
   community:   'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
 }
 
-export default function EventDetailPanel({ event, onClose }) {
+export default function EventDetailPanel({ event, onClose, onDeleted }) {
   const { user } = useAuth()
   const [attendeeUids, setAttendeeUids] = useState(event.attendeeUids || [])
   const [rsvpLoading, setRsvpLoading] = useState(false)
@@ -34,6 +34,28 @@ export default function EventDetailPanel({ event, onClose }) {
   const [selectedPerson, setSelectedPerson] = useState(null)
   const [imageError, setImageError] = useState(false)
   const [fullScreenImage, setFullScreenImage] = useState(false)
+  // Whoever opened the event can call it off — a parent who organised a class
+  // birthday included. Without this the only way to undo one was to ask an
+  // admin. Two taps, so a stray tap cannot cancel a party.
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const isOwner = !!user?.uid && event.createdBy === user.uid
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteEvent(event.id)
+      onDeleted?.(event.id)
+      onClose()
+    } catch (e) {
+      console.error('event delete failed', e)
+      setDeleteError('מחיקת האירוע נכשלה — נסו שוב, או פנו לצוות הניהול')
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   // Escape closes the fullscreen image first, otherwise the panel
   useEscapeToClose(() => (fullScreenImage ? setFullScreenImage(false) : onClose()))
@@ -199,6 +221,39 @@ export default function EventDetailPanel({ event, onClose }) {
             )}
           </div>
         </div>
+
+        {isOwner && (
+          <div className="px-5 pt-3 border-t border-gray-100 dark:border-gray-700">
+            {deleteError && <p className="text-xs text-red-500 text-right mb-2">{deleteError}</p>}
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-xl disabled:opacity-50"
+                >
+                  {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  כן, בטלו את האירוע
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl"
+                >
+                  השאירו
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="w-full flex items-center justify-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2 rounded-xl"
+              >
+                <Trash2 size={14} />
+                ביטול האירוע
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="px-5 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
           <button

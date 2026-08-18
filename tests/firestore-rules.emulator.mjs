@@ -21,6 +21,11 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'users', 'admin1'), { role: 'admin', name: 'Admin', email: 'admin@x.com' })
   await setDoc(doc(db, 'users', 'parent1'), { role: 'new_family', name: 'Parent', email: 'parent@x.com', classIds: [], childIds: [] })
   await setDoc(doc(db, 'users', 'stranger1'), { role: 'community', name: 'Stranger', email: 'stranger@x.com', classIds: [] })
+  // an ordinary parent WITH a class — may open an event for that class alone
+  await setDoc(doc(db, 'users', 'classparent1'), {
+    role: 'new_family', name: 'Class Parent', email: 'classparent@x.com',
+    classIds: ['class-1'], childIds: ['childA'],
+  })
   // unlinked imported child whose phone-book data lists parent1's email
   await setDoc(doc(db, 'children', 'childA'), {
     name: 'Child A', classId: 'class-1', parentUids: [],
@@ -83,6 +88,7 @@ await env.withSecurityRulesDisabled(async (ctx) => {
 
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
 const stranger = env.authenticatedContext('stranger1', { email: 'stranger@x.com' }).firestore()
+const classParent = env.authenticatedContext('classparent1', { email: 'classparent@x.com' }).firestore()
 // 'someuid' opened trainA — the pot's coordinator
 const someuidCtx = env.authenticatedContext('someuid', { email: 'coordinator@x.com' }).firestore()
 
@@ -175,6 +181,46 @@ await check('member CANNOT create a committee event attributed to someone else',
   setDoc(doc(parent, 'events', 'ev7'), {
     title: 'ישיבה', committeeId: 'commX', createdBy: 'someoneelse', date: '2030-07-01',
   }), 'deny')
+
+console.log('\n— a parent opening an event for their own class —')
+const birthday = {
+  title: 'יום הולדת לנועה', date: '2030-09-01', createdBy: 'classparent1',
+  targetGroups: ['class'], classIds: ['class-1'],
+}
+await check('parent can open an event for their own class',
+  setDoc(doc(classParent, 'events', 'evClass1'), birthday), 'allow')
+await check('parent can edit the event they opened',
+  updateDoc(doc(classParent, 'events', 'evClass1'), { location: 'גינת כרמים' }), 'allow')
+await check('parent CANNOT open an event for a class that is not theirs',
+  setDoc(doc(classParent, 'events', 'evClass2'), { ...birthday, classIds: ['class-3'] }), 'deny')
+await check('parent CANNOT open an event for their class PLUS another one',
+  setDoc(doc(classParent, 'events', 'evClass3'), { ...birthday, classIds: ['class-1', 'class-3'] }), 'deny')
+await check('parent CANNOT address the whole community',
+  setDoc(doc(classParent, 'events', 'evClass4'), { ...birthday, targetGroups: ['all'] }), 'deny')
+await check('parent CANNOT open a class event with no class at all',
+  setDoc(doc(classParent, 'events', 'evClass5'), { ...birthday, classIds: [] }), 'deny')
+await check('parent CANNOT attribute the event to someone else',
+  setDoc(doc(classParent, 'events', 'evClass6'), { ...birthday, createdBy: 'someoneelse' }), 'deny')
+await check('parent CANNOT open a class event with an oversized description',
+  setDoc(doc(classParent, 'events', 'evClass7'), { ...birthday, description: 'א'.repeat(5001) }), 'deny')
+await check('a parent with no class CANNOT open a class event',
+  setDoc(doc(stranger, 'events', 'evClass8'), { ...birthday, createdBy: 'stranger1' }), 'deny')
+await check('another parent CANNOT edit an event they did not open',
+  updateDoc(doc(parent, 'events', 'evClass1'), { title: 'חטוף' }), 'deny')
+await check('another parent CANNOT delete an event they did not open',
+  deleteDoc(doc(parent, 'events', 'evClass1')), 'deny')
+await check('parent CANNOT hand their event to someone else',
+  updateDoc(doc(classParent, 'events', 'evClass1'), { createdBy: 'someoneelse' }), 'deny')
+await check('parent CANNOT re-address their event to another class',
+  updateDoc(doc(classParent, 'events', 'evClass1'), { classIds: ['class-3'] }), 'deny')
+// The event above carries no attendeeUids field — RSVP must still work, which
+// is what the get() defaults in the RSVP rule are for.
+await check('any signed-in member can still RSVP to it',
+  updateDoc(doc(parent, 'events', 'evClass1'), { attendeeUids: ['parent1'] }), 'allow')
+await check('but still only with their OWN uid',
+  updateDoc(doc(stranger, 'events', 'evClass1'), { attendeeUids: ['parent1', 'someoneelse'] }), 'deny')
+await check('parent can cancel the event they opened',
+  deleteDoc(doc(classParent, 'events', 'evClass1')), 'allow')
 
 console.log('\n— committee document privacy (summaries) —')
 // Read tests first — before any membership mutation. stranger1 is a member of commMgr per setup.

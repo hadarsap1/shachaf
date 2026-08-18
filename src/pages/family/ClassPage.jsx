@@ -280,11 +280,13 @@ function ChildNoteCard({ child, parentId, color }) {
   )
 }
 
-// ── Class-admin event creation (from within the class) ────────────────────────
-// A class admin (or global admin) can create an event scoped to THIS class,
-// straight from the class page. The event is class-scoped by the Firestore
-// rule (classIds must be within the creator's classAdminFor), so the audience
-// is the class itself — broader broadcasts go through a global admin.
+// ── Class event creation (from within the class) ──────────────────────────────
+// ANY parent of this class can open an event for it, straight from the class
+// page — a birthday, a picnic, a park meetup — and so can its class admins.
+// The page only ever shows classes the viewer's own children are in, and
+// firestore.rules bounds the write the same way (targetGroups ['class'] +
+// classIds within the creator's own classIds). The audience is the class
+// itself; broader broadcasts still go through an admin.
 function ClassEventCreate({ cls, uid, onCreated }) {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -599,8 +601,9 @@ export default function ClassPage() {
           </Section>
         )}
 
-        {/* Class admins can create an event for this class, from within it */}
-        {cls && (isAdmin || (user?.classAdminFor || []).includes(cls.id)) && (
+        {/* Any parent of this class — not only its admins — can open an event
+            for it from here; every class on this page is one of their own. */}
+        {cls && (
           <ClassEventCreate
             cls={cls}
             uid={user.uid}

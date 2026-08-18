@@ -168,6 +168,24 @@ service cloud.firestore {
             && request.resource.data.get('dietaryRestrictions', []).size() <= 10;
       }
 
+      // The classes this member's own children are in. The anchor for "a parent
+      // may open an event for their own class": it syncs from the children
+      // linked to them, and the users rules only let a class in with a linked
+      // child as proof (classProofChildId) — so a member cannot invent one.
+      function myClassIds() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', []);
+      }
+
+      // Addressed to classes only, all of them the caller's own. Three fences
+      // that make a parent-opened event safe with no admin in the loop: it
+      // cannot reach the whole community, cannot reach another class, and
+      // (with createdBy) cannot be someone else's event.
+      function addressedToMyClassesOnly(data) {
+        return data.get('targetGroups', []) == ['class']
+               && data.get('classIds', []).size() > 0
+               && data.get('classIds', []).hasOnly(myClassIds());
+      }
+
       allow read: if request.auth != null;
 
       allow create, update: if request.auth != null
@@ -193,15 +211,36 @@ service cloud.firestore {
                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
                       );
 
-      // Any authenticated user may RSVP (add/remove only their own uid from attendeeUids)
+      // A parent may open an event for their OWN class — see myClassIds() above.
+      allow create: if request.auth != null
+                   && validEventContent()
+                   && request.resource.data.get('createdBy', '') == request.auth.uid
+                   && addressedToMyClassesOnly(request.resource.data);
+
+      // Editing and cancelling stay with whoever opened it — and cannot be used
+      // to hand the event to someone else or re-address it to another class.
+      allow update: if request.auth != null
+                   && validEventContent()
+                   && resource.data.get('createdBy', '') == request.auth.uid
+                   && request.resource.data.get('createdBy', '') == request.auth.uid
+                   && addressedToMyClassesOnly(request.resource.data);
+
+      allow delete: if request.auth != null
+                   && resource.data.get('createdBy', '') == request.auth.uid
+                   && addressedToMyClassesOnly(resource.data);
+
+      // Any authenticated user may RSVP (add/remove only their own uid from
+      // attendeeUids). Read through get(): an event saved without the field at
+      // all used to fail this rule on "property is undefined" — nobody could
+      // sign up for it, and the reason was invisible from the app.
       allow update: if request.auth != null
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendeeUids'])
                     && (
-                         (request.resource.data.attendeeUids.hasAll(resource.data.attendeeUids)
-                          && request.resource.data.attendeeUids.removeAll(resource.data.attendeeUids) == [request.auth.uid])
+                         (request.resource.data.get('attendeeUids', []).hasAll(resource.data.get('attendeeUids', []))
+                          && request.resource.data.get('attendeeUids', []).removeAll(resource.data.get('attendeeUids', [])) == [request.auth.uid])
                          ||
-                         (resource.data.attendeeUids.hasAll(request.resource.data.attendeeUids)
-                          && resource.data.attendeeUids.removeAll(request.resource.data.attendeeUids) == [request.auth.uid])
+                         (resource.data.get('attendeeUids', []).hasAll(request.resource.data.get('attendeeUids', []))
+                          && resource.data.get('attendeeUids', []).removeAll(request.resource.data.get('attendeeUids', [])) == [request.auth.uid])
                        );
 
       // Group members can create and delete events scoped to their group.
