@@ -9,6 +9,35 @@
 
 export const CONSENT_VERSION = '1.3'
 
+// The oldest consent still good enough to DISPLAY a member's details to other
+// members (class roster, contact sheet, birthdays).
+//
+// Re-consent and display are two different questions. Bumping CONSENT_VERSION
+// re-prompts everyone — that part is exact-match and stays that way. But it
+// must not retroactively revoke what a parent already agreed to: when 1.3 added
+// parent birthdays (opt-in, and separately gated by birthdayShared), every
+// parent who had approved 1.2 silently vanished from their class roster —
+// their children included — until they happened to open the app again. A whole
+// class read as four children.
+//
+// So display asks a narrower question: did this member approve a policy from
+// which today's display follows? Bump this ONLY when a new version changes what
+// other members get to see about someone — then old consent genuinely no longer
+// covers it. Adding a purpose that is opt-in, or that shows a member their own
+// data, is not such a change.
+export const DISPLAY_CONSENT_SINCE = '1.0'
+
+// Compares dotted numeric versions ('1.10' > '1.9'), so the baseline above can
+// pass 9 without a surprise.
+export function compareConsentVersions(a, b) {
+  const parts = (v) => String(v || '').split('.').map(n => parseInt(n, 10) || 0)
+  const [x, y] = [parts(a), parts(b)]
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0) ? -1 : 1
+  }
+  return 0
+}
+
 export const CONSENT_PURPOSES = [
   'הפקת דף קשר כיתתי וקהילתי לחברי הקהילה',
   'ליווי תהליך הקליטה — משימות, טפסים וחיבור למשפחה קולטת',
@@ -76,16 +105,19 @@ export function needsConsent(user) {
   return !!user && user.consentVersion !== CONSENT_VERSION
 }
 
-// Has this user (or any user doc, e.g. another parent) approved the CURRENT
-// consent version? Used to gate DISPLAY of a member's data to others: until a
-// parent joined and approved the policy, neither their details nor their
-// children's may be shown anywhere.
+// Has this user (or any user doc, e.g. another parent) approved a policy that
+// covers today's display? Used to gate DISPLAY of a member's data to others:
+// until a parent joined and approved the policy, neither their details nor
+// their children's may be shown anywhere. A parent who approved an earlier
+// version keeps being shown — see DISPLAY_CONSENT_SINCE — while still being
+// asked to approve the current one on their next visit (needsConsent).
 export function hasConsented(user) {
-  return !!user && user.consentVersion === CONSENT_VERSION
+  return !!user?.consentVersion
+    && compareConsentVersions(user.consentVersion, DISPLAY_CONSENT_SINCE) >= 0
 }
 
 // A child may be displayed (roster, contact sheet, birthdays…) only when at
-// least one of their LINKED parents approved the current policy version.
+// least one of their LINKED parents approved the policy (see hasConsented).
 // `parentsByUid` maps uid → user doc (missing docs count as not-consented).
 export function childHasConsentedParent(child, parentsByUid) {
   return (child?.parentUids || []).some(uid => hasConsented(parentsByUid[uid]))
