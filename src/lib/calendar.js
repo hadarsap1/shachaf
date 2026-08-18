@@ -5,6 +5,7 @@
 // every event 2–3 hours late in the user's calendar. Everything below carries
 // the timezone explicitly instead.
 
+import { isEventForEveryone } from './eventFields'
 import { dietaryLabel } from './dietary'
 
 export const EVENT_TZ = 'Asia/Jerusalem'
@@ -24,7 +25,7 @@ function buildDescription(event) {
   const tbd = event.tbdFields || []
   if (tbd.includes('time')) parts.push('שעה תפורסם בהמשך')
   if (tbd.includes('location')) parts.push('מיקום יפורסם בהמשך')
-  if (event.isRequired) parts.push('כולם מוזמנים')
+  if (isEventForEveryone(event)) parts.push('כולם מוזמנים')
 
   parts.push('נשלח משחף+')
   return parts.join('\n')
