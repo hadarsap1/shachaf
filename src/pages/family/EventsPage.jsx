@@ -95,7 +95,20 @@ export default function EventsPage() {
       ])
       setMyEntityIds(entityIds)
 
-      const adminClassIds = effectiveAdmin ? classes.map(c => c.id) : (user.classAdminFor || [])
+      const myClassIds = effectiveAdmin
+        ? classes.map(c => c.id)
+        : [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
+
+      setFamilyClassIds(myClassIds)
+
+      // Classes this user may open an event for: the ones they administer, and
+      // — the ordinary case — the ones their own children are in. A parent
+      // organising a birthday for their kid's class does not need an admin;
+      // firestore.rules bounds them to exactly these classes.
+      const myEventClassIds = [...new Set([
+        ...(effectiveAdmin ? classes.map(c => c.id) : (user.classAdminFor || [])),
+        ...myClassIds,
+      ])]
       setHats([
         // An admin also opens events in the school's own name — that hat is what
         // makes the full audience selector (כל הקהילה / כיתות מסוימות) available
@@ -108,19 +121,13 @@ export default function EventsPage() {
           .filter(g => g.status !== 'pending' && (g.memberUids || []).includes(user.uid))
           .map(g => ({ type: 'group', id: g.id, name: g.name })),
         ...classes
-          .filter(c => adminClassIds.includes(c.id))
+          .filter(c => myEventClassIds.includes(c.id))
           .map(c => ({ type: 'class', id: c.id, name: c.name, grade: c.grade })),
       ])
 
       const colorMap = {}
       classes.forEach(cls => { if (cls.color) colorMap[cls.id] = cls.color })
       setClassColorMap(colorMap)
-
-      const myClassIds = effectiveAdmin
-        ? classes.map(c => c.id)
-        : [...new Set(myChildren.map(c => c.classId).filter(Boolean))]
-
-      setFamilyClassIds(myClassIds)
 
       const classFilters = classes
         .filter(cls => effectiveAdmin || myClassIds.includes(cls.id))
@@ -337,6 +344,7 @@ export default function EventsPage() {
         <EventDetailPanel
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
+          onDeleted={(id) => setEvents(evts => evts.filter(e => e.id !== id))}
         />
       )}
 
