@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees,
-  getMealTrains, claimedAddresses, getUsersByUids,
+  getMealTrains, claimedAddresses, getUsersByUids, invalidateCache,
 } from '../../lib/db'
+import { withTimeout, isTimeout } from '../../lib/withTimeout'
+import PageLoader, { PageLoadError } from '../../components/ui/PageLoader'
 import { hasConsented, childHasConsentedParent } from '../../lib/consent'
 import { myMealTrainEvents } from '../../lib/mealTrain'
 import { isEventVisibleTo } from '../../lib/eventVisibility'
@@ -13,7 +15,7 @@ import CalendarGrid from '../../components/ui/CalendarGrid'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
 import QuickEventModal from '../../components/QuickEventModal'
 import { useAuth } from '../../context/AuthContext'
-import { Calendar, List, Loader2, Plus, History } from 'lucide-react'
+import { Calendar, List, Plus, History } from 'lucide-react'
 import clsx from 'clsx'
 
 const BASE_FILTERS = [
@@ -52,6 +54,8 @@ export default function EventsPage() {
   const [classColorMap, setClassColorMap] = useState({})
   const [filterOptions, setFilterOptions] = useState(BASE_FILTERS)
   const [loading, setLoading]         = useState(true)
+  const [loadError, setLoadError]     = useState(null)   // 'timeout' | 'failed' | null
+  const [retryKey, setRetryKey]       = useState(0)
   const [displayMode, setDisplayMode] = useState('calendar')
   const [filterValue, setFilterValue] = useState('all')
   // Finished events are out of the way by default — still one click away
@@ -78,14 +82,17 @@ export default function EventsPage() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const [allEvents, classes, myChildren, groups, committees, mealTrains] = await Promise.all([
+      setLoadError(null)
+      // A deadline on the whole batch: a stalled read never rejects, and the
+      // page would sit on a spinner with nothing to press.
+      const [allEvents, classes, myChildren, groups, committees, mealTrains] = await withTimeout(Promise.all([
         getEvents(),
         getClasses(),
         getChildrenByParent(user.uid),
         getHobbyGroups(),
         getCommittees(),
         getMealTrains().catch(() => []),
-      ])
+      ]))
       setAllClasses(classes)
       setMealTrainEvents(myMealTrainEvents(mealTrains, user.uid, await claimedAddresses(mealTrains, user.uid)))
 
@@ -156,8 +163,19 @@ export default function EventsPage() {
       }
       setLoading(false)
     }
-    load().catch(err => { console.error('EventsPage load failed', err); setLoading(false) })
-  }, [user, effectiveAdmin])
+    load().catch(err => {
+      console.error(isTimeout(err) ? 'EventsPage load timed out' : 'EventsPage load failed', err)
+      setLoadError(isTimeout(err) ? 'timeout' : 'failed')
+      setLoading(false)
+    })
+  }, [user, effectiveAdmin, retryKey])
+
+  const retryLoad = () => {
+    invalidateCache('events', 'classes', 'childrenBy', 'children', 'hobbyGroups', 'committees', 'mealTrains')
+    setLoadError(null)
+    setLoading(true)
+    setRetryKey(k => k + 1)
+  }
 
   const entityIds = [...myEntityIds]
   // Your own meal-train commitments always ride along — they're personal, so no
@@ -263,15 +281,14 @@ export default function EventsPage() {
         </div>
       )}
 
-      {/* ── Loading ── */}
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin text-primary-400" size={32} />
-        </div>
+      {/* ── Loading / gave up ── */}
+      {loading && <PageLoader onRetry={retryLoad} />}
+      {!loading && loadError && (
+        <PageLoadError onRetry={retryLoad} timedOut={loadError === 'timeout'} />
       )}
 
       {/* ── Calendar view ── */}
-      {!loading && displayMode === 'calendar' && (
+      {!loading && !loadError && displayMode === 'calendar' && (
         <CalendarGrid
           events={filteredEvents}
           filterRole="all"
@@ -282,7 +299,7 @@ export default function EventsPage() {
       )}
 
       {/* ── List view ── */}
-      {!loading && displayMode === 'list' && (
+      {!loading && !loadError && displayMode === 'list' && (
         <>
           <div className="grid sm:grid-cols-2 gap-4">
             {filteredEvents.map(event => (
@@ -316,7 +333,7 @@ export default function EventsPage() {
       )}
 
       {/* ── Empty calendar state ── */}
-      {!loading && displayMode === 'calendar' && filteredEvents.length === 0 && (
+      {!loading && !loadError && displayMode === 'calendar' && filteredEvents.length === 0 && (
         <div className="text-center py-16 text-gray-400 mt-4">
           <Calendar size={44} className="mx-auto mb-4 opacity-25" />
           {filterValue === 'all' ? (

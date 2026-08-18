@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent } from '../../lib/db'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent, invalidateCache } from '../../lib/db'
+import { withTimeout, isTimeout } from '../../lib/withTimeout'
+import PageLoader, { PageLoadError } from '../../components/ui/PageLoader'
 import { hasConsented, childHasConsentedParent, CONSENT_VERSION } from '../../lib/consent'
 import { classLabel } from '../../lib/grades'
 import { setPageTitleOverride } from '../../lib/pageTitle'
@@ -375,6 +377,8 @@ export default function ClassPage() {
   const [classParents, setClassParents]   = useState([])
   const [classAdmins, setClassAdmins]     = useState([])
   const [loading, setLoading]             = useState(true)
+  const [loadError, setLoadError]         = useState(null)   // 'timeout' | 'failed' | null
+  const [retryKey, setRetryKey]           = useState(0)
   // ?class=<id> — lets a link (e.g. a specific class row on the dashboard)
   // open this page on that class instead of always on the first one
   const [searchParams, setSearchParams] = useSearchParams()
@@ -383,12 +387,16 @@ export default function ClassPage() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const [children, classes, allEvents, allAnns] = await Promise.all([
+      setLoadError(null)
+      // A deadline, and a catch below: this load had neither, so any failure —
+      // or a Firestore read that simply never answered — left the class page
+      // spinning for good, with an unhandled rejection as the only trace.
+      const [children, classes, allEvents, allAnns] = await withTimeout(Promise.all([
         getChildrenByParent(user.uid),
         getClasses(),
         getEvents(),
         getAnnouncements(),
-      ])
+      ]))
       const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
       const filtered = classes.filter(c => myClassIds.includes(c.id))
       setMyClasses(filtered)
@@ -397,8 +405,19 @@ export default function ClassPage() {
       setAnnouncements(allAnns)
       setLoading(false)
     }
-    load()
-  }, [user])
+    load().catch(err => {
+      console.error(isTimeout(err) ? 'ClassPage load timed out' : 'ClassPage load failed', err)
+      setLoadError(isTimeout(err) ? 'timeout' : 'failed')
+      setLoading(false)
+    })
+  }, [user, retryKey])
+
+  const retryLoad = () => {
+    invalidateCache('childrenBy', 'classes', 'events', 'announcements')
+    setLoadError(null)
+    setLoading(true)
+    setRetryKey(k => k + 1)
+  }
 
   // Honor ?class=<id> once the classes are loaded
   useEffect(() => {
@@ -461,11 +480,11 @@ export default function ClassPage() {
       })
     : []
 
-  if (loading) return (
-    <div className="flex justify-center py-20">
-      <Loader2 size={32} className="animate-spin text-primary-400" />
-    </div>
-  )
+  if (loading) return <PageLoader onRetry={retryLoad} />
+
+  // Before the empty state: a load that failed must not read as "you have no
+  // class" — that sent parents to the office over a dropped connection.
+  if (loadError) return <PageLoadError onRetry={retryLoad} timedOut={loadError === 'timeout'} />
 
   if (myClasses.length === 0) return (
     <div className="p-6 text-center" dir="rtl">
