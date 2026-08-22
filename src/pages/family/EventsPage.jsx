@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   getEvents, getClasses, getChildrenByParent, getChildren, getHobbyGroups, getCommittees,
   getMealTrains, claimedAddresses, getUsersByUids, invalidateCache,
 } from '../../lib/db'
 import { withTimeout, isTimeout } from '../../lib/withTimeout'
+import { EVENT_PARAM } from '../../lib/eventShare'
 import PageLoader, { PageLoadError } from '../../components/ui/PageLoader'
 import { hasConsented, childHasConsentedParent } from '../../lib/consent'
 import { myMealTrainEvents } from '../../lib/mealTrain'
@@ -76,6 +77,12 @@ export default function EventsPage() {
   // Meal-train slots this user claimed, rendered as calendar entries
   const [mealTrainEvents, setMealTrainEvents] = useState([])
   const navigate = useNavigate()
+  // ?event=<id> — a shared link opens that event, even if it is past or sits
+  // behind a filter chip. It is a shortcut into the list, not around it: an
+  // event this member may not see stays unavailable.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const sharedEventId = searchParams.get(EVENT_PARAM)
+  const [sharedMissing, setSharedMissing] = useState(false)
 
   const refreshEvents = () => getEvents().then(setEvents).catch(() => {})
 
@@ -187,6 +194,34 @@ export default function EventsPage() {
   const pastCount = visibleEvents.filter(ev => isEventPast(ev)).length
   const filteredEvents = showPast ? visibleEvents : visibleEvents.filter(ev => !isEventPast(ev))
 
+  // Runs after the load: `events` is empty until then, and a link opened cold
+  // must not be declared missing before the data arrives.
+  useEffect(() => {
+    if (loading || !sharedEventId) return
+    const found = events.find(ev => ev.id === sharedEventId)
+    const visible = found && isEventVisibleTo(found, {
+      entityIds: [...myEntityIds], classIds: familyClassIds, uid: user?.uid,
+    })
+    if (visible) {
+      setSelectedEvent(found)
+      setSharedMissing(false)
+    } else {
+      setSharedMissing(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, sharedEventId, events, familyClassIds])
+
+  // Closing the shared event drops the parameter, so a refresh does not reopen
+  // it and the URL stops claiming to point at something.
+  const closeEvent = () => {
+    setSelectedEvent(null)
+    if (sharedEventId) {
+      const next = new URLSearchParams(searchParams)
+      next.delete(EVENT_PARAM)
+      setSearchParams(next, { replace: true })
+    }
+  }
+
   const openEvent = (ev) => {
     if (ev.mealTrainId) navigate(`/meal-trains?train=${ev.mealTrainId}`)
     else setSelectedEvent(ev)
@@ -245,6 +280,15 @@ export default function EventsPage() {
           </p>
         </div>
       </div>
+
+      {/* A shared link that leads nowhere for THIS member — say so, rather than
+          opening the calendar and letting them hunt for an event that is not
+          theirs to see. */}
+      {!loading && sharedMissing && !selectedEvent && (
+        <div className="mb-5 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 text-right">
+          האירוע שקיבלת בקישור אינו זמין לך — ייתכן שהוא בוטל, או שהוא מיועד לכיתה או לוועדה אחרת.
+        </div>
+      )}
 
       {/* ── Filter chips ── */}
       {!loading && (
@@ -360,7 +404,7 @@ export default function EventsPage() {
       {selectedEvent && (
         <EventDetailPanel
           event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
+          onClose={closeEvent}
           onDeleted={(id) => setEvents(evts => evts.filter(e => e.id !== id))}
         />
       )}

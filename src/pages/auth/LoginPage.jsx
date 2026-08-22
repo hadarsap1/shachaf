@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth, GOOGLE_PENDING_KEY } from '../../context/AuthContext'
 import { AUTH_HANDLER_IS_FIRST_PARTY } from '../../lib/firebase'
+import { safeNextPath } from '../../lib/eventShare'
 import LoginHelpButton from '../../components/LoginHelpButton'
 import { hebrewNameError, normalizeName } from '../../lib/hebrewName'
 import { Users, Shield, Home, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
@@ -52,16 +53,17 @@ export default function LoginPage() {
     return () => { document.title = 'שחף+' }
   }, [])
 
-  // Redirect when user becomes authenticated (handles iOS redirect return)
+  // Redirect when user becomes authenticated (handles iOS redirect return).
+  // A ?next carried in from a shared link wins over the default landing page —
+  // that is what makes an event link open the event and not the dashboard.
   useEffect(() => {
     if (user) {
       localStorage.removeItem(GOOGLE_PENDING_KEY)
       sessionStorage.removeItem(RELOAD_GUARD_KEY)
       setAwaitingGoogleReturn(false)
-      navigate(
-        user.role === 'admin' || user.role === 'super_admin' ? '/admin' : '/dashboard',
-        { replace: true }
-      )
+      const home = user.role === 'admin' || user.role === 'super_admin' ? '/admin' : '/dashboard'
+      const next = new URLSearchParams(window.location.search).get('next')
+      navigate(safeNextPath(next, home), { replace: true })
     }
   }, [user])
 
@@ -121,8 +123,12 @@ export default function LoginPage() {
   // start the Google flow immediately instead of showing the same login screen
   // again and expecting the user to find the button a second time.
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).get('google')) return
-    window.history.replaceState({}, '', '/login')
+    const params = new URLSearchParams(window.location.search)
+    if (!params.get('google')) return
+    // Keep ?next through the hand-off, otherwise a shared link that needed a
+    // Google sign-in forgets where it was going.
+    const keep = params.get('next')
+    window.history.replaceState({}, '', keep ? `/login?next=${encodeURIComponent(keep)}` : '/login')
     handleGoogle()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -351,7 +357,10 @@ export default function LoginPage() {
                 // Once /__/auth is proxied through our own host the redirect
                 // completes inside the app and this detour disappears.
                 <a
-                  href={`${window.location.origin}/login?google=1`}
+                  href={`${window.location.origin}/login?google=1${
+                    new URLSearchParams(window.location.search).get('next')
+                      ? `&next=${encodeURIComponent(new URLSearchParams(window.location.search).get('next'))}`
+                      : ''}`}
                   target="_blank"
                   rel="noreferrer"
                   onClick={handleGoogleStandaloneClick}
@@ -453,7 +462,10 @@ export default function LoginPage() {
                     in. A dead end otherwise. */}
                 {offerBrowserFallback && (
                   <a
-                    href={`${window.location.origin}/login?google=1`}
+                    href={`${window.location.origin}/login?google=1${
+                    new URLSearchParams(window.location.search).get('next')
+                      ? `&next=${encodeURIComponent(new URLSearchParams(window.location.search).get('next'))}`
+                      : ''}`}
                     target="_blank"
                     rel="noreferrer"
                     onClick={handleGoogleStandaloneClick}
