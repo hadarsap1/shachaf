@@ -71,7 +71,12 @@ export default defineConfig(({ mode }) => ({
         // being sent to the browser. The navigation fallback would answer those
         // requests with our cached index.html — the app shell instead of the
         // handler — and the sign-in would die inside the service worker.
-        navigateFallbackDenylist: [/^\/__\//],
+        // /__/auth — Firebase's sign-in handler (see below).
+        // /e/       — the shared-event preview page, rendered by a serverless
+        //             function: answering it from the cached shell would strip
+        //             the card off every invitation and lose the event id.
+        // /api/     — serverless endpoints are never the app shell.
+        navigateFallbackDenylist: [/^\/__\//, /^\/e\//, /^\/api\//],
         // Firestore/Auth use a real-time WebChannel — a service worker intercepting
         // those requests (even with NetworkFirst) can silently break the channel.
         // Never cache or intercept them; only cache static Google Fonts.

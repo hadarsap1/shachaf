@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/__/auth/:path*", "destination": "https://sachaf-66ba1.firebaseapp.com/__/auth/:path*" },
+    { "source": "/e/:eventId", "destination": "/api/event-preview?id=:eventId" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

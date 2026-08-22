@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
@@ -8,6 +8,7 @@ import Spinner from './components/ui/AppSpinner'
 import AccessibilityWidget from './components/AccessibilityWidget'
 import ConsentModal from './components/ConsentModal'
 import { needsConsent } from './lib/consent'
+import { eventPath } from './lib/eventShare'
 
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/family/DashboardPage'
@@ -68,6 +69,11 @@ const ALUMNI_ROUTES = ['/businesses', '/settings', '/help', '/contact', '/my-pri
 function ConsentGate({ user, children }) {
   if (needsConsent(user)) return <ConsentModal />
   return children
+}
+
+function SharedEventRedirect() {
+  const { eventId } = useParams()
+  return <Navigate to={eventPath(eventId)} replace />
 }
 
 function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false, classAdminOk = false }) {
@@ -136,6 +142,13 @@ export default function App() {
         <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          {/* A shared invitation. In production /e/<id> is answered by the
+              serverless preview page (api/event-preview) and never reaches the
+              router; this route is the safety net for anything that does get
+              here — an installed app still running an older service worker, or
+              a dev server without the rewrite — so the invitation still opens
+              its event instead of bouncing to the dashboard. */}
+          <Route path="/e/:eventId" element={<SharedEventRedirect />} />
           <Route path="/onboarding" element={<ProtectedOnboarding />} />
           <Route path="/" element={<RootRedirect />} />
 
