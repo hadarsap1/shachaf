@@ -464,6 +464,15 @@ async function main() {
         assertClean('קישור ישיר לאירוע')
       })
 
+      await step('כתובת השיתוף /e/<id> נוחתת על האירוע', async () => {
+        // In production /e/<id> is the preview page (api/event-preview) and a
+        // human is handed on from there; the dev server has no functions, so
+        // this exercises the in-app safety net that catches the same URL.
+        await page.goto(`${BASE}/e/event-1`, { waitUntil: 'domcontentloaded' })
+        await page.waitForURL(/\/events\?event=event-1/, { timeout: 15000 })
+        await expectText(page, SEED.eventTitle)
+      })
+
       await step('קישור לאירוע שאינו קיים אומר זאת ולא נשאר ריק', async () => {
         await page.goto(`${BASE}/events?event=no-such-event`, { waitUntil: 'domcontentloaded' })
         await expectText(page, 'האירוע שקיבלת בקישור אינו זמין לך')

@@ -1,21 +1,30 @@
 import { describe, it, expect } from 'vitest'
 import {
-  eventShareUrl, eventShareText, whatsappShareUrl, mailtoShareUrl, safeNextPath,
+  eventShareUrl, eventPath, eventShareText, whatsappShareUrl, mailtoShareUrl, safeNextPath,
 } from './eventShare'
 
 const ORIGIN = 'https://shachaf.vercel.app'
 
 describe('eventShareUrl', () => {
-  it('points at the event inside the app', () => {
-    expect(eventShareUrl('abc123', ORIGIN)).toBe(`${ORIGIN}/events?event=abc123`)
+  // /e/<id> is the preview page (api/event-preview): a messenger gets a card,
+  // a human is handed on to the event.
+  it('points at the shareable preview URL', () => {
+    expect(eventShareUrl('abc123', ORIGIN)).toBe(`${ORIGIN}/e/abc123`)
   })
 
-  it('escapes an id rather than letting it shape the query string', () => {
-    expect(eventShareUrl('a&b=c', ORIGIN)).toBe(`${ORIGIN}/events?event=a%26b%3Dc`)
+  it('escapes an id rather than letting it shape the path', () => {
+    expect(eventShareUrl('a/b?c', ORIGIN)).toBe(`${ORIGIN}/e/a%2Fb%3Fc`)
   })
 
   it('is empty without an event — nothing to share', () => {
     expect(eventShareUrl('', ORIGIN)).toBe('')
+  })
+})
+
+describe('eventPath', () => {
+  it('is where the shared link lands inside the app', () => {
+    expect(eventPath('abc123')).toBe('/events?event=abc123')
+    expect(eventPath('a&b')).toBe('/events?event=a%26b')
   })
 })
 

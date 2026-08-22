@@ -19,6 +19,19 @@
     <meta name="description" content="שחף+ — הפלטפורמה הקהילתית של קהילת שחף" />
     <meta name="mobile-web-app-capable" content="yes" />
 
+    <!-- Link preview for the app itself. A shared EVENT gets its own card from
+         api/event-preview (/e/<id>); this is the fallback for every other link
+         to the app. Both say the same thing on purpose — the app's identity
+         and nothing about any member or event, since a preview is fetched
+         without a sign-in and travels with the message. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="שחף+" />
+    <meta property="og:locale" content="he_IL" />
+    <meta property="og:title" content="שחף+" />
+    <meta property="og:description" content="הפלטפורמה הקהילתית של קהילת שחף" />
+    <meta property="og:image" content="/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

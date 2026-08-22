@@ -15,10 +15,19 @@ import { dietaryLabel } from './dietary'
 
 export const EVENT_PARAM = 'event'
 
+// The address a message carries. /e/<id> is served by api/event-preview, which
+// gives WhatsApp & co. a real card (logo + "הזמנה לאירוע") instead of a naked
+// URL and then hands a human straight on to /events?event=<id>. The in-app
+// route below is the fallback for anything that reaches the app directly.
 export function eventShareUrl(eventId, origin = '') {
   if (!eventId) return ''
   const base = origin || (typeof window !== 'undefined' ? window.location.origin : '')
-  return `${base}/events?${EVENT_PARAM}=${encodeURIComponent(eventId)}`
+  return `${base}/e/${encodeURIComponent(eventId)}`
+}
+
+// Where the shared link ends up inside the app.
+export function eventPath(eventId) {
+  return `/events?${EVENT_PARAM}=${encodeURIComponent(eventId)}`
 }
 
 // Hebrew date line for a message — a bare '2026-09-01' tells a parent nothing.
