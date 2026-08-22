@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
+import { clearAppCaches } from '../../lib/hardReload'
 
 // The in-app version of AppSpinner: a page-level loader that admits defeat.
 //
@@ -9,13 +10,24 @@ import { Loader2, RefreshCw } from 'lucide-react'
 // Now the page says so and offers a retry that refetches (the caller drops the
 // read cache first — a hung request would otherwise be awaited a second time).
 export const STUCK_AFTER_MS = 10000
+// A refetch fixes a slow network; it cannot fix a client wedged on a stale
+// build (a deploy landed while the app was open). After a second wait, offer
+// the thing that does: drop the worker and its caches, then reload.
+export const WEDGED_AFTER_MS = 22000
+
+async function hardReload() {
+  await clearAppCaches()
+  window.location.reload()
+}
 
 export default function PageLoader({ onRetry, label = 'טוען…' }) {
   const [stuck, setStuck] = useState(false)
+  const [wedged, setWedged] = useState(false)
 
   useEffect(() => {
-    const t = setTimeout(() => setStuck(true), STUCK_AFTER_MS)
-    return () => clearTimeout(t)
+    const t1 = setTimeout(() => setStuck(true), STUCK_AFTER_MS)
+    const t2 = setTimeout(() => setWedged(true), WEDGED_AFTER_MS)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
   return (
@@ -34,6 +46,14 @@ export default function PageLoader({ onRetry, label = 'טוען…' }) {
             >
               <RefreshCw size={14} />
               נסו שוב
+            </button>
+          )}
+          {wedged && (
+            <button
+              onClick={hardReload}
+              className="mt-3 block mx-auto text-xs text-gray-500 dark:text-gray-400 underline"
+            >
+              עדיין תקוע? רענון וניקוי מטמון
             </button>
           )}
         </div>

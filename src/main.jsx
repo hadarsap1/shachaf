@@ -4,6 +4,23 @@ import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.jsx'
 import { startUpdateWatch } from './lib/appUpdate'
+import { isStaleBuildError, recoverFromStaleBuild } from './lib/chunkRecovery'
+import { clearAppCaches } from './lib/hardReload'
+
+const healStaleBuild = () => recoverFromStaleBuild({ clearCaches: clearAppCaches })
+
+// A deploy replaces every chunk hash, and the production alias stops serving
+// the previous build's files. A page still holding the old index then asks for
+// a chunk that no longer exists and dies on a page it could render fine. Vite
+// announces exactly that, so heal instead of crashing: drop the worker and its
+// caches, reload once, and the app comes back on the current build.
+window.addEventListener('vite:preloadError', (e) => {
+  e.preventDefault?.()
+  healStaleBuild()
+})
+window.addEventListener('unhandledrejection', (e) => {
+  if (isStaleBuildError(e?.reason)) healStaleBuild()
+})
 
 // PWA: the service worker updates with skipWaiting+clientsClaim, so a new
 // deploy takes over a RUNNING page mid-session. That silently breaks the
@@ -41,6 +58,9 @@ class ErrorBoundary extends Component {
   state = { hasError: false }
   static getDerivedStateFromError() { return { hasError: true } }
   componentDidCatch(err, info) {
+    // A missing chunk is a stale client, not a bug in the page — reload onto
+    // the current build instead of showing a dead end.
+    if (isStaleBuildError(err)) { healStaleBuild(); return }
     console.error('App crashed:', err, info)
     Sentry.captureException(err, { extra: { componentStack: info?.componentStack } })
     // Best-effort record; dynamic import so a broken bundle path can't block it
