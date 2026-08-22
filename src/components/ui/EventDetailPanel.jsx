@@ -9,6 +9,7 @@ import DietaryBadges from './DietaryBadges'
 // One shared implementation — the panel used to carry its own copy, which
 // drifted from the card's and exported different times.
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent } from '../../lib/calendar'
+import ShareEventButtons from './ShareEventButtons'
 
 const TYPE_LABEL = {
   social:      'חברתי',
@@ -255,7 +256,12 @@ export default function EventDetailPanel({ event, onClose, onDeleted }) {
           </div>
         )}
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700">
+        {/* Share — a link that opens this event, not just a copied message */}
+        <div className="px-5 pt-3">
+          <ShareEventButtons event={event} />
+        </div>
+
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-2 dark:border-gray-700 mt-3">
           <button
             onClick={() => window.open(buildGoogleCalendarUrl(buildCalendarData(event)), '_blank')}
             className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary-600 dark:text-primary-300 bg-primary-50 hover:bg-primary-100 border border-primary-200 dark:border-primary-800 px-3 py-2.5 rounded-xl transition-[background-color] duration-150 font-medium active:scale-[0.96] dark:bg-primary-900/30 dark:hover:bg-primary-900/50"

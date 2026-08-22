@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent, invalidateCache } from '../../lib/db'
 import { withTimeout, isTimeout } from '../../lib/withTimeout'
 import PageLoader, { PageLoadError } from '../../components/ui/PageLoader'
+import ShareEventButtons from '../../components/ui/ShareEventButtons'
 import { hasConsented, childHasConsentedParent, CONSENT_VERSION } from '../../lib/consent'
 import { classLabel } from '../../lib/grades'
 import { setPageTitleOverride } from '../../lib/pageTitle'
@@ -294,13 +295,16 @@ function ClassEventCreate({ cls, uid, onCreated }) {
   const [saving, setSaving] = useState(false)
   const [publishAck, setPublishAck] = useState(false)
   const [form, setForm] = useState({ title: '', date: '', time: '', location: '', description: '' })
+  // Kept after saving so the organiser can send the invitation on the spot —
+  // a birthday nobody was told about is not an invitation.
+  const [createdEvent, setCreatedEvent] = useState(null)
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
   const handleCreate = async () => {
     if (!form.title.trim() || !form.date || !publishAck) return
     setSaving(true)
     try {
-      await saveEvent({
+      const saved = await saveEvent({
         id: 'event-' + Date.now(),
         title: form.title.trim(),
         description: form.description.trim(),
@@ -318,11 +322,28 @@ function ClassEventCreate({ cls, uid, onCreated }) {
         version: CONSENT_VERSION,
         context: form.title.trim(),
       })
+      setCreatedEvent(saved)
       setForm({ title: '', date: '', time: '', location: '', description: '' })
       setPublishAck(false)
       setOpen(false)
       onCreated?.()
     } finally { setSaving(false) }
+  }
+
+  if (createdEvent) {
+    return (
+      <div className="mb-4 card p-4">
+        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 text-right mb-1">
+          האירוע נוצר — אפשר לשלוח אותו להורי הכיתה
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-right mb-3">{createdEvent.title}</p>
+        <ShareEventButtons event={createdEvent} />
+        <button onClick={() => setCreatedEvent(null)}
+          className="w-full mt-2 text-xs text-gray-500 dark:text-gray-400 hover:underline">
+          סגירה
+        </button>
+      </div>
+    )
   }
 
   return (

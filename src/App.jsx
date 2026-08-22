@@ -75,9 +75,14 @@ function ProtectedShell({ adminOnly = false, superOnly = false, hostOnly = false
   // Admin in "watch as parent" mode behaves like a regular parent
   const effectiveAdmin = isAdmin && !viewAs
   const effectiveClassAdmin = isClassAdmin && !viewAs
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   if (loading) return <Spinner />
-  if (!user) return <Navigate to="/login" replace />
+  // Carry the destination through the login screen: a shared event link opened
+  // by someone whose session lapsed used to land on the dashboard, and the
+  // invitation was lost. LoginPage validates ?next before honoring it.
+  if (!user) {
+    return <Navigate to={`/login?next=${encodeURIComponent(pathname + search)}`} replace />
+  }
   if (needsOnboarding) return <Navigate to="/onboarding" replace />
   if (user.status === 'alumni' && !isAdmin && !ALUMNI_ROUTES.some(p => pathname.startsWith(p))) {
     return <Navigate to="/businesses" replace />

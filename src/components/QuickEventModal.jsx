@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { X, Plus, Loader2, Calendar, ImagePlus } from 'lucide-react'
+import { X, Plus, Loader2, Calendar, ImagePlus, Check } from 'lucide-react'
 import clsx from 'clsx'
 import { createCommitteeEvent, createGroupEvent, saveEvent, uploadEventImage, logConsent } from '../lib/db'
 import { CONSENT_VERSION } from '../lib/consent'
@@ -8,6 +8,7 @@ import { EVENT_TYPE_OPTIONS } from '../lib/eventFields'
 import { DIETARY_OPTIONS, DIETARY_NOTE_MAX } from '../lib/dietary'
 import EventAudienceFields from './EventAudienceFields'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import ShareEventButtons from './ui/ShareEventButtons'
 
 // Create-an-event straight from the calendar — the form a phone gets, and it
 // carries every field the admin panel has (type, dietary warnings, "יפורסם
@@ -55,6 +56,10 @@ export default function QuickEventModal({
   // Set once the event document exists — a retry then only re-uploads the image
   // instead of creating the event a second time.
   const [savedId, setSavedId] = useState(null)
+  // The event as saved — the invitation exists now, and this is the moment
+  // someone actually wants to send it. Closing without offering that meant
+  // hunting for the event in the calendar to share it.
+  const [createdEvent, setCreatedEvent] = useState(null)
   const fileInputRef = useRef(null)
 
   // Closing after the event was already written still refreshes the list —
@@ -171,7 +176,8 @@ export default function QuickEventModal({
         }
       }
       onCreated?.()
-      onClose()
+      setCreatedEvent({ id: eventId, ...baseFields(), ...(hat.type === 'class' ? { classIds } : audience) })
+      setSaving(false)
     } catch (e) {
       console.error('quick event create failed', e)
       setError('שמירת האירוע נכשלה — נסה שוב')
@@ -200,6 +206,22 @@ export default function QuickEventModal({
           </h2>
         </div>
 
+        {createdEvent ? (
+          <>
+            <div className="flex-1 overflow-y-auto px-5 py-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                <Check size={22} className="text-green-600" />
+              </div>
+              <p className="font-bold text-gray-800 dark:text-gray-100">האירוע נוצר</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-5">{createdEvent.title}</p>
+              <ShareEventButtons event={createdEvent} />
+            </div>
+            <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
+              <button onClick={onClose} className="w-full btn-primary py-2.5">סיום</button>
+            </div>
+          </>
+        ) : (
+        <>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Mandatory attribution — the event's "parents" */}
           <div>
@@ -364,6 +386,8 @@ export default function QuickEventModal({
             {savedId ? 'סגור' : 'ביטול'}
           </button>
         </div>
+        </>
+        )}
       </div>
     </div>
   )

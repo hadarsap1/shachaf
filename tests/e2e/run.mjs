@@ -454,6 +454,35 @@ async function main() {
         assertClean('דף אירועים')
       })
 
+      await step('קישור ישיר לאירוע פותח את האירוע עצמו', async () => {
+        // What a WhatsApp invitation actually does: land on the event, not on
+        // the calendar with the guest hunting for it.
+        await page.goto(`${BASE}/events?event=event-1`, { waitUntil: 'domcontentloaded' })
+        await page.getByRole('button', { name: /^אני מגיע\/ה$|לחץ לביטול/ }).first().waitFor({ timeout: 15000 })
+        await expectText(page, SEED.eventTitle)
+        await page.getByRole('button', { name: 'שיתוף האירוע' }).first().waitFor({ timeout: 10000 })
+        assertClean('קישור ישיר לאירוע')
+      })
+
+      await step('קישור לאירוע שאינו קיים אומר זאת ולא נשאר ריק', async () => {
+        await page.goto(`${BASE}/events?event=no-such-event`, { waitUntil: 'domcontentloaded' })
+        await expectText(page, 'האירוע שקיבלת בקישור אינו זמין לך')
+      })
+
+      await step('קישור לאירוע שנפתח ללא התחברות מגיע לאירוע אחרי הכניסה', async () => {
+        // The whole point of a shared link: a guest whose session lapsed lands
+        // on the event, not on the dashboard with the invitation forgotten.
+        const guest = await newPage({ width: 1280, height: 900 })
+        await guest.goto(`${BASE}/events?event=event-1`, { waitUntil: 'domcontentloaded' })
+        await guest.waitForURL(/\/login\?next=/, { timeout: 10000 })
+        await guest.getByPlaceholder('כתובת מייל').fill(ACCOUNTS.parent.email)
+        await guest.getByPlaceholder('סיסמה').fill(ACCOUNTS.parent.password)
+        await guest.getByRole('button', { name: 'כניסה', exact: true }).click()
+        await guest.waitForURL(/\/events\?event=event-1/, { timeout: 20000 })
+        await expectText(guest, SEED.eventTitle)
+        await guest.context().close()
+      })
+
       await step('אישור הגעה לאירוע נשמר ושורד רענון', async () => {
         await dismissTutorial(page)
         await page.getByText(SEED.eventTitle).first().click()
