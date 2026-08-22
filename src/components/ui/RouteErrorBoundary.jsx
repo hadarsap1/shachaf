@@ -1,6 +1,8 @@
 import { Component } from 'react'
 import * as Sentry from '@sentry/react'
 import { logCrash } from '../../lib/db'
+import { isStaleBuildError, recoverFromStaleBuild } from '../../lib/chunkRecovery'
+import { clearAppCaches } from '../../lib/hardReload'
 
 // Per-route error boundary. Unlike the single root boundary, this resets
 // automatically whenever `resetKey` (the pathname) changes — so a transient
@@ -19,6 +21,13 @@ export default class RouteErrorBoundary extends Component {
   }
 
   componentDidCatch(err, info) {
+    // Lazy routes are the first casualty of a deploy landing mid-session: the
+    // chunk for this page is gone from the current build. That is a stale
+    // client, so heal it rather than blaming the page.
+    if (isStaleBuildError(err)) {
+      recoverFromStaleBuild({ clearCaches: clearAppCaches })
+      return
+    }
     console.error('Route crashed:', err, info?.componentStack)
     Sentry.captureException(err, { extra: { componentStack: info?.componentStack, route: this.props.resetKey } })
     logCrash({
