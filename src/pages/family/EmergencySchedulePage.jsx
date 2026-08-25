@@ -1,49 +1,80 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getEmergencyMode, getEmergencySchedule, getChildrenByParent, getClasses } from '../../lib/db'
-import { AlertTriangle, ChevronRight, ChevronLeft, ExternalLink, Loader2 } from 'lucide-react'
+import { getEmergencyMode, getEmergencyDay, getChildrenByParent, getClasses, getChildren } from '../../lib/db'
+import { EMPTY_DAY, addDays, today, formatDayLabel, visibleFor, childNames } from '../../lib/emergency'
+import { AlertTriangle, ChevronRight, ChevronLeft, ExternalLink, Loader2, BookOpen, Users, Home, MapPin, Clock } from 'lucide-react'
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
-}
-
-function addDays(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00')
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
+function Section({ icon: Icon, title, count, children }) {
+  return (
+    <div>
+      <div className="flex items-center justify-end gap-1.5 px-4 pt-3 pb-1">
+        <span className="text-xs text-gray-400">{count}</span>
+        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400">{title}</h3>
+        <Icon size={13} className="text-gray-400" />
+      </div>
+      {children}
+    </div>
+  )
 }
 
 export default function EmergencySchedulePage() {
   const { user } = useAuth()
   const [mode, setMode]       = useState(null)
-  const [date, setDate]       = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate]       = useState(today())
   const [myClasses, setMyClasses] = useState([])
-  const [schedules, setSchedules] = useState({}) // classId → slots[]
+  const [myChildIds, setMyChildIds] = useState([])
+  const [roster, setRoster]   = useState({})   // childId → child
+  const [days, setDays]       = useState({})   // classId → { slots, groups, playdates }
   const [loading, setLoading] = useState(true)
-  const [loadingSchedule, setLoadingSchedule] = useState(false)
+  const [loadingDay, setLoadingDay] = useState(false)
 
   useEffect(() => {
     if (!user?.uid) return
     Promise.all([getEmergencyMode(), getChildrenByParent(user.uid), getClasses()])
       .then(([m, kids, allClasses]) => {
         setMode(m)
+        setMyChildIds(kids.map(k => k.id))
         const myClassIds = [...new Set(kids.map(k => k.classId).filter(Boolean))]
         setMyClasses(allClasses.filter(c => myClassIds.includes(c.id)))
         setLoading(false)
       })
   }, [user])
 
+  // Class roster — resolves the child ids on groups / playdates into names.
   useEffect(() => {
     if (!myClasses.length) return
-    setLoadingSchedule(true)
-    Promise.all(myClasses.map(c => getEmergencySchedule(c.id, date))).then(results => {
+    Promise.all(myClasses.map(c => getChildren(c.id).catch(() => [])))
+      .then(lists => {
+        const map = {}
+        lists.flat().forEach(c => { map[c.id] = c })
+        setRoster(map)
+      })
+  }, [myClasses])
+
+  useEffect(() => {
+    if (!myClasses.length) return
+    setLoadingDay(true)
+    Promise.all(myClasses.map(c => getEmergencyDay(c.id, date))).then(results => {
       const map = {}
       myClasses.forEach((c, i) => { map[c.id] = results[i] })
-      setSchedules(map)
-      setLoadingSchedule(false)
+      setDays(map)
+      setLoadingDay(false)
     })
   }, [myClasses, date])
+
+  // Groups / playdates are filtered to the ones this family belongs to.
+  const forMe = useMemo(() => {
+    const out = {}
+    for (const cls of myClasses) {
+      const d = days[cls.id] || EMPTY_DAY
+      out[cls.id] = {
+        slots: d.slots || [],
+        groups: (d.groups || []).filter(g => visibleFor(g, myChildIds)),
+        playdates: (d.playdates || []).filter(p => visibleFor(p, myChildIds)),
+      }
+    }
+    return out
+  }, [myClasses, days, myChildIds])
 
   if (loading) return (
     <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-primary-400" /></div>
@@ -71,64 +102,127 @@ export default function EmergencySchedulePage() {
           <ChevronLeft size={18} />
         </button>
         <div className="text-center">
-          <p className="font-bold text-gray-800 text-sm dark:text-gray-100">{formatDate(date)}</p>
+          <p className="font-bold text-gray-800 text-sm dark:text-gray-100">{formatDayLabel(date)}</p>
           <p className="text-xs text-gray-400">{date}</p>
         </div>
         <button
           onClick={() => setDate(d => addDays(d, -1))}
-          disabled={date <= new Date().toISOString().slice(0, 10)}
+          disabled={date <= today()}
           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           <ChevronRight size={18} />
         </button>
       </div>
 
-      {/* Schedules per class */}
-      {loadingSchedule ? (
+      {/* Per class: lessons, learning groups, playdates */}
+      {loadingDay ? (
         <div className="flex justify-center py-10"><Loader2 size={28} className="animate-spin text-primary-400" /></div>
       ) : (
         <div className="space-y-4">
           {myClasses.map(cls => {
-            const slots = schedules[cls.id] || []
+            const { slots, groups, playdates } = forMe[cls.id] || EMPTY_DAY
+            const empty = !slots.length && !groups.length && !playdates.length
             return (
               <div key={cls.id} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden dark:bg-gray-800 dark:border-gray-700">
-                <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+                <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between dark:border-gray-700">
                   <span className="text-xs text-gray-400">{slots.length} שיעורים</span>
                   <h2 className="font-bold text-gray-800 dark:text-gray-100">{cls.name}</h2>
                 </div>
 
-                {slots.length === 0 ? (
+                {empty && (
                   <div className="px-4 py-6 text-center text-sm text-gray-400">
-                    אין שיעורים מתוכננים ליום זה
+                    אין פעילות מתוכננת ליום זה
                   </div>
-                ) : (
-                  <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                    {slots.map((sl, i) => (
-                      <div key={i} className="px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex flex-col gap-1">
-                            {sl.zoomLink && (
-                              <a
-                                href={sl.zoomLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800"
-                                dir="ltr"
-                              >
-                                <ExternalLink size={11} />
-                                קישור לשיעור
-                              </a>
-                            )}
-                          </div>
+                )}
+
+                {slots.length > 0 && (
+                  <Section icon={BookOpen} title="שיעורים" count={slots.length}>
+                    <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                      {slots.map((sl, i) => (
+                        <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
+                          {sl.zoomLink && (
+                            <a
+                              href={sl.zoomLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800 flex-shrink-0"
+                              dir="ltr"
+                            >
+                              <ExternalLink size={11} />
+                              קישור לשיעור
+                            </a>
+                          )}
                           <div className="text-right flex-1">
                             <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{sl.subject}</p>
                             {sl.time && <p className="text-xs text-gray-400 mt-0.5" dir="ltr">{sl.time}</p>}
                             {sl.notes && <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">{sl.notes}</p>}
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </Section>
+                )}
+
+                {groups.length > 0 && (
+                  <Section icon={Users} title="קבוצות למידה" count={groups.length}>
+                    <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                      {groups.map((g, i) => {
+                        const names = childNames(g, roster)
+                        return (
+                          <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
+                            {g.link && (
+                              <a
+                                href={g.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800 flex-shrink-0"
+                                dir="ltr"
+                              >
+                                <ExternalLink size={11} />
+                                קישור
+                              </a>
+                            )}
+                            <div className="text-right flex-1">
+                              <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{g.name || 'קבוצת למידה'}</p>
+                              <div className="flex items-center justify-end gap-3 mt-0.5 text-xs text-gray-400 flex-wrap">
+                                {g.place && <span className="flex items-center gap-1"><MapPin size={10} />{g.place}</span>}
+                                {g.time && <span className="flex items-center gap-1" dir="ltr"><Clock size={10} />{g.time}</span>}
+                              </div>
+                              {g.guide && <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">מנחה: {g.guide}</p>}
+                              {names.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">משתתפים: {names.join(', ')}</p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </Section>
+                )}
+
+                {playdates.length > 0 && (
+                  <Section icon={Home} title="מפגשי משחק" count={playdates.length}>
+                    <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                      {playdates.map((p, i) => {
+                        const names = childNames(p, roster)
+                        return (
+                          <div key={i} className="px-4 py-3 text-right">
+                            <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">
+                              {p.host ? `אצל ${p.host}` : 'מפגש משחק'}
+                            </p>
+                            <div className="flex items-center justify-end gap-3 mt-0.5 text-xs text-gray-400 flex-wrap">
+                              {p.address && <span className="flex items-center gap-1"><MapPin size={10} />{p.address}</span>}
+                              {p.time && <span className="flex items-center gap-1" dir="ltr"><Clock size={10} />{p.time}</span>}
+                            </div>
+                            {names.length > 0 && (
+                              <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">משתתפים: {names.join(', ')}</p>
+                            )}
+                            {p.notes && <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">{p.notes}</p>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </Section>
                 )}
               </div>
             )

@@ -9,6 +9,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { compressImage } from './image'
 import { claimerUidsOf } from './mealTrain'
 import { taskProgressUpdate } from './tasks'
+import { normalizeDay } from './emergency'
 
 // ── Read cache ────────────────────────────────────────────────────────────────
 // Pages remount (and refetch) on every navigation; with hundreds of users that
@@ -1214,19 +1215,23 @@ export async function setEmergencyMode(data, uid) {
   }, { merge: true })
 }
 
-// emergencySchedule doc id = `{classId}_{date}` (date: YYYY-MM-DD)
-export async function getEmergencySchedule(classId, date) {
+// emergencySchedule doc id = `{classId}_{date}` (date: YYYY-MM-DD).
+// One doc per class per day carries the whole emergency routine: lessons
+// (slots), small learning groups, and playdates.
+export async function getEmergencyDay(classId, date) {
   const snap = await getDoc(doc(db, 'emergencySchedule', `${classId}_${date}`))
-  return snap.exists() ? snap.data().slots || [] : []
+  return normalizeDay(snap.exists() ? snap.data() : null)
 }
 
-export async function saveEmergencySchedule(classId, date, slots) {
+// patch = any subset of { slots, groups, playdates }; merged so saving one
+// section never wipes the others.
+export async function saveEmergencyDay(classId, date, patch) {
   await setDoc(doc(db, 'emergencySchedule', `${classId}_${date}`), {
     classId,
     date,
-    slots,
+    ...patch,
     updatedAt: serverTimestamp(),
-  })
+  }, { merge: true })
 }
 
 // Fetch all emergency schedule docs for a given date (all classes)
