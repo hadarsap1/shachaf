@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
-import { clearAppCaches } from '../../lib/hardReload'
+import { clearAppCaches, reloadFresh } from '../../lib/hardReload'
+import { clearAutoReloads } from '../../lib/reloadBudget'
 
 // The in-app version of AppSpinner: a page-level loader that admits defeat.
 //
@@ -16,8 +17,11 @@ export const STUCK_AFTER_MS = 10000
 export const WEDGED_AFTER_MS = 22000
 
 async function hardReload() {
+  // A person pressed this. That is a better guard than any counter, so give
+  // the automatic-reload budget back before spending a reload of our own.
+  clearAutoReloads()
   await clearAppCaches()
-  window.location.reload()
+  await reloadFresh()
 }
 
 export default function PageLoader({ onRetry, label = 'טוען…' }) {

@@ -10,12 +10,17 @@
 // happened to fetch a consistent set.
 //
 // A refresh alone is not enough — the service worker can hand back the same
-// stale index from its cache. The way out is to drop the worker and its
-// caches, then reload; that is what clearAppCaches does, and this module is
-// the decision of WHEN, guarded so a genuinely broken build cannot become a
-// reload loop.
+// stale index from its cache, and so can the browser's own HTTP cache. The way
+// out is to drop the worker and its caches and re-fetch the document, which is
+// what clearAppCaches + reloadFresh do; this module is the decision of WHEN.
+//
+// This decision is NOT the module's own to make twice. Every automatic reload
+// in the app draws on the shared budget in reloadBudget.js, so a build that is
+// genuinely broken costs the user a couple of flashes and then gets an error
+// screen, instead of an app that reloads itself forever.
 
-export const RECOVERY_KEY = 'shachaf_stale_build_reload'
+import { canAutoReload, noteAutoReload } from './reloadBudget'
+import { reloadFresh } from './hardReload'
 
 // Every browser words it differently, and the wording is all we get.
 const CHUNK_ERROR = /(failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|failed to load module script|chunkloaderror|loading chunk \S+ failed|dynamically imported module)/i
@@ -26,28 +31,15 @@ export function isStaleBuildError(err) {
   return CHUNK_ERROR.test(text)
 }
 
-// Once per browsing session. A second failure after a clean reload is not a
-// stale build — it is a broken one, and looping would only hide it.
-export function canRecover(storage) {
-  // No storage means no guard, and an unguarded auto-reload is how a broken
-  // build becomes an infinite refresh. The manual escape hatch in AppSpinner
-  // still covers that case.
-  if (!storage) return false
-  try { return !storage.getItem(RECOVERY_KEY) } catch { return false }
-}
-
-export function markRecovered(storage) {
-  try { storage?.setItem(RECOVERY_KEY, String(Date.now())) } catch { /* private mode */ }
-}
-
 // Returns true if it took over (caller should stop rendering its error state).
 export async function recoverFromStaleBuild({
-  storage = typeof sessionStorage !== 'undefined' ? sessionStorage : null,
+  storage = typeof localStorage !== 'undefined' ? localStorage : null,
+  now = () => Date.now(),
   clearCaches,
-  reload = () => window.location.reload(),
+  reload = () => reloadFresh(),
 } = {}) {
-  if (!canRecover(storage)) return false
-  markRecovered(storage)
+  if (!canAutoReload(storage, now())) return false
+  noteAutoReload(storage, now())
   try { await clearCaches?.() } catch { /* best effort — reload anyway */ }
   reload()
   return true

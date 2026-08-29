@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { clearAppCaches } from '../../lib/hardReload'
+import { clearAutoReloads } from '../../lib/reloadBudget'
 
 // The full-screen loader shown while auth and the user profile resolve.
 //
@@ -19,6 +20,8 @@ export default function AppSpinner() {
   }, [])
 
   const hardReload = async () => {
+    // A person pressed this — hand the automatic-reload budget back.
+    clearAutoReloads()
     await clearAppCaches()
     window.location.replace('/login')
   }

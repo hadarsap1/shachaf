@@ -23,3 +23,21 @@ export async function clearAppCaches(nav = typeof navigator !== 'undefined' ? na
   } catch { /* ignore */ }
   return results
 }
+
+// Reload onto a freshly fetched document.
+//
+// Dropping the worker and its caches still leaves the browser's own HTTP cache,
+// and location.reload() is allowed to answer from it. When the thing that is
+// stale IS the index — it names chunk URLs the server no longer has — that
+// reload lands on the same broken page, which is how "refresh and it fixes
+// itself" turns into a refresh that changes nothing. Re-fetching the document
+// with cache:'reload' replaces the cached entry first, so the reload gets the
+// current index. Best effort: if the fetch fails we reload regardless.
+export async function reloadFresh(win = typeof window !== 'undefined' ? window : null,
+                                  doFetch = typeof fetch !== 'undefined' ? fetch : null) {
+  if (!win) return
+  try {
+    if (doFetch) await doFetch(win.location.href, { cache: 'reload', credentials: 'same-origin' })
+  } catch { /* offline or blocked — reload anyway */ }
+  win.location.reload()
+}

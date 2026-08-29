@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
-import {
-  isStaleBuildError, canRecover, markRecovered, recoverFromStaleBuild, RECOVERY_KEY,
-} from './chunkRecovery'
+import { isStaleBuildError, recoverFromStaleBuild } from './chunkRecovery'
+import { BUDGET_KEY, MAX_AUTO_RELOADS, WINDOW_MS } from './reloadBudget'
 
 const fakeStorage = () => {
   const map = new Map()
   return {
     getItem: (k) => (map.has(k) ? map.get(k) : null),
     setItem: (k, v) => map.set(k, v),
+    removeItem: (k) => map.delete(k),
   }
 }
 
@@ -51,34 +51,35 @@ describe('recoverFromStaleBuild', () => {
     expect(reload).toHaveBeenCalledTimes(1)
   })
 
-  it('refuses a second time in the same session — a loop hides a real break', async () => {
+  it('draws on the shared budget, so a broken build cannot become a loop', async () => {
     const storage = fakeStorage()
     const reload = vi.fn()
-    await recoverFromStaleBuild({ storage, clearCaches: vi.fn(), reload })
-    const second = await recoverFromStaleBuild({ storage, clearCaches: vi.fn(), reload })
-    expect(second).toBe(false)
-    expect(reload).toHaveBeenCalledTimes(1)
+    let t = 1_000_000
+    const now = () => (t += 1500)
+    for (let i = 0; i < MAX_AUTO_RELOADS; i++) {
+      expect(await recoverFromStaleBuild({ storage, now, clearCaches: vi.fn(), reload })).toBe(true)
+    }
+    expect(await recoverFromStaleBuild({ storage, now, clearCaches: vi.fn(), reload })).toBe(false)
+    expect(reload).toHaveBeenCalledTimes(MAX_AUTO_RELOADS)
+  })
+
+  it('counts against the same budget the boot rescue and the worker takeover use', async () => {
+    const storage = fakeStorage()
+    // rescue.js writes this key directly — it runs before the bundle exists.
+    storage.setItem(BUDGET_KEY, JSON.stringify(
+      Array.from({ length: MAX_AUTO_RELOADS }, (_, i) => 1_000_000 + i)))
+    const reload = vi.fn()
+    expect(await recoverFromStaleBuild({ storage, now: () => 1_000_100, clearCaches: vi.fn(), reload })).toBe(false)
+    expect(reload).not.toHaveBeenCalled()
+    // …and it recovers on its own once the window has passed.
+    expect(await recoverFromStaleBuild({
+      storage, now: () => 1_000_000 + WINDOW_MS + 1, clearCaches: vi.fn(), reload,
+    })).toBe(true)
   })
 
   it('does nothing when storage is unavailable, rather than looping blind', async () => {
     const reload = vi.fn()
     expect(await recoverFromStaleBuild({ storage: null, clearCaches: vi.fn(), reload })).toBe(false)
     expect(reload).not.toHaveBeenCalled()
-  })
-})
-
-describe('canRecover / markRecovered', () => {
-  it('flips after the first recovery', () => {
-    const storage = fakeStorage()
-    expect(canRecover(storage)).toBe(true)
-    markRecovered(storage)
-    expect(canRecover(storage)).toBe(false)
-    expect(storage.getItem(RECOVERY_KEY)).toBeTruthy()
-  })
-
-  it('survives a storage that throws (private mode)', () => {
-    const throwing = { getItem: () => { throw new Error('blocked') }, setItem: () => { throw new Error('blocked') } }
-    expect(canRecover(throwing)).toBe(false)
-    expect(() => markRecovered(throwing)).not.toThrow()
   })
 })
