@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { getResources, saveResource, deleteResource } from '../../lib/db'
+import { useState, useEffect, useRef } from 'react'
+import { getResources, saveResource, deleteResource, uploadResourceFile, deleteResourceFile } from '../../lib/db'
 import {
   BookOpen, Plus, Edit2, Trash2, X, Loader2, Check,
-  Link, FileText, Map, Phone, Calendar, Video, ExternalLink,
+  Link, FileText, Map, Phone, Calendar, Video, ExternalLink, Upload, Paperclip,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -33,6 +33,9 @@ const blank = (order) => ({
   url: '',
   category: '',
   iconType: 'link',
+  fileUrl: '',
+  filePath: '',
+  fileName: '',
   order,
 })
 
@@ -44,6 +47,8 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
   const [error, setError] = useState('')
   const [categoryInput, setCategoryInput] = useState(resource.category || '')
   const [showCatSuggestions, setShowCatSuggestions] = useState(false)
+  const [file, setFile] = useState(null)   // newly picked file, uploaded on save
+  const fileRef = useRef(null)
 
   const set = (f, v) => setDraft(d => ({ ...d, [f]: v }))
 
@@ -53,16 +58,42 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
 
   const handleSave = async () => {
     if (!draft.title?.trim()) { setError('כותרת היא שדה חובה'); return }
-    if (!draft.url?.trim()) { setError('קישור הוא שדה חובה'); return }
+    if (!draft.url?.trim() && !file && !draft.fileUrl) { setError('צריך קישור או קובץ מצורף'); return }
     if (!categoryInput.trim()) { setError('קטגוריה היא שדה חובה'); return }
     setSaving(true)
     try {
-      await onSave({ ...draft, title: draft.title.trim(), url: draft.url.trim(), category: categoryInput.trim() })
+      let fileFields = { fileUrl: draft.fileUrl || '', filePath: draft.filePath || '', fileName: draft.fileName || '' }
+      const replaced = file ? draft.filePath : null
+      if (file) {
+        const up = await uploadResourceFile(file)
+        fileFields = { fileUrl: up.url, filePath: up.path, fileName: up.name }
+      }
+      await onSave({
+        ...draft, ...fileFields,
+        title: draft.title.trim(), url: (draft.url || '').trim(), category: categoryInput.trim(),
+      })
+      // only once the doc points at the new file — a failed save must not
+      // leave the resource pointing at a file that's already been deleted
+      if (replaced) await deleteResourceFile(replaced)
     } catch (e) {
       setError(e.message)
     } finally {
       setSaving(false)
     }
+  }
+
+  const pickFile = (f) => {
+    if (!f) return
+    if (f.size > 10 * 1024 * 1024) { setError('הקובץ גדול מדי (עד 10MB)'); return }
+    if (!/^image\/|^application\/pdf$/.test(f.type)) { setError('אפשר לצרף PDF או תמונה בלבד'); return }
+    setError('')
+    setFile(f)
+  }
+
+  const clearFile = () => {
+    setFile(null)
+    setDraft(d => ({ ...d, fileUrl: '', filePath: '', fileName: '' }))
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   return (
@@ -154,15 +185,45 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
 
           {/* URL */}
           <div>
-            <label className="label block mb-1 text-right text-xs">קישור (URL) *</label>
+            <label className="label block mb-1 text-right text-xs">קישור (URL)</label>
             <input
               type="url"
-              value={draft.url}
+              value={draft.url || ''}
               onChange={e => set('url', e.target.value)}
               className="input w-full"
               placeholder="https://"
               dir="ltr"
             />
+          </div>
+
+          {/* File attachment — an alternative to a URL */}
+          <div>
+            <label className="label block mb-1 text-right text-xs">או קובץ מצורף (PDF / תמונה)</label>
+            {(file || draft.fileUrl) ? (
+              <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-3 dark:bg-gray-900">
+                <Paperclip size={15} className="text-primary-500 flex-shrink-0" />
+                <span className="flex-1 text-xs text-gray-700 truncate text-right dark:text-gray-200">
+                  {file ? file.name : draft.fileName || 'קובץ מצורף'}
+                </span>
+                <button type="button" onClick={clearFile}
+                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg" title="הסר קובץ">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-gray-300 text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors dark:border-gray-600 dark:text-gray-400">
+                <Upload size={15} /> בחירת קובץ
+              </button>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              onChange={e => pickFile(e.target.files?.[0])}
+            />
+            <p className="text-[11px] text-gray-400 mt-1 text-right">עד 10MB. אם לא הוזן קישור — הכרטיס יפתח את הקובץ.</p>
           </div>
 
           {/* Order */}
@@ -223,7 +284,9 @@ export default function AdminResourcesPage() {
   const handleDelete = async (id) => {
     setDeleting(id)
     try {
+      const filePath = resources.find(r => r.id === id)?.filePath
       await deleteResource(id)
+      if (filePath) await deleteResourceFile(filePath)
       setResources(prev => prev.filter(r => r.id !== id))
     } finally {
       setDeleting(null)
@@ -286,7 +349,13 @@ export default function AdminResourcesPage() {
                     {resource.description && (
                       <div className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{resource.description}</div>
                     )}
-                    <div className="text-xs text-primary-400 mt-0.5 truncate" dir="ltr">{resource.url}</div>
+                    {resource.url && <div className="text-xs text-primary-400 mt-0.5 truncate" dir="ltr">{resource.url}</div>}
+                    {resource.fileUrl && (
+                      <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
+                        <span className="truncate">{resource.fileName || 'קובץ מצורף'}</span>
+                        <Paperclip size={11} className="flex-shrink-0" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button

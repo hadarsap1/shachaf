@@ -3,29 +3,20 @@ import {
   getClasses, saveClass, deleteClass, getUsers,
   assignClassAdmin, removeClassAdmin,
   getChildren, saveChild, deleteChild, bulkImportChildren,
+  getSchoolStaff, saveSchoolStaff,
 } from '../../lib/db'
 import { CLASS_COLORS, blankCenterHours } from '../../lib/classColors'
 import { currentSchoolYearLabel } from '../../lib/hebrewYear'
 import {
   GraduationCap, Plus, Edit2, Trash2, X, Check, Users,
-  Loader2, Search, Upload, Baby, Cake,
+  Loader2, Search, Upload, Baby, Cake, ChevronDown, School,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { GRADES, GRADE_SEP, gradeList, classLabel } from '../../lib/grades'
 import { readSheetObjects } from '../../lib/spreadsheet'
+import { SCHEDULE_DAYS, SCHEDULE_PERIODS } from '../../lib/schedule'
+import { useAuth } from '../../context/AuthContext'
 
-const SCHEDULE_DAYS  = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
-const SCHEDULE_PERIODS = [
-  { id: 'morning', label: 'מפגש בוקר' },
-  { id: '1',       label: '1' },
-  { id: '2',       label: '2' },
-  { id: 'break1',  label: 'הפסקה', isBreak: true },
-  { id: '3',       label: '3' },
-  { id: '4',       label: '4' },
-  { id: 'break2',  label: 'הפסקה', isBreak: true },
-  { id: '5',       label: '5' },
-  { id: '6',       label: '6' },
-]
 
 const blankClass = () => ({
   id: 'class-' + Date.now(),
@@ -108,7 +99,7 @@ function ScheduleEditor({ schedule = {}, onChange }) {
       <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="sticky right-0 z-10 bg-white w-16 px-2 py-2 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+            <th className="sticky right-0 z-10 bg-white w-20 px-2 py-2 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700">
               שיעור
             </th>
             {SCHEDULE_DAYS.map(d => (
@@ -124,14 +115,15 @@ function ScheduleEditor({ schedule = {}, onChange }) {
               <tr key={period.id}>
                 <td colSpan={SCHEDULE_DAYS.length + 1}
                   className="py-1 px-3 text-[10px] text-gray-400 text-center bg-gray-50 border-y border-gray-100 italic dark:bg-gray-900 dark:border-gray-700">
-                  — {period.label} —
+                  — {period.label} <span dir="ltr">{period.time}</span> —
                 </td>
               </tr>
             )
             return (
               <tr key={period.id} className="border-t border-gray-100 hover:bg-gray-50/50 dark:border-gray-700">
                 <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-500 font-semibold text-center border-l border-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
-                  {period.label}
+                  <div>{period.label}</div>
+                  <div className="text-[9px] font-normal text-gray-400 dark:text-gray-500" dir="ltr">{period.time}</div>
                 </td>
                 {SCHEDULE_DAYS.map((_, di) => {
                   const key = `${di}-${period.id}`
@@ -653,6 +645,78 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+// ── School staff — one list shared by every class ─────────────────────────────
+
+function SchoolStaffCard() {
+  const { user } = useAuth()
+  const [people, setPeople] = useState([])
+  const [open, setOpen]     = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved]   = useState(false)
+  const [error, setError]   = useState('')
+
+  useEffect(() => {
+    getSchoolStaff()
+      .then(setPeople)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const save = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      // drop rows left completely blank
+      const cleaned = people.filter(p => p.name?.trim())
+        .map(p => ({ ...p, name: p.name.trim() }))
+      await saveSchoolStaff(cleaned, user?.uid || null)
+      setPeople(cleaned)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-card border border-gray-100 mb-4 dark:bg-gray-800 dark:border-gray-700">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 p-4 text-right">
+        <School size={18} className="text-primary-600 dark:text-primary-400 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-gray-800 dark:text-gray-100">צוות בית הספר</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            מנהל/ת, יועצ/ת, מורים מקצועיים — מוצג לכל הכיתות
+            {!loading && people.length > 0 && ` · ${people.length} אנשי צוות`}
+          </div>
+        </div>
+        <ChevronDown size={16} className={clsx('text-gray-400 flex-shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 border-t border-gray-100 pt-4 dark:border-gray-700">
+          {loading ? (
+            <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin text-primary-400" /></div>
+          ) : (
+            <>
+              <PeopleEditor people={people} onChange={setPeople} showTitle placeholder="שם" />
+              {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+              <button onClick={save} disabled={saving}
+                className="btn-primary w-full mt-4 flex items-center justify-center gap-2 disabled:opacity-60">
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                {saving ? 'שומר...' : saved ? 'נשמר' : 'שמור צוות בית הספר'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminClassesPage() {
   const [classes, setClasses]   = useState([])
   const [users, setUsers]       = useState([])
@@ -712,6 +776,8 @@ export default function AdminClassesPage() {
       </div>
 
       {error && <div className="mb-4 bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm dark:bg-red-900/20 dark:text-red-300">{error}</div>}
+
+      <SchoolStaffCard />
 
       <div className="relative mb-4">
         <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
