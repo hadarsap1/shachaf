@@ -19,6 +19,10 @@ import { SCHEDULE_DAYS, SCHEDULE_PERIODS } from '../../lib/schedule'
 
 // ── Weekly schedule (with personal overrides) ─────────────────────────────────
 
+// The school-staff tab rides in ?class= alongside the real class ids, so a
+// refresh or a back-navigation lands back on it like any class.
+const STAFF_TAB = 'staff'
+
 const OVERRIDE_KEY = (classId, uid) => `shachaf_schedule_override_${classId}_${uid}`
 
 function loadOverrides(classId, uid) {
@@ -388,6 +392,7 @@ export default function ClassPage() {
   const [classParents, setClassParents]   = useState([])
   const [classAdmins, setClassAdmins]     = useState([])
   const [schoolStaff, setSchoolStaff]     = useState([])
+  const [showStaff, setShowStaff]         = useState(false)
   const [loading, setLoading]             = useState(true)
   const [loadError, setLoadError]         = useState(null)   // 'timeout' | 'failed' | null
   const [retryKey, setRetryKey]           = useState(0)
@@ -440,6 +445,7 @@ export default function ClassPage() {
   // Honor ?class=<id> once the classes are loaded
   useEffect(() => {
     if (!requestedClassId || !myClasses.length) return
+    if (requestedClassId === STAFF_TAB) { setShowStaff(true); return }
     const i = myClasses.findIndex(c => c.id === requestedClassId)
     if (i >= 0) setSelectedIdx(i)
   }, [requestedClassId, myClasses])
@@ -449,16 +455,23 @@ export default function ClassPage() {
   // Switching tabs keeps the URL in sync, so a refresh (or back) stays on the
   // class being viewed rather than snapping back to the first one
   const selectClass = (i) => {
+    setShowStaff(false)
     setSelectedIdx(i)
     const target = myClasses[i]
     if (target) setSearchParams({ class: target.id }, { replace: true })
   }
 
+  const selectStaff = () => {
+    setShowStaff(true)
+    setSearchParams({ class: STAFF_TAB }, { replace: true })
+  }
+
   // Header shows the class actually on screen, not the full list of classes
   useEffect(() => {
-    setPageTitleOverride(cls ? classLabel(cls.name, cls.grade) : '')
+    if (showStaff) setPageTitleOverride('צוות בית הספר')
+    else setPageTitleOverride(cls ? classLabel(cls.name, cls.grade) : '')
     return () => setPageTitleOverride('')
-  }, [cls?.id, cls?.name, cls?.grade])
+  }, [cls?.id, cls?.name, cls?.grade, showStaff])
 
   // Roster reloads whenever the selected class changes (multi-class parents)
   useEffect(() => {
@@ -517,48 +530,91 @@ export default function ClassPage() {
     </div>
   )
 
+  // Class switcher — a labeled, clearly-selectable row. The old version — a labeled, clearly-selectable row. The old version
+  // was bare pills that read as decoration, so parents with more than one
+  // child didn't realize they could switch between classes.
+  const classTabs = (myClasses.length > 1 || schoolStaff.length > 0) ? (
+    <div className="mb-5">
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 text-right">
+        {myClasses.length > 1
+          ? `יש לך ${myClasses.length} כיתות — בחר/י כדי לעבור ביניהן:`
+          : 'בחר/י מה להציג:'}
+      </p>
+      <div
+        role="tablist"
+        aria-label="בחירת כיתה"
+        className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+      >
+        {myClasses.map((c, i) => {
+          const active = !showStaff && i === selectedIdx
+          return (
+            <button
+              key={c.id}
+              role="tab"
+              aria-selected={active}
+              onClick={() => selectClass(i)}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
+                active
+                  ? 'text-white shadow-md font-bold'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-400'
+              )}
+              style={active ? { backgroundColor: c.color || '#1B3B70', borderColor: c.color || '#1B3B70' } : {}}
+            >
+              {active
+                ? <Check size={15} className="flex-shrink-0" />
+                : <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: c.color || '#1B3B70' }} />}
+              {classLabel(c.name, c.grade)}
+            </button>
+          )
+        })}
+
+        {/* School staff — its own tab rather than a section repeated inside
+            every class, since it is the same list for all of them */}
+        {schoolStaff.length > 0 && (
+          <button
+            role="tab"
+            aria-selected={showStaff}
+            onClick={selectStaff}
+            className={clsx(
+              'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
+              showStaff
+                ? 'bg-gray-700 text-white border-gray-700 shadow-md font-bold dark:bg-gray-200 dark:text-gray-900 dark:border-gray-200'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-400'
+            )}
+          >
+            <School size={15} className="flex-shrink-0" />
+            צוות בה״ס
+          </button>
+        )}
+      </div>
+    </div>
+  ) : null
+
+  // School staff is the same list for every class, so it gets its own tab
+  // instead of repeating inside each one.
+  if (showStaff && schoolStaff.length > 0) return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
+      {classTabs}
+      <div className="rounded-2xl p-5 mb-5 text-white bg-gray-700 dark:bg-gray-600">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-black">צוות בית הספר</h1>
+            <p className="text-sm opacity-80 mt-0.5">מנהל/ת, יועצ/ת ומורים מקצועיים — לכל הכיתות</p>
+          </div>
+          <School size={32} className="opacity-30" />
+        </div>
+      </div>
+      <Section title="אנשי צוות" icon={Users} color="#374151">
+        {schoolStaff.map((p, i) => <PersonCard key={i} person={p} />)}
+      </Section>
+    </div>
+  )
+
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
-      {/* Class switcher — a labeled, clearly-selectable row. The old version
-          was bare pills that read as decoration, so parents with more than one
-          child didn't realize they could switch between classes. */}
-      {myClasses.length > 1 && (
-        <div className="mb-5">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 text-right">
-            יש לך {myClasses.length} כיתות — בחר/י כדי לעבור ביניהן:
-          </p>
-          <div
-            role="tablist"
-            aria-label="בחירת כיתה"
-            className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
-          >
-            {myClasses.map((c, i) => {
-              const active = i === selectedIdx
-              return (
-                <button
-                  key={c.id}
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => selectClass(i)}
-                  className={clsx(
-                    'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
-                    active
-                      ? 'text-white shadow-md font-bold'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-400'
-                  )}
-                  style={active ? { backgroundColor: c.color || '#1B3B70', borderColor: c.color || '#1B3B70' } : {}}
-                >
-                  {active
-                    ? <Check size={15} className="flex-shrink-0" />
-                    : <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: c.color || '#1B3B70' }} />}
-                  {classLabel(c.name, c.grade)}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {classTabs}
 
       {/* Class header */}
       {cls && (
@@ -685,13 +741,6 @@ export default function ClassPage() {
               <PersonCard person={{ ...cls.teacherContact, role: 'מחנך/ת כיתה' }} />
             )}
             {(cls.assistants || []).map((p, i) => <PersonCard key={i} person={p} />)}
-          </Section>
-        )}
-
-        {/* School staff — principal, counselor, subject teachers; same for all classes */}
-        {schoolStaff.length > 0 && (
-          <Section title="צוות בית הספר" icon={School} color={cls?.color || '#1B3B70'}>
-            {schoolStaff.map((p, i) => <PersonCard key={i} person={p} />)}
           </Section>
         )}
 
