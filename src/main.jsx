@@ -5,7 +5,8 @@ import './index.css'
 import App from './App.jsx'
 import { startUpdateWatch } from './lib/appUpdate'
 import { isStaleBuildError, recoverFromStaleBuild } from './lib/chunkRecovery'
-import { clearAppCaches } from './lib/hardReload'
+import { canAutoReload, noteAutoReload, clearAutoReloads } from './lib/reloadBudget'
+import { clearAppCaches, reloadFresh } from './lib/hardReload'
 
 const healStaleBuild = () => recoverFromStaleBuild({ clearCaches: clearAppCaches })
 
@@ -25,14 +26,25 @@ window.addEventListener('unhandledrejection', (e) => {
 // PWA: the service worker updates with skipWaiting+clientsClaim, so a new
 // deploy takes over a RUNNING page mid-session. That silently breaks the
 // Firestore WebChannel — in-flight queries hang forever (endless spinners)
-// and lazy chunks with old hashes 404. Reload once when a NEW worker takes
-// control so the app restarts cleanly on the new bundle. The hadController
-// guard skips the very first install (no takeover → no reload loop).
+// and lazy chunks with old hashes 404. Reload when a NEW worker takes control
+// so the app restarts cleanly on the new bundle. The hadController guard skips
+// the very first install (no takeover → nothing to restart onto).
+//
+// hadController alone is not enough. A worker that keeps re-taking control —
+// two builds behind one alias, an install that never settles — hands this
+// listener the same event on every load, and an unguarded reload there is an
+// app that blinks forever without ever coming up. So the takeover spends from
+// the shared budget too; once it is out, the page stays put and whatever is
+// wrong gets to be visible instead of being reloaded away.
 if ('serviceWorker' in navigator) {
   let hadController = !!navigator.serviceWorker.controller
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController) window.location.reload()
+    const takeover = hadController
     hadController = true
+    if (!takeover) return
+    if (!canAutoReload()) return
+    noteAutoReload()
+    window.location.reload()
   })
 
   // An installed app can stay open for days without ever checking for a new
@@ -74,7 +86,7 @@ class ErrorBoundary extends Component {
         <div dir="rtl" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center', fontFamily: 'sans-serif' }}>
           <h1 style={{ fontSize: 20, fontWeight: 700 }}>משהו השתבש</h1>
           <p style={{ color: '#6b7280' }}>נסו לרענן את הדף. אם הבעיה נמשכת, פנו אלינו.</p>
-          <button onClick={() => window.location.reload()} style={{ background: '#2563EB', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 24px', fontSize: 15, cursor: 'pointer' }}>
+          <button onClick={() => { clearAutoReloads(); reloadFresh() }} style={{ background: '#2563EB', color: '#fff', border: 'none', borderRadius: 12, padding: '10px 24px', fontSize: 15, cursor: 'pointer' }}>
             רענון
           </button>
         </div>
