@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getResources } from '../../lib/db'
-import { BookOpen, ExternalLink, Loader2, FileText, Map, Phone, Calendar, Video, Link } from 'lucide-react'
+import { BookOpen, ExternalLink, Loader2, FileText, Map, Phone, Calendar, Video, Link, Paperclip } from 'lucide-react'
 
 const ICON_MAP = {
   link:     { icon: Link,         bg: 'bg-primary-50 dark:bg-primary-900/30',   color: 'text-primary-600 dark:text-primary-400' },
@@ -56,10 +56,11 @@ export default function ResourcesPage() {
           <div className="space-y-2">
             {resources.filter(r => r.category === cat).map(resource => {
               const { icon: Icon, bg, color } = ICON_MAP[resource.iconType] || ICON_MAP.link
+              const isFile = !resource.url && !!resource.fileUrl
               return (
                 <a
                   key={resource.id}
-                  href={resource.url}
+                  href={resource.url || resource.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-[box-shadow] duration-200 group"
@@ -72,8 +73,16 @@ export default function ResourcesPage() {
                     {resource.description && (
                       <div className="text-xs text-gray-500 mt-0.5 truncate dark:text-gray-400">{resource.description}</div>
                     )}
+                    {isFile && (
+                      <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
+                        <span className="truncate">{resource.fileName || 'קובץ מצורף'}</span>
+                        <Paperclip size={11} className="flex-shrink-0" />
+                      </div>
+                    )}
                   </div>
-                  <ExternalLink size={14} className="text-gray-300 group-hover:text-primary-400 transition-colors flex-shrink-0" />
+                  {isFile
+                    ? <Paperclip size={14} className="text-gray-300 group-hover:text-primary-400 transition-colors flex-shrink-0" />
+                    : <ExternalLink size={14} className="text-gray-300 group-hover:text-primary-400 transition-colors flex-shrink-0" />}
                 </a>
               )
             })}

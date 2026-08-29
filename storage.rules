@@ -74,6 +74,16 @@ service firebase.storage {
                    );
     }
 
+    // "Useful info" resource files (PDF or image) — admin writes; authenticated reads
+    match /resources/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*|application/pdf')
+                   && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
+                        in ['admin', 'super_admin'];
+    }
+
     // Community images (announcements, resources) — admin writes; authenticated reads
     match /community/{fileName} {
       allow read: if request.auth != null;

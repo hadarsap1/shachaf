@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent, invalidateCache } from '../../lib/db'
+import { getClasses, getChildrenByParent, getChildren, getEvents, getAnnouncements, getChildNote, saveChildNote, getUsersByUids, saveEvent, logConsent, invalidateCache, getSchoolStaff } from '../../lib/db'
 import { withTimeout, isTimeout } from '../../lib/withTimeout'
 import PageLoader, { PageLoadError } from '../../components/ui/PageLoader'
 import ShareEventButtons from '../../components/ui/ShareEventButtons'
@@ -9,24 +9,13 @@ import { setPageTitleOverride } from '../../lib/pageTitle'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
-  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact, Plus,
+  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact, Plus, School,
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
 import ContactSheetModal from '../../components/ui/ContactSheetModal'
+import { SCHEDULE_DAYS, SCHEDULE_PERIODS } from '../../lib/schedule'
 
-const SCHEDULE_DAYS    = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
-const SCHEDULE_PERIODS = [
-  { id: 'morning', label: 'מפגש בוקר' },
-  { id: '1',       label: '1' },
-  { id: '2',       label: '2' },
-  { id: 'break1',  label: 'הפסקה', isBreak: true },
-  { id: '3',       label: '3' },
-  { id: '4',       label: '4' },
-  { id: 'break2',  label: 'הפסקה', isBreak: true },
-  { id: '5',       label: '5' },
-  { id: '6',       label: '6' },
-]
 
 // ── Weekly schedule (with personal overrides) ─────────────────────────────────
 
@@ -101,7 +90,7 @@ function ScheduleView({ schedule, classId, uid }) {
         <table className="min-w-full text-xs border-collapse" style={{ direction: 'rtl' }}>
           <thead>
             <tr className="border-b border-gray-100 dark:border-gray-700">
-              <th className="sticky right-0 z-10 bg-white w-14 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700" />
+              <th className="sticky right-0 z-10 bg-white w-16 px-2 py-1.5 text-gray-400 font-medium text-right border-l border-gray-100 dark:bg-gray-800 dark:border-gray-700" />
               {SCHEDULE_DAYS.map(d => (
                 <th key={d} className="px-1 py-1.5 text-center text-gray-500 font-semibold min-w-[60px] dark:text-gray-400">{d}</th>
               ))}
@@ -113,14 +102,15 @@ function ScheduleView({ schedule, classId, uid }) {
                 <tr key={period.id}>
                   <td colSpan={SCHEDULE_DAYS.length + 1}
                     className="py-0.5 px-2 text-[10px] text-gray-300 text-center italic">
-                    — {period.label} —
+                    — {period.label} <span dir="ltr">{period.time}</span> —
                   </td>
                 </tr>
               )
               return (
                 <tr key={period.id} className="border-t border-gray-50">
                   <td className="sticky right-0 z-10 bg-white px-2 py-1.5 text-gray-400 font-semibold text-center border-l border-gray-100 text-[11px] dark:bg-gray-800 dark:border-gray-700">
-                    {period.label}
+                    <div>{period.label}</div>
+                    <div className="text-[9px] font-normal text-gray-300 dark:text-gray-500" dir="ltr">{period.time}</div>
                   </td>
                   {SCHEDULE_DAYS.map((_, di) => {
                     const key = `${di}-${period.id}`
@@ -397,6 +387,7 @@ export default function ClassPage() {
   const [classChildren, setClassChildren] = useState([])
   const [classParents, setClassParents]   = useState([])
   const [classAdmins, setClassAdmins]     = useState([])
+  const [schoolStaff, setSchoolStaff]     = useState([])
   const [loading, setLoading]             = useState(true)
   const [loadError, setLoadError]         = useState(null)   // 'timeout' | 'failed' | null
   const [retryKey, setRetryKey]           = useState(0)
@@ -432,6 +423,12 @@ export default function ClassPage() {
       setLoading(false)
     })
   }, [user, retryKey])
+
+  // School-wide staff (principal, counselor, subject teachers) — same for every
+  // class, and supplementary, so it loads on its own and fails quietly.
+  useEffect(() => {
+    getSchoolStaff().then(setSchoolStaff).catch(() => {})
+  }, [])
 
   const retryLoad = () => {
     invalidateCache('childrenBy', 'classes', 'events', 'announcements')
@@ -688,6 +685,13 @@ export default function ClassPage() {
               <PersonCard person={{ ...cls.teacherContact, role: 'מחנך/ת כיתה' }} />
             )}
             {(cls.assistants || []).map((p, i) => <PersonCard key={i} person={p} />)}
+          </Section>
+        )}
+
+        {/* School staff — principal, counselor, subject teachers; same for all classes */}
+        {schoolStaff.length > 0 && (
+          <Section title="צוות בית הספר" icon={School} color={cls?.color || '#1B3B70'}>
+            {schoolStaff.map((p, i) => <PersonCard key={i} person={p} />)}
           </Section>
         )}
 
