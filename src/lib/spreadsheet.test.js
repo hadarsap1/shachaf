@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeSheetResult, dropEmptyRows } from './spreadsheet'
+import {
+  normalizeSheetResult, dropEmptyRows, stripBom, personKey, splitNewChildren,
+} from './spreadsheet'
 
 describe('normalizeSheetResult', () => {
   it('extracts rows from the read-excel-file v9 sheet-array shape', () => {
@@ -39,5 +41,44 @@ describe('dropEmptyRows', () => {
   })
   it('drops non-array entries defensively', () => {
     expect(dropEmptyRows([['ok'], 'junk', null])).toEqual([['ok']])
+  })
+})
+
+describe('personKey', () => {
+  it('folds hyphen spacing and geresh so the phone book matches the app', () => {
+    expect(personKey('בר - און  אייזן')).toBe(personKey('בר-און אייזן'))
+    expect(personKey("ג'וליה")).toBe(personKey('גוליה'))
+  })
+})
+
+describe('splitNewChildren', () => {
+  const rows = [
+    { name: 'עומר ספיר ורדי', classId: 'a' },
+    { name: 'דן בר - און', classId: 'e' },
+    { name: 'שי ביטון', classId: 'a' },
+  ]
+
+  it('imports only the children not already on file', () => {
+    const { toImport, duplicates } = splitNewChildren(rows, [{ id: '1', name: 'דן בר-און' }])
+    expect(toImport.map(r => r.name)).toEqual(['עומר ספיר ורדי', 'שי ביטון'])
+    expect(duplicates).toHaveLength(1)
+    expect(duplicates[0].existing.id).toBe('1')
+  })
+
+  it('collapses a name repeated inside the file itself', () => {
+    const { toImport } = splitNewChildren([...rows, { name: 'שי ביטון', classId: 'a' }], [])
+    expect(toImport).toHaveLength(3)
+  })
+
+  it('re-importing the same file adds nobody', () => {
+    const existing = rows.map((r, i) => ({ id: String(i), name: r.name }))
+    expect(splitNewChildren(rows, existing).toImport).toEqual([])
+  })
+})
+
+describe('stripBom', () => {
+  it('removes the BOM Excel prepends, so the first header still matches', () => {
+    expect(stripBom('﻿כיתה,שם פרטי')).toBe('כיתה,שם פרטי')
+    expect(stripBom('כיתה,שם פרטי')).toBe('כיתה,שם פרטי')
   })
 })
