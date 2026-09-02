@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { classLabel, classShortLabel, normalizeClassName, inferGrade } from '../../lib/grades'
 import { phoneIndex, matchUserToParent } from '../../lib/phone'
-import { readSheetRows } from '../../lib/spreadsheet'
+import { readSheetRows, splitNewChildren } from '../../lib/spreadsheet'
 import {
   getChildren, getClasses, getUsers, saveChild, deleteChild, saveClass,
   bulkImportChildren, bulkDeleteChildren, linkChildToParent, unlinkChildFromParent,
@@ -345,7 +345,7 @@ function ChildPanel({ child, isNew, classes, allUsers, onSave, onClose }) {
 
 // ── CSV import panel ──────────────────────────────────────────────────────────
 
-function ImportPanel({ classes, onImport, onClose }) {
+function ImportPanel({ classes, existing, onImport, onClose }) {
   const fileRef = useRef(null)
   const [parsedRows, setParsedRows] = useState([])
   const [error, setError]     = useState('')
@@ -480,9 +480,14 @@ function ImportPanel({ classes, onImport, onClose }) {
       : { ...r, className: fallbackClass.name, classId: fallbackClass.id, valid: !!r.name, willCreate: false }
   ))
   const unclassifiedCount = parsedRows.filter(r => !r.className).length
+  // The phone book is re-imported every year and mostly repeats children who
+  // are already in the system. Importing creates NEW documents, so anyone
+  // already on file has to be filtered out here or the import duplicates them.
+  const { toImport: freshRows, duplicates } = splitNewChildren(rows, existing)
+  const skippedCount = duplicates.length
 
   const handleImport = async () => {
-    const importable = rows.filter(r => r.valid || r.willCreate)
+    const importable = freshRows.filter(r => r.valid || r.willCreate)
     if (!importable.length) return
     setSaving(true)
     try {
@@ -523,10 +528,10 @@ function ImportPanel({ classes, onImport, onClose }) {
     }
   }
 
-  const validCount   = rows.filter(r => r.valid).length
-  const createCount  = rows.filter(r => r.willCreate).length
-  const newClassNames = [...new Set(rows.filter(r => r.willCreate).map(r => normClass(r.className)))]
-  const invalidCount = rows.filter(r => !r.valid && !r.willCreate).length
+  const validCount   = freshRows.filter(r => r.valid).length
+  const createCount  = freshRows.filter(r => r.willCreate).length
+  const newClassNames = [...new Set(freshRows.filter(r => r.willCreate).map(r => normClass(r.className)))]
+  const invalidCount = freshRows.filter(r => !r.valid && !r.willCreate).length
 
   return (
     <>
@@ -564,6 +569,12 @@ function ImportPanel({ classes, onImport, onClose }) {
                   <div className="text-xl font-bold text-secondary-700 dark:text-secondary-300">{validCount + createCount}</div>
                   <div className="text-xs text-secondary-600 dark:text-secondary-400">תקין</div>
                 </div>
+                {skippedCount > 0 && (
+                  <div className="flex-1 bg-gray-100 rounded-xl p-3 text-center dark:bg-gray-700">
+                    <div className="text-xl font-bold text-gray-600 dark:text-gray-300">{skippedCount}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">כבר קיימים</div>
+                  </div>
+                )}
                 {invalidCount > 0 && (
                   <div className="flex-1 bg-red-50 rounded-xl p-3 text-center dark:bg-red-900/20">
                     <div className="text-xl font-bold text-red-600 dark:text-red-400">{invalidCount}</div>
@@ -571,6 +582,11 @@ function ImportPanel({ classes, onImport, onClose }) {
                   </div>
                 )}
               </div>
+              {skippedCount > 0 && (
+                <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                  {skippedCount === 1 ? 'ילד אחד כבר רשום במערכת ולא ייובא שוב' : `${skippedCount} ילדים כבר רשומים במערכת ולא ייובאו שוב`} — הפרטים הקיימים שלהם נשארים כמו שהם
+                </div>
+              )}
               {unclassifiedCount > 0 && (
                 <div className="bg-blue-50 rounded-xl px-3 py-2.5 space-y-1.5 dark:bg-blue-900/20">
                   <p className="text-xs text-blue-700 dark:text-blue-300 text-right">
@@ -591,7 +607,14 @@ function ImportPanel({ classes, onImport, onClose }) {
                 </div>
               )}
               <div className="max-h-64 overflow-y-auto space-y-1">
-                {rows.map((r, i) => (
+                {duplicates.map((r, i) => (
+                  <div key={`dup-${i}`} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+                    <X size={12} className="flex-shrink-0" />
+                    <span className="flex-1 truncate line-through">{r.name}</span>
+                    <span className="text-xs">כבר קיים</span>
+                  </div>
+                ))}
+                {freshRows.map((r, i) => (
                   <div key={i} className={clsx(
                     'flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
                     r.valid ? 'bg-gray-50 dark:bg-gray-800' : r.willCreate ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-red-50 dark:bg-red-900/30'
@@ -954,6 +977,7 @@ export default function AdminChildrenPage() {
       {showImport && (
         <ImportPanel
           classes={classes}
+          existing={children}
           onImport={handleImport}
           onClose={() => setShowImport(false)}
         />
