@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  normalizeSheetResult, dropEmptyRows, stripBom, personKey, splitNewChildren,
+  normalizeSheetResult, dropEmptyRows, stripBom, personKey, splitNewChildren, mergeStaff,
 } from './spreadsheet'
 
 describe('normalizeSheetResult', () => {
@@ -73,6 +73,47 @@ describe('splitNewChildren', () => {
   it('re-importing the same file adds nobody', () => {
     const existing = rows.map((r, i) => ({ id: String(i), name: r.name }))
     expect(splitNewChildren(rows, existing).toImport).toEqual([])
+  })
+})
+
+describe('mergeStaff', () => {
+  const current = [
+    { name: 'עומר נאור', title: 'מנהל', phone: '', email: 'omer@shachaf1.org.il' },
+    { name: 'ליז פריד', title: 'יועצת', phone: '050-1111111', email: '' },
+  ]
+  const incoming = [
+    { name: 'עומר נאור', title: 'מנהל', phone: '050-8243525', email: 'omer@shachaf1.org.il' },
+    { name: 'ליז פריד', title: 'יועצת', phone: '050-6889824', email: 'liz@shachaf1.org.il' },
+    { name: 'דנה ברד', title: 'מדעים', phone: '052-8901201', email: 'dana@shachaf1.org.il' },
+  ]
+
+  it('fills blanks, appends newcomers, and keeps everyone', () => {
+    const { merged, added, filled } = mergeStaff(current, incoming)
+    expect(merged).toHaveLength(3)
+    expect(merged[0].phone).toBe('050-8243525')   // was blank
+    expect(merged[1].email).toBe('liz@shachaf1.org.il')
+    expect(added).toBe(1)
+    expect(filled).toBe(2)
+  })
+
+  it('never overwrites a filled field — it reports the difference instead', () => {
+    const { merged, conflicts } = mergeStaff(current, incoming)
+    expect(merged[1].phone).toBe('050-1111111')   // kept, not replaced
+    expect(conflicts).toEqual([
+      { name: 'ליז פריד', field: 'phone', current: '050-1111111', incoming: '050-6889824' },
+    ])
+  })
+
+  it('does not mutate the saved list', () => {
+    mergeStaff(current, incoming)
+    expect(current[0].phone).toBe('')
+  })
+
+  it('is idempotent — merging twice changes nothing the second time', () => {
+    const once = mergeStaff(current, incoming)
+    const twice = mergeStaff(once.merged, incoming)
+    expect(twice.merged).toEqual(once.merged)
+    expect(twice.added).toBe(0)
   })
 })
 

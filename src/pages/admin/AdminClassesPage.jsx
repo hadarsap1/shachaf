@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { GRADES, GRADE_SEP, gradeList, classLabel } from '../../lib/grades'
-import { readSheetObjects } from '../../lib/spreadsheet'
+import { readSheetObjects, mergeStaff } from '../../lib/spreadsheet'
 import { SCHEDULE_DAYS, SCHEDULE_PERIODS } from '../../lib/schedule'
 import { useAuth } from '../../context/AuthContext'
 
@@ -647,6 +647,34 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
 
 // ── School staff — one list shared by every class ─────────────────────────────
 
+// Column names accepted in the staff CSV/Excel — the school keeps the list in a
+// phone-book sheet whose headers vary a little from year to year.
+const STAFF_COLS = {
+  name:  ['שם', 'שם מלא', 'name'],
+  title: ['תפקיד', 'מקצוע', 'title', 'role'],
+  phone: ['טלפון', 'נייד', 'phone', 'mobile'],
+  email: ['מייל', 'אימייל', 'דוא"ל', 'email'],
+}
+
+function parseStaffRows(headers, data) {
+  const strip = (v) => String(v ?? '').trim().replace(/["״׳]/g, '')
+  const pick = Object.fromEntries(
+    Object.entries(STAFF_COLS).map(([field, names]) => {
+      const wanted = names.map(strip)
+      return [field, headers.find(h => wanted.includes(strip(h).toLowerCase()) || wanted.includes(strip(h)))]
+    })
+  )
+  if (!pick.name) throw new Error('לא נמצאה עמודת "שם" בקובץ')
+  return data
+    .map(row => ({
+      name:  String(row[pick.name] ?? '').trim(),
+      title: pick.title ? String(row[pick.title] ?? '').trim() : '',
+      phone: pick.phone ? String(row[pick.phone] ?? '').trim() : '',
+      email: pick.email ? String(row[pick.email] ?? '').trim().toLowerCase() : '',
+    }))
+    .filter(p => p.name)
+}
+
 function SchoolStaffCard() {
   const { user } = useAuth()
   const [people, setPeople] = useState([])
@@ -655,6 +683,8 @@ function SchoolStaffCard() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved]   = useState(false)
   const [error, setError]   = useState('')
+  const [report, setReport] = useState(null)
+  const fileRef = useRef(null)
 
   useEffect(() => {
     getSchoolStaff()
@@ -662,6 +692,23 @@ function SchoolStaffCard() {
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
+
+  // Importing only FILLS IN what's missing: nobody is removed, and a value that
+  // already differs is reported instead of replaced, so a stale sheet can't wipe
+  // a correction someone made by hand. Nothing is written until “שמור” is pressed.
+  const handleFile = async (file) => {
+    setError('')
+    setReport(null)
+    try {
+      const { headers, data } = await readSheetObjects(file)
+      const incoming = parseStaffRows(headers, data)
+      const { merged, added, filled, conflicts } = mergeStaff(people, incoming)
+      setPeople(merged)
+      setReport({ added, filled, conflicts })
+    } catch (e) {
+      setError(e.message)
+    }
+  }
 
   const save = async () => {
     setSaving(true)
@@ -702,6 +749,38 @@ function SchoolStaffCard() {
             <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin text-primary-400" /></div>
           ) : (
             <>
+              <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} />
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="btn-outline w-full mb-3 flex items-center justify-center gap-2 text-sm py-2">
+                <Upload size={14} />
+                ייבוא מקובץ (משלים פרטים חסרים בלבד)
+              </button>
+
+              {report && (
+                <div className="mb-3 space-y-2">
+                  <div className="bg-secondary-50 rounded-xl px-3 py-2 text-xs text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300">
+                    {report.added || report.filled
+                      ? [report.added && `נוספו ${report.added} אנשי צוות`,
+                         report.filled && `הושלמו פרטים ל-${report.filled}`].filter(Boolean).join(' · ')
+                      : 'לא נמצאו פרטים חדשים להשלמה'}
+                    {' — בדקו ולחצו "שמור" כדי לשמור'}
+                  </div>
+                  {report.conflicts.length > 0 && (
+                    <div className="bg-amber-50 rounded-xl px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 space-y-1">
+                      <p className="font-semibold">
+                        {report.conflicts.length} פרטים בקובץ שונים מהקיים — לא שונו אוטומטית:
+                      </p>
+                      {report.conflicts.map((c, i) => (
+                        <p key={i} dir="rtl">
+                          {c.name}: קיים <span dir="ltr" className="font-mono">{c.current}</span> · בקובץ <span dir="ltr" className="font-mono">{c.incoming}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <PeopleEditor people={people} onChange={setPeople} showTitle placeholder="שם" />
               {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
               <button onClick={save} disabled={saving}

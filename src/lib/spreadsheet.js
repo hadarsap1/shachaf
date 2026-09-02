@@ -109,3 +109,40 @@ export function splitNewChildren(rows, existing = []) {
   }
   return { toImport, duplicates }
 }
+
+const STAFF_FIELDS = ['title', 'phone', 'email']
+
+// Merge staff rows from a file into the saved list: fills BLANK fields, appends
+// people who aren't listed yet, and never removes or replaces anything. A value
+// that differs from one already on file is reported as a conflict for the admin
+// to resolve by hand — an outdated phone is not worth overwriting a correction.
+export function mergeStaff(current = [], incoming = []) {
+  const merged = current.map(p => ({ ...p }))
+  const byKey = new Map()
+  merged.forEach((p, i) => { if (!byKey.has(personKey(p.name))) byKey.set(personKey(p.name), i) })
+  let added = 0
+  let filled = 0
+  const conflicts = []
+  for (const row of incoming) {
+    const key = personKey(row.name)
+    if (!key) continue
+    const i = byKey.get(key)
+    if (i === undefined) {
+      merged.push({ name: normalizeName(row.name), title: row.title || '', phone: row.phone || '', email: row.email || '' })
+      byKey.set(key, merged.length - 1)
+      added++
+      continue
+    }
+    const person = merged[i]
+    let touched = false
+    for (const field of STAFF_FIELDS) {
+      const next = String(row[field] ?? '').trim()
+      const now  = String(person[field] ?? '').trim()
+      if (!next) continue
+      if (!now) { person[field] = next; touched = true }
+      else if (now !== next) conflicts.push({ name: person.name, field, current: now, incoming: next })
+    }
+    if (touched) filled++
+  }
+  return { merged, added, filled, conflicts }
+}
