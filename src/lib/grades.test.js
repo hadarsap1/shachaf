@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GRADES, GRADE_SEP, gradeList, isKindergarten, classLabel, classShortLabel, membersOfLabel, normalizeClassName, inferGrade } from './grades'
+import { GRADES, GRADE_SEP, gradeList, isKindergarten, classLabel, classShortLabel, membersOfLabel, normalizeClassName, inferGrade, parallelClasses, gradesOfClasses } from './grades'
 
 describe('gradeList', () => {
   it('splits a multi-grade string back to its parts', () => {
@@ -100,5 +100,44 @@ describe('membersOfLabel', () => {
   })
   it('says בכיתה for regular classes', () => {
     expect(membersOfLabel('א1', 'א')).toBe('חברים/ות בכיתה')
+  })
+})
+
+describe('parallelClasses', () => {
+  const all = [
+    { id: 'a1', name: 'א1', grade: 'א' },
+    { id: 'a2', name: 'א2', grade: 'א' },
+    { id: 'a3', name: 'א3', grade: 'א' },
+    { id: 'b1', name: 'ב1', grade: 'ב' },
+    { id: 'gan', name: 'גן שחף', grade: 'גן חובה / גן ט״ח' },
+    { id: 'gan2', name: 'גן שחפית', grade: 'גן חובה / גן ט״ח' },
+    { id: 'nograde', name: 'חופית', grade: '' },
+  ]
+
+  it('finds the other classes in my grade, and never my own', () => {
+    expect(parallelClasses(all, [all[0]]).map(c => c.id)).toEqual(['a2', 'a3'])
+  })
+
+  it('covers every grade a family belongs to', () => {
+    expect(parallelClasses(all, [all[0], all[3]]).map(c => c.id)).toEqual(['a2', 'a3'])
+    expect(parallelClasses(all, [all[1], all[3]]).map(c => c.id)).toEqual(['a1', 'a3'])
+  })
+
+  it('pairs a multi-grade class only with the same combination', () => {
+    expect(parallelClasses(all, [all[4]]).map(c => c.id)).toEqual(['gan2'])
+  })
+
+  it('matches nothing for a class with no grade set', () => {
+    expect(parallelClasses(all, [all[6]])).toEqual([])
+    expect(parallelClasses(all, [])).toEqual([])
+  })
+})
+
+describe('gradesOfClasses', () => {
+  it('lists each grade once, dropping the empty ones', () => {
+    expect(gradesOfClasses([
+      { grade: 'א' }, { grade: 'א' }, { grade: '' }, { grade: 'ב' }, {},
+    ])).toEqual(['א', 'ב'])
+    expect(gradesOfClasses()).toEqual([])
   })
 })

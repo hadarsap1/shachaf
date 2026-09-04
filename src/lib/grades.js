@@ -64,3 +64,20 @@ export function classLabel(nameOrGrade, grade = '') {
   if (isKindergarten(grade)) return `גן ${nameOrGrade}`
   return `כיתה ${nameOrGrade}`
 }
+
+// The classes PARALLEL to a member's own: same grade level, different class —
+// "השכבה שלי" (א1 alongside א2). Matching is on the stored grade STRING, so a
+// class that spans several grades ("גן חובה / גן ט״ח") pairs only with a class
+// that spans exactly the same ones. firestore.rules compares the very same
+// string, so what the UI offers and what the rules allow cannot drift apart.
+export function parallelClasses(allClasses = [], myClasses = []) {
+  const myIds = new Set(myClasses.map(c => c.id))
+  const myGrades = new Set(myClasses.map(c => c.grade).filter(Boolean))
+  return allClasses.filter(c => !myIds.has(c.id) && c.grade && myGrades.has(c.grade))
+}
+
+// The grade values a member belongs to — mirrored to users/{uid}.grades, which
+// is what the rules read to allow the parallel-class roster.
+export function gradesOfClasses(classes = []) {
+  return [...new Set(classes.map(c => c.grade).filter(Boolean))]
+}

@@ -657,8 +657,8 @@ async function _syncUserClassIds(uid) {
   const userSnap = await getDoc(doc(db, 'users', uid))
   // Alumni keep no class membership even if children docs are still linked
   if (userSnap.data()?.status === 'alumni') {
-    if ((userSnap.data()?.classIds || []).length > 0) {
-      await updateDoc(doc(db, 'users', uid), { classIds: [] })
+    if ((userSnap.data()?.classIds || []).length > 0 || (userSnap.data()?.grades || []).length > 0) {
+      await updateDoc(doc(db, 'users', uid), { classIds: [], grades: [] })
     }
     return []
   }
@@ -673,6 +673,33 @@ async function _syncUserClassIds(uid) {
     const proof = kids.find(k => k.classId === classId)
     acc = [...acc, classId]
     await updateDoc(doc(db, 'users', uid), { classIds: acc, classProofChildId: proof.id })
+  }
+  // A grade sync that fails must not cost the caller the classIds above: the
+  // parallel-class view degrades, login does not.
+  await _syncUserGrades(uid, acc, userSnap.data()?.grades || []).catch(() => {})
+  return acc
+}
+
+// users/{uid}.grades mirrors the GRADE of every class the member belongs to —
+// what the rules read to decide whether the parallel class in the same grade
+// level may be opened ("השכבה שלי"). It is derived, never chosen: same shape as
+// classIds above, so removals go in one write and each ADDED grade goes in its
+// own write with gradeProofClassId — a class already in the member's own
+// classIds, which the rules re-read to confirm the grade really is that class's.
+async function _syncUserGrades(uid, classIds, current) {
+  // the cached reader: this runs on every login, and class grades barely move
+  const byId = Object.fromEntries((await getClasses()).map(c => [c.id, c]))
+  // The raw stored string, untrimmed: the rules compare it to classes/{id}.grade
+  // character for character, and a "cleaned" value here would be denied.
+  const target = [...new Set(classIds.map(id => byId[id]?.grade).filter(Boolean))]
+  let acc = current.filter(g => target.includes(g))
+  if (acc.length !== current.length) {
+    await updateDoc(doc(db, 'users', uid), { grades: acc })
+  }
+  for (const grade of target.filter(g => !acc.includes(g))) {
+    const proof = classIds.find(id => byId[id]?.grade === grade)
+    acc = [...acc, grade]
+    await updateDoc(doc(db, 'users', uid), { grades: acc, gradeProofClassId: proof })
   }
   return acc
 }

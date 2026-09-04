@@ -41,6 +41,37 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'children', 'childC'), {
     name: 'Child C', classId: 'class-3', parentUids: ['someuid'], parentEmails: ['nobody@x.com'],
   })
+  // classes carry the grade level the parallel-class roster keys off
+  await setDoc(doc(db, 'classes', 'class-1'), { name: 'א1', grade: 'א' })
+  await setDoc(doc(db, 'classes', 'class-2'), { name: 'א2', grade: 'א' })
+  await setDoc(doc(db, 'classes', 'class-3'), { name: 'ב1', grade: 'ב' })
+  await setDoc(doc(db, 'classes', 'class-4'), { name: 'חופית', grade: '' })
+  // a parent of class-1 whose grade already synced — sees the parallel class
+  await setDoc(doc(db, 'users', 'gradeparent1'), {
+    role: 'community', name: 'Grade Parent', email: 'gradeparent@x.com',
+    classIds: ['class-1'], grades: ['א'], consentVersion: '1.5',
+  })
+  // their counterpart in the parallel class, and a parent one grade over
+  await setDoc(doc(db, 'users', 'gradeparent2'), {
+    role: 'community', name: 'Parallel Parent', email: 'parallel@x.com',
+    classIds: ['class-2'], grades: ['א'], consentVersion: '1.5',
+  })
+  await setDoc(doc(db, 'users', 'othergrade1'), {
+    role: 'community', name: 'Other Grade', email: 'othergrade@x.com',
+    classIds: ['class-3'], grades: ['ב'], consentVersion: '1.5',
+  })
+  // used for the grades WRITE guards, so the read tests above stay untouched
+  await setDoc(doc(db, 'users', 'writeparent1'), {
+    role: 'community', name: 'Write Parent', email: 'writeparent@x.com',
+    classIds: ['class-1'], grades: [],
+  })
+  // child of the parallel class, and one in a class with no grade at all
+  await setDoc(doc(db, 'children', 'childD'), {
+    name: 'Child D', classId: 'class-2', parentUids: ['gradeparent2'], parentEmails: ['parallel@x.com'],
+  })
+  await setDoc(doc(db, 'children', 'childE'), {
+    name: 'Child E', classId: 'class-4', parentUids: ['someuid'], parentEmails: [],
+  })
   // broadcast onboarding task exactly as the admin panel writes it — no
   // assignedTo field, audience expressed through targetGroups
   await setDoc(doc(db, 'tasks', 'taskBroadcast'), {
@@ -89,6 +120,8 @@ await env.withSecurityRulesDisabled(async (ctx) => {
 const parent = env.authenticatedContext('parent1', { email: 'parent@x.com' }).firestore()
 const stranger = env.authenticatedContext('stranger1', { email: 'stranger@x.com' }).firestore()
 const classParent = env.authenticatedContext('classparent1', { email: 'classparent@x.com' }).firestore()
+const gradeParent = env.authenticatedContext('gradeparent1', { email: 'gradeparent@x.com' }).firestore()
+const writeParent = env.authenticatedContext('writeparent1', { email: 'writeparent@x.com' }).firestore()
 // 'someuid' opened trainA — the pot's coordinator
 const someuidCtx = env.authenticatedContext('someuid', { email: 'coordinator@x.com' }).firestore()
 
@@ -523,6 +556,34 @@ await check('a member CANNOT clear the flag on someone else\'s report',
 await check('an admin CAN answer it',
   updateDoc(doc(admin, 'feedback', 'fbMine'), { adminReply: 'תוקן, תודה', status: 'resolved', userUnread: true }), 'allow')
 
+console.log('\n— parallel class in the same grade level ("השכבה שלי") —')
+await check('grade parent CAN read a child of the parallel class in their grade',
+  getDoc(doc(gradeParent, 'children', 'childD')), 'allow')
+await check('grade parent CAN query the parallel class roster',
+  getDocs(query(collection(gradeParent, 'children'), where('classId', '==', 'class-2'))), 'allow')
+await check('grade parent CAN read a parent of the parallel class',
+  getDoc(doc(gradeParent, 'users', 'gradeparent2')), 'allow')
+await check('grade parent CANNOT read a child one grade over',
+  getDoc(doc(gradeParent, 'children', 'childC')), 'deny')
+await check('grade parent CANNOT read a parent one grade over',
+  getDoc(doc(gradeParent, 'users', 'othergrade1')), 'deny')
+await check('grade parent CANNOT read a child of a class with no grade set',
+  getDoc(doc(gradeParent, 'children', 'childE')), 'deny')
+await check('a class parent whose grade has not synced yet sees only their own class',
+  getDoc(doc(classParent, 'children', 'childD')), 'deny')
+await check('a member CAN add the grade of a class they belong to (syncUserGrades)',
+  updateDoc(doc(writeParent, 'users', 'writeparent1'), { grades: ['א'], gradeProofClassId: 'class-1' }), 'allow')
+await check('a member CAN drop a grade at any time',
+  updateDoc(doc(writeParent, 'users', 'writeparent1'), { grades: [] }), 'allow')
+await check('a member CANNOT add a grade their proof class does not have',
+  updateDoc(doc(writeParent, 'users', 'writeparent1'), { grades: ['ב'], gradeProofClassId: 'class-1' }), 'deny')
+await check('a member CANNOT prove a grade with a class they do not belong to',
+  updateDoc(doc(writeParent, 'users', 'writeparent1'), { grades: ['ב'], gradeProofClassId: 'class-3' }), 'deny')
+await check('a member CANNOT add a grade without naming a proof class',
+  updateDoc(doc(writeParent, 'users', 'writeparent1'), { grades: ['א'], gradeProofClassId: '' }), 'deny')
+await check('a member CANNOT add two grades in one write',
+  updateDoc(doc(writeParent, 'users', 'writeparent1'), { grades: ['א', 'ב'], gradeProofClassId: 'class-1' }), 'deny')
+
 console.log('\n— escalation guards stay closed —')
 await check('stranger CANNOT query children by an email that is not theirs',
   getDocs(query(collection(stranger, 'children'), where('parentEmails', 'array-contains', 'parent@x.com'))), 'deny')
@@ -540,6 +601,8 @@ await check('user CANNOT self-set classIds',
   updateDoc(doc(stranger, 'users', 'stranger1'), { classIds: ['class-1'] }), 'deny')
 await check('user CANNOT self-set classAdminFor',
   updateDoc(doc(stranger, 'users', 'stranger1'), { classAdminFor: ['class-1'] }), 'deny')
+await check('user CANNOT self-set grades',
+  updateDoc(doc(stranger, 'users', 'stranger1'), { grades: ['א'], gradeProofClassId: 'class-1' }), 'deny')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await env.cleanup()

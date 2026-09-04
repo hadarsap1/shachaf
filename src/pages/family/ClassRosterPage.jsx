@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getClasses, getChildren, getChildrenByParent, getUsersByUids } from '../../lib/db'
 import { hasConsented, childHasConsentedParent } from '../../lib/consent'
-import { classLabel } from '../../lib/grades'
+import { classLabel, parallelClasses } from '../../lib/grades'
 import { GraduationCap, Phone, Users, Loader2, Mail, ShieldCheck } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
 
 function ChildCard({ child, parents }) {
@@ -62,13 +62,19 @@ function ChildCard({ child, parents }) {
 export default function ClassRosterPage() {
   const { user } = useAuth()
   const [myClasses, setMyClasses] = useState([])
-  const [otherClasses, setOtherClasses] = useState([]) // classes user has no child in
+  const [gradeClasses, setGradeClasses] = useState([])   // parallel classes in my grade
+  const [otherClasses, setOtherClasses] = useState([])   // neither mine nor my grade
   const [otherAdmins, setOtherAdmins] = useState({})  // classId → [user]
-  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [selectedId, setSelectedId] = useState('')
   const [classChildren, setClassChildren] = useState([])
   const [parents, setParents] = useState({}) // childId → [user]
   const [loading, setLoading] = useState(true)
   const [loadingRoster, setLoadingRoster] = useState(false)
+  const [rosterError, setRosterError] = useState(false)
+  // ?class=<id> — the parallel-class links on the class page land here, on that
+  // class, and the tab choice stays in the URL so a refresh keeps it.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedClassId = searchParams.get('class')
 
   useEffect(() => {
     if (!user) return
@@ -79,9 +85,18 @@ export default function ClassRosterPage() {
       ])
       const myClassIds = [...new Set(myKids.map(c => c.classId).filter(Boolean))]
       const mine = allClasses.filter(c => myClassIds.includes(c.id))
-      const other = allClasses.filter(c => !myClassIds.includes(c.id))
+      // Classes in the same grade level as one of mine — א1 next to א2. Their
+      // roster opens in full; every other class shows its coordinator only.
+      const parallel = parallelClasses(allClasses, mine)
+      const parallelIds = new Set(parallel.map(c => c.id))
+      const other = allClasses.filter(c => !myClassIds.includes(c.id) && !parallelIds.has(c.id))
       setMyClasses(mine)
+      setGradeClasses(parallel)
       setOtherClasses(other)
+      const openable = new Set([...mine, ...parallel].map(c => c.id))
+      setSelectedId(prev => prev
+        || (openable.has(requestedClassId) ? requestedClassId : '')
+        || mine[0]?.id || '')
 
       // Fetch admin contacts for non-member classes (class admins are publicly readable)
       const adminUids = [...new Set(other.flatMap(c => c.adminUids || []))]
@@ -97,15 +112,15 @@ export default function ClassRosterPage() {
       setLoading(false)
     }
     load()
-  }, [user])
+  }, [user, requestedClassId])
 
   // Load roster for the selected class
   useEffect(() => {
-    const cls = myClasses[selectedIdx]
-    if (!cls) return
+    if (!selectedId) return
     setLoadingRoster(true)
+    setRosterError(false)
     const loadRoster = async () => {
-      const kids = await getChildren(cls.id)
+      const kids = await getChildren(selectedId)
 
       // Collect all unique parentUids across the class then fetch individually
       const allParentUids = [...new Set(kids.flatMap(k => k.parentUids || []))]
@@ -126,8 +141,16 @@ export default function ClassRosterPage() {
       setParents(parentMap)
       setLoadingRoster(false)
     }
-    loadRoster()
-  }, [myClasses, selectedIdx])
+    // A parent whose profile has not synced its grade yet (no visit since the
+    // parallel-class roster shipped) is denied by the rules — say so instead of
+    // spinning forever.
+    loadRoster().catch(() => {
+      setClassChildren([])
+      setParents({})
+      setRosterError(true)
+      setLoadingRoster(false)
+    })
+  }, [selectedId])
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -144,7 +167,30 @@ export default function ClassRosterPage() {
     </div>
   )
 
-  const cls = myClasses[selectedIdx]
+  const viewable = [...myClasses, ...gradeClasses]
+  const cls = viewable.find(c => c.id === selectedId)
+  const isParallel = !!cls && gradeClasses.some(c => c.id === cls.id)
+
+  const selectClass = (id) => {
+    setSelectedId(id)
+    setSearchParams({ class: id }, { replace: true })
+  }
+
+  const classTab = (c) => (
+    <button
+      key={c.id}
+      onClick={() => selectClass(c.id)}
+      className={clsx(
+        'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-all border',
+        c.id === selectedId
+          ? 'text-white border-transparent shadow-sm'
+          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
+      )}
+      style={c.id === selectedId ? { backgroundColor: c.color || '#1B3B70' } : {}}
+    >
+      {c.name}
+    </button>
+  )
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto" dir="rtl">
@@ -156,24 +202,30 @@ export default function ClassRosterPage() {
         <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">ילדים ופרטי הורים</p>
       </div>
 
-      {/* Class tabs */}
-      {myClasses.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
-          {myClasses.map((c, i) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedIdx(i)}
-              className={clsx(
-                'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-all border',
-                i === selectedIdx
-                  ? 'text-white border-transparent shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
-              )}
-              style={i === selectedIdx ? { backgroundColor: c.color || '#1B3B70' } : {}}
-            >
-              {c.name}
-            </button>
-          ))}
+      {/* Class tabs — my own classes, then the parallel ones in my grade */}
+      {viewable.length > 1 && (
+        <div className="mb-5 space-y-3">
+          <div>
+            {gradeClasses.length > 0 && (
+              <p className="text-xs font-semibold text-gray-400 mb-1.5">
+                {myClasses.length > 1 ? 'הכיתות שלי' : 'הכיתה שלי'}
+              </p>
+            )}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {myClasses.map(classTab)}
+            </div>
+          </div>
+          {gradeClasses.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1.5">
+                <Users size={13} className="flex-shrink-0" />
+                השכבה שלי — כיתות מקבילות
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {gradeClasses.map(classTab)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -184,7 +236,11 @@ export default function ClassRosterPage() {
           <span className="text-sm opacity-80">{classChildren.length} ילדים</span>
           <div>
             <h2 className="text-lg font-black">{cls.name}</h2>
-            {cls.grade && <p className="text-xs opacity-70">{classLabel(cls.grade)}</p>}
+            {cls.grade && (
+              <p className="text-xs opacity-70">
+                {classLabel(cls.grade)}{isParallel ? ' · כיתה מקבילה בשכבה שלי' : ''}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -197,6 +253,10 @@ export default function ClassRosterPage() {
       {loadingRoster ? (
         <div className="flex justify-center py-10">
           <Loader2 size={28} className="animate-spin text-primary-400" />
+        </div>
+      ) : rosterError ? (
+        <div className="text-center py-10 text-gray-400 text-sm">
+          לא הצלחנו לטעון את הספרייה כרגע. אם זו כיתה מקבילה, התנתק והתחבר מחדש כדי לרענן את השיוך לשכבה.
         </div>
       ) : classChildren.length === 0 ? (
         <div className="text-center py-10 text-gray-400 text-sm">אין ילדים להצגה — יוצגו רק ילדים שהוריהם אישרו את התקנון</div>
