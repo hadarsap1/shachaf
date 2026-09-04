@@ -1,6 +1,6 @@
 // Run: node src/lib/contactSheet.test.mjs
 import assert from 'node:assert'
-import { entriesFromChildren, buildSheetSvg, TEMPLATES, THEMES, formatILPhone } from './contactSheet.js'
+import { entriesFromChildren, buildSheetSvg, TEMPLATES, THEMES, formatILPhone, photoKeyOf } from './contactSheet.js'
 
 // themes recolor the sheet — each theme's card color appears in the SVG
 for (const t of THEMES) {
@@ -27,6 +27,14 @@ const entries = entriesFromChildren(kids)
 assert.equal(entries[0].name, 'אבי כהן', 'sorted Hebrew: אבי before שי')
 assert.deepEqual(entries[1].lines, ['אלי  050-1', 'גל  052-2'])
 assert.deepEqual(entries[0].lines, ['רן'], 'parent with no phone still listed, empty parent dropped')
+
+// each row carries the child id, so its photo survives a name edit in the editor
+const idKids = [{ id: 'c1', name: 'תמר', parents: [] }, { id: 'c2', name: 'תמר', parents: [] }]
+const idEntries = entriesFromChildren(idKids)
+assert.deepEqual(idEntries.map(e => e.id), ['c1', 'c2'], 'entries carry the child id')
+assert.equal(photoKeyOf(idKids[0]), 'c1', 'photo key is the id, not the name')
+assert.notEqual(photoKeyOf(idKids[0]), photoKeyOf(idKids[1]), 'two children named alike keep separate photos')
+assert.equal(photoKeyOf({ name: 'ללא מזהה' }), 'ללא מזהה', 'falls back to the name when there is no id')
 
 // buildSheetSvg: every template returns SVG containing escaped user text
 const evil = [{ name: '<script>&"x', lines: ['a<b'] }]
