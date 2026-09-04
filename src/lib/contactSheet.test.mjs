@@ -1,6 +1,6 @@
 // Run: node src/lib/contactSheet.test.mjs
 import assert from 'node:assert'
-import { entriesFromChildren, buildSheetSvg, TEMPLATES, THEMES, formatILPhone, photoKeyOf } from './contactSheet.js'
+import { entriesFromChildren, buildSheetSvg, TEMPLATES, THEMES, formatILPhone, photoKeyOf, formatBirthDate } from './contactSheet.js'
 
 // themes recolor the sheet — each theme's card color appears in the SVG
 for (const t of THEMES) {
@@ -65,3 +65,42 @@ for (const t of TEMPLATES) {
 }
 
 console.log('contactSheet: all checks passed')
+
+// ── birth dates ───────────────────────────────────────────────────────────────
+assert.equal(formatBirthDate('2018-03-14'), '14.3.2018', 'stored ISO date reads as Hebrew d.m.yyyy')
+assert.equal(formatBirthDate('2018-11-05'), '5.11.2018', 'leading zeros dropped')
+for (const bad of ['', null, undefined, '14/03/2018', '2018-3-4', 'לא תאריך']) {
+  assert.equal(formatBirthDate(bad), '', `not a stored date: ${bad}`)
+}
+
+const bdayKids = [{ id: 'b1', name: 'נועם', birthDate: '2018-03-14', parents: [{ name: 'אמא', phone: '0501' }] }]
+assert.equal(entriesFromChildren(bdayKids)[0].birthDate, '2018-03-14', 'entries carry the birth date')
+
+for (const t of TEMPLATES) {
+  const withB = buildSheetSvg({ template: t.id, title: 't', entries: entriesFromChildren(bdayKids) })
+  assert.ok(withB.includes('14.3.2018'), `${t.id} prints the birth date`)
+  // the editor clears birthDate when the checkbox is off — nothing is printed
+  const withoutB = buildSheetSvg({ template: t.id, title: 't', entries: [{ name: 'נועם', lines: ['אמא'], birthDate: '' }] })
+  assert.ok(!withoutB.includes('14.3.2018'), `${t.id} omits the date when it is off`)
+}
+
+// a birthday line makes the card taller, so nothing overlaps the row below
+const many = [{ name: 'א', lines: ['הורה 1', 'הורה 2', 'הורה 3'], birthDate: '2018-03-14' }]
+const tallerH = (svg) => +/height="(\d+)"/.exec(svg)[1]
+for (const t of ['cards', 'compact']) {
+  const withB = tallerH(buildSheetSvg({ template: t, title: 't', entries: many }))
+  const withoutB = tallerH(buildSheetSvg({ template: t, title: 't', entries: [{ ...many[0], birthDate: '' }] }))
+  assert.ok(withB > withoutB, `${t} grows to fit the birthday line`)
+}
+
+// clipping must never cut an emoji in half: a lone surrogate makes
+// encodeURIComponent throw, and with it the preview AND the export
+const emojiRow = [{
+  name: 'ילד עם שם ארוך מאוד מאוד מאוד מאוד ארוך',
+  lines: ['הורה אחת 050-1234567', 'הורה שני 052-7654321', 'הורה שלישי 054-1111111'],
+  birthDate: '2018-03-14',
+}]
+for (const t of TEMPLATES) {
+  const svg = buildSheetSvg({ template: t.id, title: 'כותרת ארוכה במיוחד', entries: emojiRow })
+  assert.doesNotThrow(() => encodeURIComponent(svg), `${t.id} survives being turned into a data URL`)
+}
