@@ -5,6 +5,18 @@ import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob, l
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from './Toaster'
 
+// Why a photo did not load, in the editor itself: this runs on a phone, where
+// there is no console to open, and "the photos did not load" without the reason
+// is a bug report nobody can act on.
+function PhotoErrors({ errors }) {
+  if (!errors?.length) return null
+  return (
+    <p className="text-[11px] text-amber-700/70 dark:text-amber-500/70 mt-1 break-words" dir="rtl">
+      {errors.join(' · ')}
+    </p>
+  )
+}
+
 // consentedParentsByUid — parents who approved the policy (uid → user doc);
 // when provided, only their details appear on the generated sheet.
 export default function ContactSheetModal({ className, children, consentedParentsByUid = null, onClose }) {
@@ -16,7 +28,7 @@ export default function ContactSheetModal({ className, children, consentedParent
   const [busy, setBusy] = useState(false)
   // Photos parents chose to upload: { photos: key → data URL, requested, failed }.
   // Kept separate from the editable entries so photo loading never races edits.
-  const [photos, setPhotos] = useState({ photos: {}, requested: 0, failed: 0, reloadId: -1 })
+  const [photos, setPhotos] = useState({ photos: {}, requested: 0, failed: 0, errors: [], reloadId: -1 })
   const [photoReload, setPhotoReload] = useState(0)
   const [includePhotos, setIncludePhotos] = useState(true)
   // Derived rather than its own state: the result carries the attempt it came
@@ -28,7 +40,7 @@ export default function ContactSheetModal({ className, children, consentedParent
     const attempt = photoReload
     loadChildPhotoMap(children)
       .then(r => { if (active) setPhotos({ ...r, reloadId: attempt }) })
-      .catch(() => { if (active) setPhotos({ photos: {}, requested: 0, failed: 0, reloadId: attempt }) })
+      .catch(e => { if (active) setPhotos({ photos: {}, requested: 0, failed: 0, errors: [String(e?.message || e)], reloadId: attempt }) })
     return () => { active = false }
   }, [children, photoReload])
 
@@ -174,11 +186,14 @@ export default function ContactSheetModal({ className, children, consentedParent
                     className="w-4 h-4 accent-primary-600" />
                 </label>
                 {photos.failed > 0 && (
-                  <p className="flex items-center justify-end gap-1.5 text-xs text-amber-600 mt-2">
-                    <AlertTriangle size={12} />
-                    {photos.failed} תמונות לא נטענו
-                    <button onClick={() => setPhotoReload(n => n + 1)} className="underline">נסה שוב</button>
-                  </p>
+                  <div className="mt-2 text-right">
+                    <p className="flex items-center justify-end gap-1.5 text-xs text-amber-600">
+                      <AlertTriangle size={12} />
+                      {photos.failed} תמונות לא נטענו
+                      <button onClick={() => setPhotoReload(n => n + 1)} className="underline">נסה שוב</button>
+                    </p>
+                    <PhotoErrors errors={photos.errors} />
+                  </div>
                 )}
               </div>
             ) : photos.requested > 0 ? (
@@ -189,6 +204,7 @@ export default function ContactSheetModal({ className, children, consentedParent
                 <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
                   ל-{photos.requested} ילדים בכיתה יש תמונה, אך אף אחת לא נטענה. הדף ייווצר בלעדיהן.
                 </p>
+                <PhotoErrors errors={photos.errors} />
                 <button onClick={() => setPhotoReload(n => n + 1)}
                   className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 underline mt-1.5 ms-auto">
                   <RotateCcw size={11} /> נסה לטעון שוב

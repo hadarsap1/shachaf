@@ -5,14 +5,21 @@ const BUCKETS = ['shachaf.appspot.com']
 const OK = 'https://firebasestorage.googleapis.com/v0/b/shachaf.appspot.com/o/children%2Fabc%2Fphoto.jpg?alt=media&token=t-1'
 
 describe('allowedBuckets', () => {
-  it('prefers the explicitly configured bucket', () => {
-    expect(allowedBuckets({ FIREBASE_STORAGE_BUCKET: 'b.appspot.com', FIREBASE_PROJECT_ID: 'p' }))
-      .toEqual(['b.appspot.com'])
-  })
-
-  it('falls back to the project id defaults', () => {
+  it('accepts both default bucket names of the project', () => {
     expect(allowedBuckets({ FIREBASE_PROJECT_ID: 'p' }))
       .toEqual(['p.appspot.com', 'p.firebasestorage.app'])
+  })
+
+  it('derives the project from the configured bucket, old name or new', () => {
+    for (const b of ['p.appspot.com', 'p.firebasestorage.app']) {
+      expect(allowedBuckets({ VITE_FIREBASE_STORAGE_BUCKET: b }))
+        .toEqual(['p.appspot.com', 'p.firebasestorage.app'])
+    }
+  })
+
+  it('keeps a custom bucket name that is neither default', () => {
+    expect(allowedBuckets({ FIREBASE_STORAGE_BUCKET: 'custom-bucket', FIREBASE_PROJECT_ID: 'p' }))
+      .toEqual(['p.appspot.com', 'p.firebasestorage.app', 'custom-bucket'])
   })
 
   it('is null when nothing is configured', () => {

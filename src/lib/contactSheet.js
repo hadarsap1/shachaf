@@ -71,16 +71,40 @@ export const photoKeyOf = (c) => c.id || c.name || ''
 // is what left the contact sheet photo-less. /api/photo relays the image
 // through our own origin, where no CORS check applies; configuring the bucket
 // (cors.json in the repo root) makes the direct path work and skips the relay.
+// The failure message is written to be READ — it surfaces in the editor, on a
+// phone, where there is no console to open. It names both attempts, so the
+// failing step is identifiable from a screenshot alone.
 async function fetchPhotoBlob(url) {
+  let direct
   try {
     const res = await fetch(url)
-    if (!res.ok) throw new Error(`photo fetch ${res.status}`)
-    return await res.blob()
-  } catch (err) {
-    const res = await fetch(`/api/photo?u=${encodeURIComponent(url)}`)
-    if (!res.ok) throw new Error(`photo relay ${res.status}`, { cause: err })
-    return await res.blob()
+    if (res.ok) return await res.blob()
+    direct = `HTTP ${res.status}`
+  } catch (e) {
+    direct = e?.message || 'נחסם'
   }
+
+  let res
+  try {
+    res = await fetch(`/api/photo?u=${encodeURIComponent(url)}`)
+  } catch (e) {
+    throw new Error(`ישיר: ${direct} | ממסר: ${e?.message || 'נכשל'}`, { cause: e })
+  }
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`
+    try {
+      const body = await res.json()
+      if (body?.error) detail += ` ${body.error}`
+    } catch { /* not JSON — the status is all we get */ }
+    throw new Error(`ישיר: ${direct} | ממסר: ${detail}`)
+  }
+  // A relay answering with the app shell instead of an image means the request
+  // never reached the function (routing), not that the photo is broken.
+  const type = (res.headers.get('content-type') || '').split(';')[0]
+  if (!type.startsWith('image/')) {
+    throw new Error(`ישיר: ${direct} | ממסר החזיר ${type || 'ללא סוג'}`)
+  }
+  return await res.blob()
 }
 
 async function photoToDataUrl(url, size) {
@@ -90,7 +114,7 @@ async function photoToDataUrl(url, size) {
     const img = await new Promise((resolve, reject) => {
       const i = new Image()
       i.onload = () => resolve(i)
-      i.onerror = () => reject(new Error('photo decode failed'))
+      i.onerror = () => reject(new Error('הקובץ שהתקבל אינו תמונה תקינה'))
       i.src = objUrl
     })
     const canvas = document.createElement('canvas')
@@ -106,7 +130,8 @@ async function photoToDataUrl(url, size) {
 }
 
 // Resolve the photos of every child whose parent uploaded one. Browser-only
-// (uses Image/canvas). Returns { photos: { key → dataURL }, requested, failed }
+// (uses Image/canvas). Returns { photos: { key → dataURL }, requested, failed,
+// errors }
 // rather than a bare map: a photo that fails to load must be VISIBLE in the
 // editor. Silently degrading to a photo-less sheet is what made a broken
 // contact sheet look like a sheet with nothing to show.
@@ -118,17 +143,20 @@ export async function loadChildPhotoMap(children, size = 112) {
     withPhoto.map(c => withTimeout(photoToDataUrl(c.photoUrl, size), PHOTO_TIMEOUT_MS))
   )
   const photos = {}
+  const errors = []
   let failed = 0
   withPhoto.forEach((c, i) => {
     if (results[i].status === 'fulfilled') photos[photoKeyOf(c)] = results[i].value
     else {
       failed++
+      const msg = String(results[i].reason?.message || results[i].reason || 'שגיאה לא ידועה')
+      if (!errors.includes(msg)) errors.push(msg)
       // The child's id, never their name: console breadcrumbs can reach Sentry,
       // and a child's name is not ours to send off the device.
       console.error('child photo load failed', c.id || '(no id)', results[i].reason)
     }
   })
-  return { photos, requested: withPhoto.length, failed }
+  return { photos, requested: withPhoto.length, failed, errors: errors.slice(0, 2) }
 }
 
 // ── Templates ──────────────────────────────────────────────────────────────────

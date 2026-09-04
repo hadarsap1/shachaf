@@ -21,15 +21,20 @@ const HOST = 'firebasestorage.googleapis.com'
 const MAX_BYTES = 15 * 1024 * 1024   // mirrors the upload cap in storage.rules
 const PATH_PREFIX = 'children/'
 
-// The bucket this deployment is allowed to relay from. Falls back to the
-// project id's two default bucket names, and to null when neither is
-// configured — see parsePhotoUrl for what null means.
+// The buckets this deployment may relay from: both default names of its own
+// Firebase project. A project that moved from <id>.appspot.com to
+// <id>.firebasestorage.app still serves photos uploaded under the old name, and
+// the download URLs in Firestore keep whichever name they were minted with — so
+// pinning a single name would reject half the class. Returns null when nothing
+// is configured; see parsePhotoUrl for what null means.
 export function allowedBuckets(env = process.env) {
   const explicit = env.FIREBASE_STORAGE_BUCKET || env.VITE_FIREBASE_STORAGE_BUCKET
-  if (explicit) return [explicit]
-  const project = env.FIREBASE_PROJECT_ID
-  if (project) return [`${project}.appspot.com`, `${project}.firebasestorage.app`]
-  return null
+  const project = env.FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID
+    || (explicit || '').replace(/\.(appspot\.com|firebasestorage\.app)$/, '')
+  if (!project) return explicit ? [explicit] : null
+  const buckets = [`${project}.appspot.com`, `${project}.firebasestorage.app`]
+  if (explicit && !buckets.includes(explicit)) buckets.push(explicit)
+  return buckets
 }
 
 // Validate the requested URL and pull the object path out of it. Returns
