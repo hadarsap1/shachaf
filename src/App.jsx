@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { AccessibilityProvider } from './context/AccessibilityContext'
@@ -25,7 +25,6 @@ import ClassPage from './pages/family/ClassPage'
 import CommitteesPage from './pages/family/CommitteesPage'
 import CommunityGroupsPage from './pages/family/CommunityGroupsPage'
 import BusinessDirectoryPage from './pages/family/BusinessDirectoryPage'
-import ClassRosterPage from './pages/family/ClassRosterPage'
 import EmergencySchedulePage from './pages/family/EmergencySchedulePage'
 import PendingApprovalPage from './pages/family/PendingApprovalPage'
 import MyPrivacyPage from './pages/family/MyPrivacyPage'
@@ -123,6 +122,12 @@ function RootRedirect() {
   return <Navigate to="/dashboard" replace />
 }
 
+function ClassRosterRedirect() {
+  const [params] = useSearchParams()
+  const classId = params.get('class')
+  return <Navigate to={classId ? `/class?class=${encodeURIComponent(classId)}` : '/class'} replace />
+}
+
 function RouteFallback() {
   return (
     <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
@@ -173,7 +178,11 @@ export default function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/class" element={<ClassPage />} />
-            <Route path="/class-roster" element={<ClassRosterPage />} />
+            {/* The class library used to be a page of its own; parallel
+                classes made it a second, differently-styled copy of the class
+                page's roster. One roster now, on /class — old links (and the
+                grade links that carried ?class=) still land in the right place. */}
+            <Route path="/class-roster" element={<ClassRosterRedirect />} />
             <Route path="/committees" element={<CommitteesPage />} />
             <Route path="/community" element={<CommunityGroupsPage />} />
             <Route path="/businesses" element={<BusinessDirectoryPage />} />

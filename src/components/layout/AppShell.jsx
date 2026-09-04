@@ -23,7 +23,6 @@ const SIDEBAR_MAX = 420
 export const NAV_EMOJI = {
   '/dashboard':       '🏠',
   '/class':           '🎓',
-  '/class-roster':    '👥',
   '/families':        '👨‍👩‍👧',
   '/tasks':           '✅',
   '/events':          '📅',
