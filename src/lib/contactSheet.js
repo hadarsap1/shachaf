@@ -3,6 +3,13 @@
 // works on iOS Safari) that can be rasterized to JPEG for download / WhatsApp
 // share. Rendered as an <img> data URL, so user text is escaped data, not DOM.
 
+// Explicit .js: this module is also loaded by node directly (contactSheet.test.mjs)
+import { withTimeout } from './withTimeout.js'
+
+// Long enough for a slow phone connection, short enough that the editor is
+// never stuck waiting on a photo that will not arrive.
+const PHOTO_TIMEOUT_MS = 15000
+
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -31,6 +38,10 @@ export function entriesFromChildren(children, consentedParentsByUid = null) {
   return [...children]
     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'))
     .map(c => ({
+      // The child's id travels with the row so its photo stays attached even
+      // after the name is edited in the sheet editor (and so two children who
+      // share a name don't share a photo). Rows added by hand have no id.
+      id: c.id || '',
       name: c.name || '',
       lines: consentedParentsByUid
         ? (c.parentUids || [])
@@ -47,11 +58,33 @@ export function entriesFromChildren(children, consentedParentsByUid = null) {
 // Photos only appear on the sheet when a parent chose to upload one. They are
 // downscaled to a small square and embedded as data URIs, preserving the
 // module's invariant: the SVG stays self-contained, so canvas export never
-// taints. Fetch/decode failures degrade silently to a sheet without the photo.
+// taints.
+
+// The key a photo is stored and looked up under — see entriesFromChildren.
+export const photoKeyOf = (c) => c.id || c.name || ''
+
+// Reading a photo's PIXELS (which is what embedding it as a data URI means)
+// needs a CORS-enabled response — unlike an <img>, which renders the very same
+// URL with no CORS at all. A Firebase Storage bucket without a CORS
+// configuration serves download URLs without those headers, so the direct
+// fetch below fails while the same photo shows fine in the class roster. That
+// is what left the contact sheet photo-less. /api/photo relays the image
+// through our own origin, where no CORS check applies; configuring the bucket
+// (cors.json in the repo root) makes the direct path work and skips the relay.
+async function fetchPhotoBlob(url) {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`photo fetch ${res.status}`)
+    return await res.blob()
+  } catch (err) {
+    const res = await fetch(`/api/photo?u=${encodeURIComponent(url)}`)
+    if (!res.ok) throw new Error(`photo relay ${res.status}`, { cause: err })
+    return await res.blob()
+  }
+}
+
 async function photoToDataUrl(url, size) {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`photo fetch ${res.status}`)
-  const blob = await res.blob()
+  const blob = await fetchPhotoBlob(url)
   const objUrl = URL.createObjectURL(blob)
   try {
     const img = await new Promise((resolve, reject) => {
@@ -72,18 +105,30 @@ async function photoToDataUrl(url, size) {
   }
 }
 
-// Resolve { childName → photo dataURL } for children whose parents uploaded a
-// photo. Browser-only (uses Image/canvas).
+// Resolve the photos of every child whose parent uploaded one. Browser-only
+// (uses Image/canvas). Returns { photos: { key → dataURL }, requested, failed }
+// rather than a bare map: a photo that fails to load must be VISIBLE in the
+// editor. Silently degrading to a photo-less sheet is what made a broken
+// contact sheet look like a sheet with nothing to show.
 export async function loadChildPhotoMap(children, size = 112) {
-  const withPhoto = children.filter(c => c.name && c.photoUrl)
+  const withPhoto = children.filter(c => photoKeyOf(c) && c.photoUrl)
+  // A per-photo deadline: the editor waits on this load before it lets the
+  // sheet be exported, so a request that never settles must not park it there.
   const results = await Promise.allSettled(
-    withPhoto.map(c => photoToDataUrl(c.photoUrl, size))
+    withPhoto.map(c => withTimeout(photoToDataUrl(c.photoUrl, size), PHOTO_TIMEOUT_MS))
   )
-  const map = {}
+  const photos = {}
+  let failed = 0
   withPhoto.forEach((c, i) => {
-    if (results[i].status === 'fulfilled') map[c.name] = results[i].value
+    if (results[i].status === 'fulfilled') photos[photoKeyOf(c)] = results[i].value
+    else {
+      failed++
+      // The child's id, never their name: console breadcrumbs can reach Sentry,
+      // and a child's name is not ours to send off the device.
+      console.error('child photo load failed', c.id || '(no id)', results[i].reason)
+    }
   })
-  return map
+  return { photos, requested: withPhoto.length, failed }
 }
 
 // ── Templates ──────────────────────────────────────────────────────────────────

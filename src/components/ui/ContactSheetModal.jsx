@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Download, Share2, Plus, Trash2, Loader2, GripVertical } from 'lucide-react'
+import { X, Download, Share2, Plus, Trash2, Loader2, GripVertical, AlertTriangle, RotateCcw } from 'lucide-react'
 import clsx from 'clsx'
 import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob, loadChildPhotoMap } from '../../lib/contactSheet'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
@@ -14,16 +14,25 @@ export default function ContactSheetModal({ className, children, consentedParent
   const [subtitle, setSubtitle] = useState('')
   const [entries, setEntries] = useState(() => entriesFromChildren(children, consentedParentsByUid))
   const [busy, setBusy] = useState(false)
-  // childName → embedded data URL, only for photos parents chose to upload.
+  // Photos parents chose to upload: { photos: key → data URL, requested, failed }.
   // Kept separate from the editable entries so photo loading never races edits.
-  const [photoMap, setPhotoMap] = useState({})
+  const [photos, setPhotos] = useState({ photos: {}, requested: 0, failed: 0, reloadId: -1 })
+  const [photoReload, setPhotoReload] = useState(0)
   const [includePhotos, setIncludePhotos] = useState(true)
+  // Derived rather than its own state: the result carries the attempt it came
+  // from, so "still loading" needs no setState inside the effect body.
+  const photosLoading = photos.reloadId !== photoReload
 
   useEffect(() => {
     let active = true
-    loadChildPhotoMap(children).then(map => { if (active) setPhotoMap(map) })
+    const attempt = photoReload
+    loadChildPhotoMap(children)
+      .then(r => { if (active) setPhotos({ ...r, reloadId: attempt }) })
+      .catch(() => { if (active) setPhotos({ photos: {}, requested: 0, failed: 0, reloadId: attempt }) })
     return () => { active = false }
-  }, [children])
+  }, [children, photoReload])
+
+  const loadedPhotos = Object.keys(photos.photos).length
 
   useEscapeToClose(onClose, !busy)
 
@@ -31,10 +40,10 @@ export default function ContactSheetModal({ className, children, consentedParent
     () => buildSheetSvg({
       template, title, subtitle, theme,
       entries: includePhotos
-        ? entries.map(e => ({ ...e, photo: photoMap[e.name] }))
+        ? entries.map(e => ({ ...e, photo: photos.photos[e.id] || photos.photos[e.name] }))
         : entries,
     }),
-    [template, title, subtitle, entries, theme, photoMap, includePhotos]
+    [template, title, subtitle, entries, theme, photos, includePhotos]
   )
   const previewUrl = useMemo(
     () => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
@@ -95,13 +104,15 @@ export default function ContactSheetModal({ className, children, consentedParent
           <button onClick={onClose} aria-label="סגור" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"><X size={18} /></button>
           <h2 className="font-bold text-gray-800 dark:text-gray-100">יצירת דף קשר</h2>
           <div className="flex gap-2">
-            <button onClick={handleDownload} disabled={busy}
+            {/* Export waits for the photos: a sheet shared while they were
+                still loading comes out silently photo-less. */}
+            <button onClick={handleDownload} disabled={busy || photosLoading}
               className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 disabled:opacity-50">
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} JPG
+              {busy || photosLoading ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} JPG
             </button>
-            <button onClick={handleShare} disabled={busy}
+            <button onClick={handleShare} disabled={busy || photosLoading}
               className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
-              {busy ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />} שיתוף
+              {busy || photosLoading ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />} שיתוף
             </button>
           </div>
         </div>
@@ -143,15 +154,46 @@ export default function ContactSheetModal({ className, children, consentedParent
               </div>
             </div>
 
-            {Object.keys(photoMap).length > 0 ? (
-              <label className="flex items-center justify-end gap-2.5 cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
-                <span className="text-sm text-gray-700 dark:text-gray-200 text-right">
-                  כלול תמונות ילדים
-                  <span className="block text-xs text-gray-400">רק תמונות שהועלו ע"י ההורים ({Object.keys(photoMap).length})</span>
-                </span>
-                <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)}
-                  className="w-4 h-4 accent-primary-600" />
-              </label>
+            {/* Photos: loading, loaded (with any failures), all-failed, or none
+                uploaded at all. The states are kept apart on purpose — "no photos
+                were uploaded" and "the photos did not load" call for opposite
+                actions, and showing the first for the second is what hid a
+                broken sheet. */}
+            {photosLoading ? (
+              <p className="flex items-center justify-end gap-2 text-xs text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+                <Loader2 size={13} className="animate-spin" /> טוען תמונות ילדים…
+              </p>
+            ) : loadedPhotos > 0 ? (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+                <label className="flex items-center justify-end gap-2.5 cursor-pointer">
+                  <span className="text-sm text-gray-700 dark:text-gray-200 text-right">
+                    כלול תמונות ילדים
+                    <span className="block text-xs text-gray-400">רק תמונות שהועלו ע"י ההורים ({loadedPhotos})</span>
+                  </span>
+                  <input type="checkbox" checked={includePhotos} onChange={e => setIncludePhotos(e.target.checked)}
+                    className="w-4 h-4 accent-primary-600" />
+                </label>
+                {photos.failed > 0 && (
+                  <p className="flex items-center justify-end gap-1.5 text-xs text-amber-600 mt-2">
+                    <AlertTriangle size={12} />
+                    {photos.failed} תמונות לא נטענו
+                    <button onClick={() => setPhotoReload(n => n + 1)} className="underline">נסה שוב</button>
+                  </p>
+                )}
+              </div>
+            ) : photos.requested > 0 ? (
+              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl px-4 py-3 text-right">
+                <p className="flex items-center justify-end gap-1.5 text-sm text-amber-700 dark:text-amber-400 font-medium">
+                  <AlertTriangle size={14} /> התמונות לא נטענו
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                  ל-{photos.requested} ילדים בכיתה יש תמונה, אך אף אחת לא נטענה. הדף ייווצר בלעדיהן.
+                </p>
+                <button onClick={() => setPhotoReload(n => n + 1)}
+                  className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 underline mt-1.5 ms-auto">
+                  <RotateCcw size={11} /> נסה לטעון שוב
+                </button>
+              </div>
             ) : (
               <p className="text-xs text-gray-400 text-right bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
                 לא נמצאו תמונות ילדים לדף זה — תמונה נכללת רק כשההורה העלה ואישר אותה בהגדרות,

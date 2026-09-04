@@ -160,6 +160,21 @@ Deploy the security rules:
 firebase deploy --only firestore:rules
 ```
 
+### Storage CORS (child photos on the contact sheet)
+A `<img>` renders a Storage download URL with no CORS at all, but *reading its
+pixels* needs one — and the contact sheet embeds each child photo as a data URI
+so the exported image stays self-contained. Without a CORS configuration on the
+bucket the browser blocks that read, and photos that show fine in the class
+roster are missing from the sheet.
+
+`/api/photo` relays the image through our own origin so the sheet works either
+way. To let the browser take the direct (faster) path, set the bucket's CORS
+policy once — edit the origins in `cors.json` to match the deployed domain:
+```bash
+gcloud storage buckets update gs://<VITE_FIREBASE_STORAGE_BUCKET> --cors-file=cors.json
+# older toolchains: gsutil cors set cors.json gs://<VITE_FIREBASE_STORAGE_BUCKET>
+```
+
 Key collections:
 
 | Collection | Description |
