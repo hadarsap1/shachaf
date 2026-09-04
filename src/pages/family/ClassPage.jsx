@@ -9,7 +9,7 @@ import { setPageTitleOverride } from '../../lib/pageTitle'
 import { useAuth } from '../../context/AuthContext'
 import {
   GraduationCap, Clock, Users, Calendar, Megaphone,
-  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact, Plus, School,
+  Phone, Mail, Loader2, ChevronDown, Cake, StickyNote, Check, RotateCcw, Pencil, Contact, Plus, School, ShieldCheck,
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
@@ -386,7 +386,7 @@ export default function ClassPage() {
   const [myClasses, setMyClasses]         = useState([])
   const [allClasses, setAllClasses]       = useState([])   // for the parallel classes in my grade
   const [myChildren, setMyChildren]       = useState([])
-  const [selectedIdx, setSelectedIdx]     = useState(0)
+  const [selectedId, setSelectedId]       = useState('')   // a class id — mine or a parallel one
   const [events, setEvents]               = useState([])
   const [announcements, setAnnouncements] = useState([])
   const [classChildren, setClassChildren] = useState([])
@@ -394,6 +394,9 @@ export default function ClassPage() {
   const [classAdmins, setClassAdmins]     = useState([])
   const [schoolStaff, setSchoolStaff]     = useState([])
   const [showStaff, setShowStaff]         = useState(false)
+  const [rosterError, setRosterError]     = useState(false)
+  const [rosterLoading, setRosterLoading] = useState(false)
+  const [rosterQuery, setRosterQuery]     = useState('')
   const [loading, setLoading]             = useState(true)
   const [loadError, setLoadError]         = useState(null)   // 'timeout' | 'failed' | null
   const [retryKey, setRetryKey]           = useState(0)
@@ -419,6 +422,8 @@ export default function ClassPage() {
       const filtered = classes.filter(c => myClassIds.includes(c.id))
       setMyClasses(filtered)
       setAllClasses(classes)
+      // open on the family's own first class; ?class= may move it below
+      setSelectedId(prev => prev || filtered[0]?.id || '')
       setMyChildren(children)
       setEvents(allEvents)
       setAnnouncements(allAnns)
@@ -444,23 +449,32 @@ export default function ClassPage() {
     setRetryKey(k => k + 1)
   }
 
+  // The parallel classes in every grade this family belongs to — a tab of their
+  // own, so a parent reaches א2 the same way they switch between their own
+  // classes. Never one of the family's own classes.
+  const gradeClasses = parallelClasses(allClasses, myClasses)
+  const openClasses = [...myClasses, ...gradeClasses]
+
   // Honor ?class=<id> once the classes are loaded
   useEffect(() => {
     if (!requestedClassId || !myClasses.length) return
     if (requestedClassId === STAFF_TAB) { setShowStaff(true); return }
-    const i = myClasses.findIndex(c => c.id === requestedClassId)
-    if (i >= 0) setSelectedIdx(i)
-  }, [requestedClassId, myClasses])
+    if (openClasses.some(c => c.id === requestedClassId)) setSelectedId(requestedClassId)
+  }, [requestedClassId, myClasses, allClasses])   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cls = myClasses[selectedIdx]
+  const cls = openClasses.find(c => c.id === selectedId)
+  // A class in my grade that is not mine: same roster, fewer sections — the
+  // schedule, birthdays, announcements and events of another class are neither
+  // mine to see nor readable under the rules.
+  const isParallel = !!cls && gradeClasses.some(c => c.id === cls.id)
 
   // Switching tabs keeps the URL in sync, so a refresh (or back) stays on the
   // class being viewed rather than snapping back to the first one
-  const selectClass = (i) => {
+  const selectClass = (id) => {
     setShowStaff(false)
-    setSelectedIdx(i)
-    const target = myClasses[i]
-    if (target) setSearchParams({ class: target.id }, { replace: true })
+    setSelectedId(id)
+    setRosterQuery('')
+    setSearchParams({ class: id }, { replace: true })
   }
 
   const selectStaff = () => {
@@ -485,6 +499,8 @@ export default function ClassPage() {
     if ((cls.adminUids || []).length > 0) {
       getUsersByUids(cls.adminUids).then(setClassAdmins).catch(() => {})
     }
+    setRosterError(false)
+    setRosterLoading(true)
     getChildren(cls.id).then(async allKids => {
       const parentUids = [...new Set(allKids.flatMap(k => k.parentUids || []))]
       const parents = parentUids.length > 0 ? await getUsersByUids(parentUids) : []
@@ -494,14 +510,16 @@ export default function ClassPage() {
       // appear only once that parent approved it themselves.
       setClassChildren(allKids.filter(k => childHasConsentedParent(k, byUid)))
       setClassParents(parents.filter(u => hasConsented(u)))
-    }).catch(() => {})
+    }).catch(() => setRosterError(true)).finally(() => setRosterLoading(false))
   }, [cls?.id])
 
-  // The parallel classes in the grade level of the class on screen — never one
-  // of the family's own classes, those already have a tab of their own.
-  const gradeClasses = cls
-    ? parallelClasses(allClasses, myClasses).filter(c => c.grade === cls.grade)
-    : []
+  // Roster filter — matches a child's name or any of their parents' names
+  const rosterMatch = rosterQuery.trim().toLowerCase()
+  const visibleRoster = !rosterMatch ? classChildren : classChildren.filter(child => {
+    if ((child.name || '').toLowerCase().includes(rosterMatch)) return true
+    return classParents.some(p => (child.parentUids || []).includes(p.uid)
+      && (p.name || '').toLowerCase().includes(rosterMatch))
+  })
 
   const classEvents = cls
     ? events
@@ -541,42 +559,54 @@ export default function ClassPage() {
   // Class switcher — a labeled, clearly-selectable row. The old version — a labeled, clearly-selectable row. The old version
   // was bare pills that read as decoration, so parents with more than one
   // child didn't realize they could switch between classes.
-  const classTabs = (myClasses.length > 1 || schoolStaff.length > 0) ? (
+  const classTab = (c, parallel) => {
+    const active = !showStaff && c.id === selectedId
+    return (
+      <button
+        key={c.id}
+        role="tab"
+        aria-selected={active}
+        onClick={() => selectClass(c.id)}
+        className={clsx(
+          'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
+          active
+            ? 'text-white shadow-md font-bold'
+            : 'bg-white text-gray-600 hover:border-gray-400 font-medium dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-400',
+          // a parallel class is not mine: dashed while unselected, so the row
+          // shows at a glance where my own classes end
+          !active && (parallel
+            ? 'border-dashed border-gray-300 dark:border-gray-600'
+            : 'border-gray-200 dark:border-gray-600')
+        )}
+        style={active ? { backgroundColor: c.color || '#1B3B70', borderColor: c.color || '#1B3B70' } : {}}
+      >
+        {active
+          ? <Check size={15} className="flex-shrink-0" />
+          : parallel
+            ? <Users size={14} className="flex-shrink-0 opacity-60" />
+            : <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: c.color || '#1B3B70' }} />}
+        {classLabel(c.name, c.grade)}
+      </button>
+    )
+  }
+
+  const classTabs = (openClasses.length > 1 || schoolStaff.length > 0) ? (
     <div className="mb-5">
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 text-right">
-        {myClasses.length > 1
-          ? `יש לך ${myClasses.length} כיתות — בחר/י כדי לעבור ביניהן:`
-          : 'בחר/י מה להציג:'}
+        {gradeClasses.length > 0
+          ? 'הכיתה שלך והכיתות המקבילות בשכבה — בחר/י כדי לעבור ביניהן:'
+          : myClasses.length > 1
+            ? `יש לך ${myClasses.length} כיתות — בחר/י כדי לעבור ביניהן:`
+            : 'בחר/י מה להציג:'}
       </p>
       <div
         role="tablist"
         aria-label="בחירת כיתה"
         className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
       >
-        {myClasses.map((c, i) => {
-          const active = !showStaff && i === selectedIdx
-          return (
-            <button
-              key={c.id}
-              role="tab"
-              aria-selected={active}
-              onClick={() => selectClass(i)}
-              className={clsx(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm flex-shrink-0 transition-all border-2',
-                active
-                  ? 'text-white shadow-md font-bold'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:border-gray-400'
-              )}
-              style={active ? { backgroundColor: c.color || '#1B3B70', borderColor: c.color || '#1B3B70' } : {}}
-            >
-              {active
-                ? <Check size={15} className="flex-shrink-0" />
-                : <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: c.color || '#1B3B70' }} />}
-              {classLabel(c.name, c.grade)}
-            </button>
-          )
-        })}
+        {myClasses.map(c => classTab(c, false))}
+        {gradeClasses.map(c => classTab(c, true))}
 
         {/* School staff — its own tab rather than a section repeated inside
             every class, since it is the same list for all of them */}
@@ -635,12 +665,24 @@ export default function ClassPage() {
             </div>
             <GraduationCap size={32} className="opacity-30" />
           </div>
-          {(isAdmin || (user?.classAdminFor || []).includes(cls.id)) && classChildren.length > 0 && (
+          {!isParallel && (isAdmin || (user?.classAdminFor || []).includes(cls.id)) && classChildren.length > 0 && (
             <button onClick={() => setShowContactSheet(true)}
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
               <Contact size={15} /> צור דף קשר
             </button>
           )}
+        </div>
+      )}
+
+      {/* Viewing a class that is not mine — say so plainly, and say that the
+          street runs both ways, before any contact detail is on screen */}
+      {isParallel && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 mb-5 flex items-start gap-2.5 text-right dark:bg-amber-900/20 dark:border-amber-800">
+          <Users size={16} className="flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          <p className="text-xs text-amber-800 leading-relaxed dark:text-amber-200">
+            זו כיתה מקבילה בשכבה שלך, לא הכיתה של ילדך. מוצגים כאן ילדי הכיתה ופרטי הקשר של ההורים -
+            וכשם שאתה רואה אותם, גם הם רואים אותך ואת ילדיך בספריית השכבה.
+          </p>
         </div>
       )}
 
@@ -654,15 +696,15 @@ export default function ClassPage() {
       )}
 
       <div className="space-y-4">
-        {/* Schedule */}
-        {cls && (
+        {/* Schedule — of my own class only */}
+        {cls && !isParallel && (
           <Section title="מערכת שעות" icon={Clock} color={cls.color || '#1B3B70'}>
             <ScheduleView schedule={cls.schedule} classId={cls.id} uid={user.uid} />
           </Section>
         )}
 
         {/* Upcoming birthdays */}
-        {(() => {
+        {!isParallel && (() => {
           const today = new Date()
           const upcoming = classChildren
             .filter(c => c.birthDate)
@@ -692,7 +734,7 @@ export default function ClassPage() {
         })()}
 
         {/* Announcements */}
-        {classAnns.length > 0 && (
+        {!isParallel && classAnns.length > 0 && (
           <Section title="הודעות" icon={Megaphone} color={cls?.color || '#1B3B70'}>
             <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {classAnns.slice(0, 5).map(ann => (
@@ -704,7 +746,7 @@ export default function ClassPage() {
 
         {/* Any parent of this class — not only its admins — can open an event
             for it from here; every class on this page is one of their own. */}
-        {cls && (
+        {cls && !isParallel && (
           <ClassEventCreate
             cls={cls}
             uid={user.uid}
@@ -713,7 +755,7 @@ export default function ClassPage() {
         )}
 
         {/* Upcoming events for this class */}
-        {classEvents.length > 0 && (
+        {!isParallel && classEvents.length > 0 && (
           <Section
             title="אירועי הכיתה"
             icon={Calendar}
@@ -760,7 +802,7 @@ export default function ClassPage() {
         )}
 
         {/* Personal notes per child — visible only to this parent */}
-        {myChildren.filter(c => c.classId === cls?.id).length > 0 && (
+        {!isParallel && myChildren.filter(c => c.classId === cls?.id).length > 0 && (
           <Section title="הערות אישיות" icon={StickyNote} color={cls?.color || '#1B3B70'}>
             <p className="text-xs text-gray-400 mb-3 text-right">הערות אלו פרטיות — רק אתם רואים אותן</p>
             <div className="space-y-4">
@@ -771,38 +813,61 @@ export default function ClassPage() {
           </Section>
         )}
 
-        {/* The parallel classes in this class's grade level — the roster itself
-            lives on the class-library page, one class at a time */}
-        {gradeClasses.length > 0 && (
-          <Section title="השכבה שלי" icon={Users} color={cls?.color || '#1B3B70'}>
-            <p className="text-xs text-gray-400 mb-3 text-right">
-              כיתות מקבילות באותה שכבה — אפשר לפתוח את ספריית הכיתה ולראות את פרטי הקשר
-            </p>
-            <div className="space-y-2">
-              {gradeClasses.map(c => (
-                <Link
-                  key={c.id}
-                  to={`/class-roster?class=${encodeURIComponent(c.id)}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2.5 hover:border-gray-300 dark:hover:border-gray-500"
-                >
-                  <span className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1">
-                    <Contact size={13} /> ספריית הכיתה
-                  </span>
-                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                    {classLabel(c.name, c.grade)}
-                    <span className="w-2.5 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: c.color || '#1B3B70' }} />
-                  </span>
-                </Link>
-              ))}
+        {/* Class roster — kids and their parents. The one section a parallel
+            class shows in full, so it must say whose roster this is. */}
+        {rosterLoading ? (
+          <Section title="ילדי הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
+            <div className="flex justify-center py-6">
+              <Loader2 size={24} className="animate-spin text-primary-400" />
             </div>
           </Section>
-        )}
-
-        {/* Class roster — kids and their parents */}
-        {classChildren.length > 0 && (
+        ) : rosterError ? (
           <Section title="ילדי הכיתה" icon={Users} color={cls?.color || '#1B3B70'}>
+            <p className="text-sm text-gray-500 text-right dark:text-gray-400">
+              לא הצלחנו לטעון את רשימת הילדים. אם נכנסת זה עתה לכיתה חדשה, רענון העמוד בדרך כלל פותר את זה.
+            </p>
+          </Section>
+        ) : cls && classChildren.length === 0 ? (
+          // Never an empty void: a roster can be empty because the families
+          // have not approved the current policy yet, and on a parallel class
+          // that silence reads as a broken feature.
+          <Section
+            title={isParallel ? `ילדי ${classLabel(cls.name, cls.grade)}` : 'ילדי הכיתה'}
+            icon={Users}
+            color={cls?.color || '#1B3B70'}
+          >
+            <p className="text-sm text-gray-500 text-right leading-relaxed dark:text-gray-400">
+              אין עדיין משפחות להצגה. מוצגות רק משפחות שאישרו את תקנון הפרטיות המעודכן,
+              והרשימה מתמלאת ככל שהורים נכנסים לאפליקציה ומאשרים אותו.
+            </p>
+          </Section>
+        ) : (
+          <Section
+            title={isParallel ? `ילדי ${classLabel(cls.name, cls.grade)}` : 'ילדי הכיתה'}
+            icon={Users}
+            color={cls?.color || '#1B3B70'}
+          >
+            <p className="flex items-center gap-1.5 justify-end text-xs text-gray-400 mb-3">
+              מוצגות רק משפחות שאישרו את תקנון הפרטיות
+              <ShieldCheck size={13} className="flex-shrink-0" />
+            </p>
+            {/* A roster of thirty children is a wall of names — let a parent
+                type the name they actually came for, child's or parent's. */}
+            {classChildren.length > 8 && (
+              <input
+                type="search"
+                value={rosterQuery}
+                onChange={e => setRosterQuery(e.target.value)}
+                placeholder="חיפוש לפי שם ילד/ה או הורה"
+                aria-label="חיפוש ברשימת הכיתה"
+                className="w-full mb-3 px-3 py-2 rounded-xl border border-gray-200 text-sm text-right bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+              />
+            )}
             <div className="space-y-3">
-              {classChildren.map(child => {
+              {visibleRoster.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-4">לא נמצאה התאמה ל"{rosterQuery}"</p>
+              )}
+              {visibleRoster.map(child => {
                 const parents = classParents.filter(p => (child.parentUids || []).includes(p.uid))
                 return (
                   <div key={child.id} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
