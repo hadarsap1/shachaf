@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Download, Share2, Plus, Trash2, Loader2, GripVertical, AlertTriangle, RotateCcw } from 'lucide-react'
+import { X, Download, Share2, Plus, Trash2, Loader2, GripVertical, AlertTriangle, RotateCcw, Cake } from 'lucide-react'
 import clsx from 'clsx'
-import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob, loadChildPhotoMap } from '../../lib/contactSheet'
+import { TEMPLATES, THEMES, buildSheetSvg, entriesFromChildren, svgToJpegBlob, loadChildPhotoMap, formatBirthDate } from '../../lib/contactSheet'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from './Toaster'
 
@@ -31,6 +31,7 @@ export default function ContactSheetModal({ className, children, consentedParent
   const [photos, setPhotos] = useState({ photos: {}, requested: 0, failed: 0, errors: [], reloadId: -1 })
   const [photoReload, setPhotoReload] = useState(0)
   const [includePhotos, setIncludePhotos] = useState(true)
+  const [includeBirthdays, setIncludeBirthdays] = useState(true)
   // Derived rather than its own state: the result carries the attempt it came
   // from, so "still loading" needs no setState inside the effect body.
   const photosLoading = photos.reloadId !== photoReload
@@ -45,17 +46,22 @@ export default function ContactSheetModal({ className, children, consentedParent
   }, [children, photoReload])
 
   const loadedPhotos = Object.keys(photos.photos).length
+  const withBirthday = entries.filter(e => formatBirthDate(e.birthDate)).length
 
   useEscapeToClose(onClose, !busy)
 
   const svg = useMemo(
     () => buildSheetSvg({
       template, title, subtitle, theme,
-      entries: includePhotos
-        ? entries.map(e => ({ ...e, photo: photos.photos[e.id] || photos.photos[e.name] }))
-        : entries,
+      // Both extras are opt-out here rather than filtered upstream, so toggling
+      // one never rebuilds the rows the user has been editing.
+      entries: entries.map(e => ({
+        ...e,
+        photo: includePhotos ? (photos.photos[e.id] || photos.photos[e.name]) : undefined,
+        birthDate: includeBirthdays ? e.birthDate : '',
+      })),
     }),
-    [template, title, subtitle, entries, theme, photos, includePhotos]
+    [template, title, subtitle, entries, theme, photos, includePhotos, includeBirthdays]
   )
   const previewUrl = useMemo(
     () => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
@@ -215,6 +221,19 @@ export default function ContactSheetModal({ className, children, consentedParent
                 לא נמצאו תמונות ילדים לדף זה — תמונה נכללת רק כשההורה העלה ואישר אותה בהגדרות,
                 ורק לילדים שהוריהם אישרו את התקנון
               </p>
+            )}
+
+            {withBirthday > 0 && (
+              <label className="flex items-center justify-end gap-2.5 cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+                <span className="text-sm text-gray-700 dark:text-gray-200 text-right">
+                  <span className="flex items-center justify-end gap-1.5"><Cake size={14} className="text-gray-400" /> כלול תאריכי לידה</span>
+                  <span className="block text-xs text-gray-400">
+                    {withBirthday} מתוך {entries.filter(e => e.name).length} ילדים. הדף מיועד להורי הכיתה בלבד
+                  </span>
+                </span>
+                <input type="checkbox" checked={includeBirthdays} onChange={e => setIncludeBirthdays(e.target.checked)}
+                  className="w-4 h-4 accent-primary-600" />
+              </label>
             )}
 
             <div>

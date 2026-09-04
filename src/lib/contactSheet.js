@@ -13,8 +13,16 @@ const PHOTO_TIMEOUT_MS = 15000
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-// Clip a string to n chars so long names don't overflow a card
-const clip = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
+// Clip a string to n characters so long names don't overflow a card.
+//
+// Counts CODE POINTS, not UTF-16 units: slicing mid-emoji leaves a lone
+// surrogate, and the whole sheet then dies inside encodeURIComponent
+// ("URI malformed") when the SVG is turned into a data URL — no preview, no
+// export, nothing. The birthday line ends in 🎂, so this is one clip away.
+const clip = (s, n) => {
+  const cp = Array.from(String(s ?? ''))
+  return cp.length > n ? cp.slice(0, n - 1).join('') + '…' : String(s ?? '')
+}
 
 // Restore the leading zero Sheets strips from IL mobile numbers, and format
 // as 0xx-xxxxxxx. Leaves anything that isn't a bare 9/10-digit IL mobile as-is.
@@ -24,6 +32,15 @@ export function formatILPhone(raw) {
   if (/^5\d{8}$/.test(d)) n = '0' + d            // 9 digits starting 5 → add 0
   if (/^0\d{9}$/.test(n)) return n.slice(0, 3) + '-' + n.slice(3)
   return String(raw || '').trim()
+}
+
+// A child's birth date as it is written in Hebrew: 14.3.2018. Anything that is
+// not a stored YYYY-MM-DD comes back empty rather than half-formatted.
+export function formatBirthDate(raw) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(raw || '').trim())
+  if (!m) return ''
+  const [, y, mo, d] = m
+  return `${+d}.${+mo}.${y}`
 }
 
 // ── Build editable entries from a class's children ─────────────────────────────
@@ -43,6 +60,7 @@ export function entriesFromChildren(children, consentedParentsByUid = null) {
       // share a name don't share a photo). Rows added by hand have no id.
       id: c.id || '',
       name: c.name || '',
+      birthDate: c.birthDate || '',
       lines: consentedParentsByUid
         ? (c.parentUids || [])
             .map(uid => consentedParentsByUid[uid])
@@ -217,12 +235,24 @@ function photoCircle(id, cx, cy, r, entry, p) {
     <text x="${cx}" y="${cy + r * 0.36}" text-anchor="middle" font-family="${FONT}" font-size="${Math.round(r * 1.05)}" font-weight="700" fill="${p.name}">${esc((entry.name || '?')[0])}</text>`
 }
 
+// How many text lines the tallest entry needs: parent lines (capped per
+// template) plus the birthday line when there is one. Every card is built to
+// that height so the grid stays even.
+function bodyLines(entries, cap) {
+  return Math.max(1, ...entries.map(e => Math.min(e.lines.length, cap) + (e.birthday ? 1 : 0)))
+}
+
+// The birthday reads as a birthday, not as a stray number.
+const cake = (d) => `🎂 ${d}`
+
 function cardsTemplate(entries, title, subtitle, p) {
   const w = 1080, cols = 2, pad = 40, gap = 24
   const top = 140
   const cardW = (w - pad * 2 - gap * (cols - 1)) / cols
   const hasPhotos = entries.some(e => e.photo)
-  const cardH = hasPhotos ? 208 : 150
+  const lineH = hasPhotos ? 26 : 28
+  const firstY = hasPhotos ? 142 : 78
+  const cardH = firstY + (bodyLines(entries, 3) - 1) * lineH + (hasPhotos ? 14 : 20)
   const rows = Math.ceil(entries.length / cols)
   const h = top + rows * (cardH + gap) + 80
   let body = header(w, title, subtitle, p)
@@ -235,14 +265,15 @@ function cardsTemplate(entries, title, subtitle, p) {
     if (hasPhotos) {
       body += photoCircle(`cph${i}`, cx, y + 48, 32, e, p)
       body += `<text x="${cx}" y="${y + 112}" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 26))}</text>`
-      e.lines.slice(0, 3).forEach((ln, k) => {
-        body += `<text x="${cx}" y="${y + 142 + k * 26}" text-anchor="middle" font-family="${FONT}" font-size="20" fill="${p.text}">${esc(clip(ln, 32))}</text>`
-      })
     } else {
       body += `<text x="${cx}" y="${y + 42}" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 26))}</text>`
-      e.lines.slice(0, 3).forEach((ln, k) => {
-        body += `<text x="${cx}" y="${y + 78 + k * 28}" text-anchor="middle" font-family="${FONT}" font-size="21" fill="${p.text}">${esc(clip(ln, 32))}</text>`
-      })
+    }
+    const shown = e.lines.slice(0, 3)
+    shown.forEach((ln, k) => {
+      body += `<text x="${cx}" y="${y + firstY + k * lineH}" text-anchor="middle" font-family="${FONT}" font-size="${hasPhotos ? 20 : 21}" fill="${p.text}">${esc(clip(ln, 32))}</text>`
+    })
+    if (e.birthday) {
+      body += `<text x="${cx}" y="${y + firstY + shown.length * lineH}" text-anchor="middle" font-family="${FONT}" font-size="${hasPhotos ? 18 : 19}" fill="${p.muted}">${esc(cake(e.birthday))}</text>`
     }
   })
   body += footer(w, h, p)
@@ -252,7 +283,11 @@ function cardsTemplate(entries, title, subtitle, p) {
 function listTemplate(entries, title, subtitle, p) {
   const w = 1080, pad = 48, top = 140
   const hasPhotos = entries.some(e => e.photo)
-  const rowH = hasPhotos ? 88 : 76
+  // The birthday gets its own line rather than joining the contact line: at one
+  // line the row runs out of width around two parents, and clipping there would
+  // eat the date (or a phone number) instead of just looking tight.
+  const hasBirthdays = entries.some(e => e.birthday)
+  const rowH = (hasPhotos ? 88 : 76) + (hasBirthdays ? 24 : 0)
   const textX = hasPhotos ? w - pad - 76 : w - pad
   const h = top + entries.length * rowH + 80
   let body = header(w, title, subtitle, p)
@@ -262,6 +297,9 @@ function listTemplate(entries, title, subtitle, p) {
     if (hasPhotos) body += photoCircle(`lph${i}`, w - pad - 32, y + rowH / 2 - 4, 30, e, p)
     body += `<text x="${textX}" y="${y + 30}" text-anchor="end" font-family="${FONT}" font-size="26" font-weight="700" fill="${p.name}">${esc(clip(e.name, 30))}</text>
       <text x="${textX}" y="${y + 58}" text-anchor="end" font-family="${FONT}" font-size="21" fill="${p.text}">${esc(clip(e.lines.join('   ·   '), 60))}</text>`
+    if (e.birthday) {
+      body += `<text x="${textX}" y="${y + 84}" text-anchor="end" font-family="${FONT}" font-size="18" fill="${p.muted}">${esc(cake(e.birthday))}</text>`
+    }
   })
   body += footer(w, h, p)
   return svgWrap(w, h, body, p)
@@ -271,7 +309,9 @@ function compactTemplate(entries, title, subtitle, p) {
   const w = 1080, cols = 3, pad = 32, gap = 16, top = 140
   const cardW = (w - pad * 2 - gap * (cols - 1)) / cols
   const hasPhotos = entries.some(e => e.photo)
-  const cardH = hasPhotos ? 164 : 118
+  const lineH = hasPhotos ? 23 : 24
+  const firstY = hasPhotos ? 110 : 62
+  const cardH = firstY + (bodyLines(entries, 2) - 1) * lineH + (hasPhotos ? 31 : 32)
   const rows = Math.ceil(entries.length / cols)
   const h = top + rows * (cardH + gap) + 76
   let body = header(w, title, subtitle, p)
@@ -284,14 +324,15 @@ function compactTemplate(entries, title, subtitle, p) {
     if (hasPhotos) {
       body += photoCircle(`sph${i}`, cx, y + 36, 24, e, p)
       body += `<text x="${cx}" y="${y + 84}" text-anchor="middle" font-family="${FONT}" font-size="21" font-weight="700" fill="${p.name}">${esc(clip(e.name, 20))}</text>`
-      e.lines.slice(0, 2).forEach((ln, k) => {
-        body += `<text x="${cx}" y="${y + 110 + k * 23}" text-anchor="middle" font-family="${FONT}" font-size="17" fill="${p.text}">${esc(clip(ln, 24))}</text>`
-      })
     } else {
       body += `<text x="${cx}" y="${y + 34}" text-anchor="middle" font-family="${FONT}" font-size="21" font-weight="700" fill="${p.name}">${esc(clip(e.name, 20))}</text>`
-      e.lines.slice(0, 2).forEach((ln, k) => {
-        body += `<text x="${cx}" y="${y + 62 + k * 24}" text-anchor="middle" font-family="${FONT}" font-size="17" fill="${p.text}">${esc(clip(ln, 24))}</text>`
-      })
+    }
+    const shown = e.lines.slice(0, 2)
+    shown.forEach((ln, k) => {
+      body += `<text x="${cx}" y="${y + firstY + k * lineH}" text-anchor="middle" font-family="${FONT}" font-size="17" fill="${p.text}">${esc(clip(ln, 24))}</text>`
+    })
+    if (e.birthday) {
+      body += `<text x="${cx}" y="${y + firstY + shown.length * lineH}" text-anchor="middle" font-family="${FONT}" font-size="16" fill="${p.muted}">${esc(cake(e.birthday))}</text>`
     }
   })
   body += footer(w, h, p)
@@ -299,7 +340,11 @@ function compactTemplate(entries, title, subtitle, p) {
 }
 
 export function buildSheetSvg({ template, title, subtitle, entries, theme }) {
-  const list = entries.filter(e => e.name)
+  // birthDate reaches the templates already formatted (and already filtered by
+  // the editor's checkbox — an entry without one simply has no birthday line).
+  const list = entries
+    .filter(e => e.name)
+    .map(e => ({ ...e, birthday: formatBirthDate(e.birthDate) }))
   const p = paletteFor(theme)
   if (template === 'list') return listTemplate(list, title, subtitle, p)
   if (template === 'compact') return compactTemplate(list, title, subtitle, p)
