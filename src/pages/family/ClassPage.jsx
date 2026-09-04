@@ -4,7 +4,7 @@ import { withTimeout, isTimeout } from '../../lib/withTimeout'
 import PageLoader, { PageLoadError } from '../../components/ui/PageLoader'
 import ShareEventButtons from '../../components/ui/ShareEventButtons'
 import { hasConsented, childHasConsentedParent, CONSENT_VERSION } from '../../lib/consent'
-import { classLabel } from '../../lib/grades'
+import { classLabel, parallelClasses } from '../../lib/grades'
 import { setPageTitleOverride } from '../../lib/pageTitle'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -384,6 +384,7 @@ export default function ClassPage() {
   const { user, isAdmin } = useAuth()
   const [showContactSheet, setShowContactSheet] = useState(false)
   const [myClasses, setMyClasses]         = useState([])
+  const [allClasses, setAllClasses]       = useState([])   // for the parallel classes in my grade
   const [myChildren, setMyChildren]       = useState([])
   const [selectedIdx, setSelectedIdx]     = useState(0)
   const [events, setEvents]               = useState([])
@@ -417,6 +418,7 @@ export default function ClassPage() {
       const myClassIds = [...new Set(children.map(c => c.classId).filter(Boolean))]
       const filtered = classes.filter(c => myClassIds.includes(c.id))
       setMyClasses(filtered)
+      setAllClasses(classes)
       setMyChildren(children)
       setEvents(allEvents)
       setAnnouncements(allAnns)
@@ -494,6 +496,12 @@ export default function ClassPage() {
       setClassParents(parents.filter(u => hasConsented(u)))
     }).catch(() => {})
   }, [cls?.id])
+
+  // The parallel classes in the grade level of the class on screen — never one
+  // of the family's own classes, those already have a tab of their own.
+  const gradeClasses = cls
+    ? parallelClasses(allClasses, myClasses).filter(c => c.grade === cls.grade)
+    : []
 
   const classEvents = cls
     ? events
@@ -758,6 +766,33 @@ export default function ClassPage() {
             <div className="space-y-4">
               {myChildren.filter(c => c.classId === cls?.id).map(child => (
                 <ChildNoteCard key={child.id} child={child} parentId={user.uid} color={cls?.color} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* The parallel classes in this class's grade level — the roster itself
+            lives on the class-library page, one class at a time */}
+        {gradeClasses.length > 0 && (
+          <Section title="השכבה שלי" icon={Users} color={cls?.color || '#1B3B70'}>
+            <p className="text-xs text-gray-400 mb-3 text-right">
+              כיתות מקבילות באותה שכבה — אפשר לפתוח את ספריית הכיתה ולראות את פרטי הקשר
+            </p>
+            <div className="space-y-2">
+              {gradeClasses.map(c => (
+                <Link
+                  key={c.id}
+                  to={`/class-roster?class=${encodeURIComponent(c.id)}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2.5 hover:border-gray-300 dark:hover:border-gray-500"
+                >
+                  <span className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1">
+                    <Contact size={13} /> ספריית הכיתה
+                  </span>
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    {classLabel(c.name, c.grade)}
+                    <span className="w-2.5 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: c.color || '#1B3B70' }} />
+                  </span>
+                </Link>
               ))}
             </div>
           </Section>

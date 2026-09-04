@@ -38,6 +38,15 @@ service cloud.firestore {
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', [])
                      );
 
+      // Same-grade parents can read each other's profiles (the parallel-class
+      // roster — "השכבה שלי"). `grades` is derived from the member's own classes
+      // and may only grow with proof (see the update rule below), so this can
+      // never reach further than the grade level the member actually belongs to.
+      allow read: if request.auth != null
+                  && resource.data.get('grades', []).hasAny(
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('grades', [])
+                     );
+
       // Host families can read new_family profiles (for their families view)
       allow read: if request.auth != null
                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'host_family'
@@ -89,6 +98,24 @@ service cloud.firestore {
                         && request.auth.uid in getAfter(/databases/$(database)/documents/children/$(request.resource.data.get('classProofChildId', '-'))).data.get('parentUids', [])
                         && getAfter(/databases/$(database)/documents/children/$(request.resource.data.get('classProofChildId', '-'))).data.get('classId', '')
                              == request.resource.data.get('classIds', []).removeAll(resource.data.get('classIds', []))[0]
+                      )
+                    )
+                    // `grades` follows the same shape: equal, shrinking, or
+                    // growing by exactly ONE grade proven by gradeProofClassId —
+                    // a class the user is already a member of, whose stored
+                    // grade is that exact value. Without this guard a member
+                    // could self-assign a grade and read every class in it.
+                    && (
+                      request.resource.data.get('grades', []) == resource.data.get('grades', [])
+                      || resource.data.get('grades', []).hasAll(request.resource.data.get('grades', []))
+                      || (
+                        request.resource.data.get('grades', []).hasAll(resource.data.get('grades', []))
+                        && request.resource.data.get('grades', []).removeAll(resource.data.get('grades', [])).size() == 1
+                        && request.resource.data.get('gradeProofClassId', '-')
+                             in request.resource.data.get('classIds', [])
+                        && exists(/databases/$(database)/documents/classes/$(request.resource.data.get('gradeProofClassId', '-')))
+                        && get(/databases/$(database)/documents/classes/$(request.resource.data.get('gradeProofClassId', '-'))).data.get('grade', '')
+                             == request.resource.data.get('grades', []).removeAll(resource.data.get('grades', []))[0]
                       )
                     );
 
@@ -354,9 +381,11 @@ service cloud.firestore {
                       || classId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', []));
     }
 
-    // Children — readable only by a linked parent, by admins, or by a parent/
-    // class-admin of the SAME class (for the class roster). Not globally readable.
-    // `classIds` on the user profile is maintained client-side (syncUserClassIds).
+    // Children — readable only by a linked parent, by admins, by a parent/
+    // class-admin of the SAME class (for the class roster), or by a parent of a
+    // PARALLEL class in the same grade level. Not globally readable.
+    // `classIds` and `grades` on the user profile are maintained client-side
+    // (syncUserClassIds), so both refresh on the member's next login.
     // a linked parent can add another parent (update parentUids only)
     match /children/{childId} {
       allow read: if request.auth != null && (
@@ -367,6 +396,16 @@ service cloud.firestore {
              in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classIds', [])
         || resource.data.get('classId', '')
              in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('classAdminFor', [])
+        // The parallel class in the caller's own grade level ("השכבה שלי"):
+        // the child's class doc carries the grade, and users/{uid}.grades holds
+        // the grades the caller proved membership in. A class with no grade set
+        // matches nobody — otherwise every ungraded class would open to every
+        // member whose grades list happens to be empty.
+        || (resource.data.get('classId', '') != ''
+            && exists(/databases/$(database)/documents/classes/$(resource.data.get('classId', '-')))
+            && get(/databases/$(database)/documents/classes/$(resource.data.get('classId', '-'))).data.get('grade', '') != ''
+            && get(/databases/$(database)/documents/classes/$(resource.data.get('classId', '-'))).data.get('grade', '')
+                 in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('grades', []))
         // Onboarding: only admin-imported families (imported flag, validated at
         // profile-create time against pendingFamilies) can browse unlinked
         // children to self-link. Random self-registered accounts cannot.

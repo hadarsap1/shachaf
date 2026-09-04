@@ -7,7 +7,7 @@
 // consent on their next visit. users/{uid}.consentVersion + consentAt are
 // the stored evidence of consent.
 
-export const CONSENT_VERSION = '1.4'
+export const CONSENT_VERSION = '1.5'
 
 // The oldest consent still good enough to DISPLAY a member's details to other
 // members (class roster, contact sheet, birthdays).
@@ -25,7 +25,12 @@ export const CONSENT_VERSION = '1.4'
 // other members get to see about someone — then old consent genuinely no longer
 // covers it. Adding a purpose that is opt-in, or that shows a member their own
 // data, is not such a change.
-export const DISPLAY_CONSENT_SINCE = '1.0'
+//
+// 1.5 opened the roster to the PARALLEL classes in the same grade level: a
+// parent's name and phone are now shown to grade-mates, not only to their own
+// class. That is exactly the case this baseline exists for — consent to 1.4
+// covered the class, not the grade — so it moves with the version this time.
+export const DISPLAY_CONSENT_SINCE = '1.5'
 
 // Compares dotted numeric versions ('1.10' > '1.9'), so the baseline above can
 // pass 9 without a surprise.
@@ -45,11 +50,13 @@ export const CONSENT_PURPOSES = [
   'תקשורת קהילתית — ועדות, קבוצות עניין והודעות',
   'תיאום סירי לידה — שיבוץ מתנדבים לימי בישול והעברת פרטי מסירה למי שנרשם',
   'הצגת ימי הולדת בלוח השנה המשותף ובדף הקשר הכיתתי - של ילדים, ושל הורים שבחרו לשתף',
+  'הצגת ספריית הכיתות המקבילות באותה שכבה, כדי שהורים בשכבה יוכלו ליצור קשר ביניהם',
 ]
 
 export const CONSENT_EXPOSURE =
-  'הורים בכיתת ילדך (שם, טלפון, כיתת הילד), צוות הניהול של הקהילה, ' +
-  'ומשפחה קולטת שהוקצתה לך. שם ילדך וכיתתו יוצגו להורי הכיתה; ' +
+  'הורים בכיתת ילדך ובכיתות המקבילות באותה שכבה (שם, טלפון, כיתת הילד), ' +
+  'צוות הניהול של הקהילה, ' +
+  'ומשפחה קולטת שהוקצתה לך. שם ילדך וכיתתו יוצגו להורי הכיתה והשכבה; ' +
   'תמונת ילד תוצג רק אם העלית אותה מרצונך. ' +
   'תאריך הלידה של ילדך מוצג להורי הכיתה בלוח השנה, ועשוי להופיע גם בדף ' +
   'הקשר הכיתתי שמפיקים הורי הכיתה ומשתפים ביניהם. ' +

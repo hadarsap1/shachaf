@@ -15,8 +15,11 @@ describe('needsConsent', () => {
 describe('hasConsented', () => {
   it('keeps showing a member who approved an earlier policy', () => {
     // The bug this guards: bumping to 1.3 emptied class rosters, because every
-    // parent still on 1.2 was read as "never consented".
-    expect(hasConsented({ consentVersion: '1.2' })).toBe(true)
+    // parent still on 1.2 was read as "never consented". Only a version that
+    // widened what OTHERS see about a member moves DISPLAY_CONSENT_SINCE, and
+    // only then may an older consent stop showing them — so an approval any
+    // later than the baseline keeps the member visible, current or not.
+    expect(hasConsented({ consentVersion: `${DISPLAY_CONSENT_SINCE}.1` })).toBe(true)
     expect(hasConsented({ consentVersion: CONSENT_VERSION })).toBe(true)
   })
 
@@ -33,7 +36,7 @@ describe('hasConsented', () => {
 })
 
 describe('childHasConsentedParent', () => {
-  const parents = { p1: { consentVersion: '1.2' }, p2: { consentVersion: '0.9' } }
+  const parents = { p1: { consentVersion: CONSENT_VERSION }, p2: { consentVersion: '0.9' } }
 
   it('shows a child once any linked parent has consented', () => {
     expect(childHasConsentedParent({ parentUids: ['p2', 'p1'] }, parents)).toBe(true)
