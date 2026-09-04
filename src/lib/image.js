@@ -6,7 +6,9 @@ const QUALITY = 0.82
 // Decode via createImageBitmap; on failure (e.g. HEIC in some engines) fall
 // back to an <img> element — iOS Safari can render HEIC in <img> even when
 // createImageBitmap rejects it, so we can still re-encode to JPEG.
-async function decode(file) {
+// Exported because the contact sheet needs exactly the same two-way decode:
+// whatever a parent managed to upload has to be readable again on export.
+export async function decode(file) {
   try {
     return await createImageBitmap(file)
   } catch {

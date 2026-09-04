@@ -5,6 +5,7 @@
 
 // Explicit .js: this module is also loaded by node directly (contactSheet.test.mjs)
 import { withTimeout } from './withTimeout.js'
+import { decode } from './image.js'
 
 // Long enough for a slow phone connection, short enough that the editor is
 // never stuck waiting on a photo that will not arrive.
@@ -92,11 +93,15 @@ export const photoKeyOf = (c) => c.id || c.name || ''
 // The failure message is written to be READ — it surfaces in the editor, on a
 // phone, where there is no console to open. It names both attempts, so the
 // failing step is identifiable from a screenshot alone.
+// Returns { blob, via } — which of the two paths delivered the bytes rides
+// along, because a file that arrives but will not decode is a different bug
+// from one that never arrives, and the difference has to be readable off a
+// phone screen. Photos load in parallel, so this cannot be module state.
 async function fetchPhotoBlob(url) {
   let direct
   try {
     const res = await fetch(url)
-    if (res.ok) return await res.blob()
+    if (res.ok) return { blob: await res.blob(), via: 'ישיר' }
     direct = `HTTP ${res.status}`
   } catch (e) {
     direct = e?.message || 'נחסם'
@@ -122,29 +127,33 @@ async function fetchPhotoBlob(url) {
   if (!type.startsWith('image/')) {
     throw new Error(`ישיר: ${direct} | ממסר החזיר ${type || 'ללא סוג'}`)
   }
-  return await res.blob()
+  return { blob: await res.blob(), via: 'ממסר' }
 }
 
 async function photoToDataUrl(url, size) {
-  const blob = await fetchPhotoBlob(url)
-  const objUrl = URL.createObjectURL(blob)
+  const { blob, via } = await fetchPhotoBlob(url)
+  // Same two-way decode the upload uses (createImageBitmap, then <img>): a
+  // format one path refuses — HEIC straight off an iPhone, say — the other
+  // usually takes. Whatever a parent managed to upload must be readable here.
+  let img
   try {
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image()
-      i.onload = () => resolve(i)
-      i.onerror = () => reject(new Error('הקובץ שהתקבל אינו תמונה תקינה'))
-      i.src = objUrl
-    })
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = size
-    const ctx = canvas.getContext('2d')
-    // cover-crop to a centered square
-    const s = Math.min(img.width, img.height)
-    ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size)
-    return canvas.toDataURL('image/jpeg', 0.8)
-  } finally {
-    URL.revokeObjectURL(objUrl)
+    img = await decode(blob)
+  } catch (e) {
+    const kind = blob.type || 'ללא סוג'
+    const kb = Math.round(blob.size / 1024)
+    throw new Error(`הקובץ שהתקבל אינו תמונה תקינה (${via}, ${kind}, ${kb}KB)`, { cause: e })
   }
+  const w = img.width || img.naturalWidth
+  const h = img.height || img.naturalHeight
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext('2d')
+  // cover-crop to a centered square
+  const s = Math.min(w, h)
+  ctx.drawImage(img, (w - s) / 2, (h - s) / 2, s, s, 0, 0, size, size)
+  const out = canvas.toDataURL('image/jpeg', 0.8)
+  img.close?.()
+  return out
 }
 
 // Resolve the photos of every child whose parent uploaded one. Browser-only
