@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildSlots, groupByDate, formatSlotDate, canSeeAddress, slotStats, SLOT_TYPES,
   isMealTrainCommittee, addDay, removeDay, toggleDayType,
-  myMealTrainEvents, mealTrainInviteMessage,
+  myMealTrainEvents, mealTrainInviteMessage, isMealTrainPast,
   isSlotTaken, claimerUidsOf, mergeSlots, daysFromSlots, babyGreeting, BABY_TYPES,
 } from './mealTrain'
 
@@ -356,5 +356,19 @@ describe('myMealTrainEvents — details for the exported calendar entry', () => 
   it('does not leak one pot\'s address into another pot\'s entry', () => {
     const [ev] = myMealTrainEvents([sampleTrain], 'me', { otherTrain: priv })
     expect(ev.location).toBe('')
+  })
+})
+
+describe('isMealTrainPast', () => {
+  const pot = (...dates) => ({ slots: dates.map(date => ({ date })) })
+  it('moves a pot to history once its last day has passed', () => {
+    expect(isMealTrainPast(pot('2026-08-05', '2026-08-12'), '2026-09-17')).toBe(true)
+  })
+  it('keeps a pot active while any day is today or later', () => {
+    expect(isMealTrainPast(pot('2026-09-10', '2026-09-17'), '2026-09-17')).toBe(false)
+  })
+  it('keeps a pot without days active, and treats closed as history', () => {
+    expect(isMealTrainPast(pot(), '2026-09-17')).toBe(false)
+    expect(isMealTrainPast({ status: 'closed', slots: [] }, '2026-09-17')).toBe(true)
   })
 })

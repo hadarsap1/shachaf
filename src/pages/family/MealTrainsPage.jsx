@@ -7,15 +7,16 @@ import { CONSENT_VERSION } from '../../lib/consent'
 import {
   SLOT_TYPES, buildSlots, groupByDate, addDay, removeDay, toggleDayType,
   formatSlotDate, canSeeAddress, slotStats, isMealTrainCommittee, mealTrainInviteMessage,
-  isSlotTaken, mergeSlots, daysFromSlots, BABY_TYPES, babyGreeting,
+  isSlotTaken, mergeSlots, daysFromSlots, BABY_TYPES, babyGreeting, isMealTrainPast,
 } from '../../lib/mealTrain'
 import { useSearchParams } from 'react-router-dom'
+import { todayKey } from '../../lib/eventVisibility'
 import { useAuth } from '../../context/AuthContext'
 import { useEscapeToClose } from '../../hooks/useEscapeToClose'
 import { toast } from '../../components/ui/Toaster'
 import {
   Baby, Plus, X, Loader2, MapPin, Lock, Phone, Utensils, Cake, Check, Trash2, Share2, Copy,
-  Pencil, UserPlus,
+  Pencil, UserPlus, ChevronDown,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -561,6 +562,8 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
   )
 }
 
+const lastDate = (train) => (train.slots || []).reduce((max, s) => (s.date > max ? s.date : max), '')
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function MealTrainsPage() {
   const { user, isAdmin } = useAuth()
@@ -593,9 +596,14 @@ export default function MealTrainsPage() {
   const canCreate = isAdmin || hats.length > 0
   // A linked pot opens at the top, so the link lands on the right family even
   // when several pots are running.
+  // The linked pot always stays in the active list, even when it's already over.
+  const today = todayKey()
   const active = (trains || [])
-    .filter(t => t.status !== 'closed')
+    .filter(t => t.id === focusId || !isMealTrainPast(t, today))
     .sort((a, b) => (b.id === focusId ? 1 : 0) - (a.id === focusId ? 1 : 0))
+  const past = (trains || [])
+    .filter(t => t.id !== focusId && isMealTrainPast(t, today))
+    .sort((a, b) => lastDate(b).localeCompare(lastDate(a)))
 
   const handleDelete = async (train) => {
     if (!window.confirm(`למחוק את סיר הלידה של ${train.familyName}?`)) return
@@ -712,6 +720,44 @@ export default function MealTrainsPage() {
             )
           })}
         </div>
+      )}
+
+      {past.length > 0 && (
+        <details className="mt-6 group">
+          <summary className="cursor-pointer list-none flex items-center justify-end gap-1.5 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            היסטוריה ({past.length})
+            <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="card mt-3 divide-y divide-gray-100 dark:divide-gray-700">
+            {past.map(train => {
+              const stats = slotStats(train.slots)
+              const dates = (train.slots || []).map(s => s.date).sort()
+              const mine = isAdmin || train.createdBy === user?.uid
+              return (
+                <div key={train.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  {mine ? (
+                    <button onClick={() => handleDelete(train)}
+                      className="text-gray-300 hover:text-red-500 flex-shrink-0" title="מחק" aria-label={`מחק את סיר הלידה של ${train.familyName}`}>
+                      <Trash2 size={14} />
+                    </button>
+                  ) : <span />}
+                  <div className="text-right min-w-0">
+                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate">
+                      {train.familyName}
+                      {(train.babyName || train.babyGender) && (
+                        <span className="font-normal text-gray-500 dark:text-gray-400"> · {babyGreeting(train)}</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {dates.length > 0 && `${formatSlotDate(dates[0])} עד ${formatSlotDate(dates[dates.length - 1])} · `}
+                      {stats.taken} מתוך {stats.total} משבצות שוריינו
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </details>
       )}
 
       {showCreate && (
