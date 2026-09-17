@@ -239,6 +239,14 @@ export function mealTrainInviteMessage(train, url) {
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+// A pot whose last day is behind us (or that was closed) belongs in history.
+// A pot with no days yet is still being set up, so it stays active.
+export function isMealTrainPast(train, today) {
+  if (train?.status === 'closed') return true
+  const dates = (train?.slots || []).map(s => s.date).filter(Boolean)
+  return dates.length > 0 && dates.every(d => d < today)
+}
+
 // Progress for the card header: how many slots are still open
 export function slotStats(slots) {
   const all = slots || []
