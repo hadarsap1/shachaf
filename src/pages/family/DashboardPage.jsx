@@ -16,6 +16,7 @@ import { myMealTrainEvents } from '../../lib/mealTrain'
 import TaskCard from '../../components/ui/TaskCard'
 import EventCard from '../../components/ui/EventCard'
 import EventDetailPanel from '../../components/ui/EventDetailPanel'
+import AllergiesWidget from '../../components/family/AllergiesWidget'
 import {
   CheckSquare, Calendar, MessageCircle, ArrowLeft, ClipboardList,
   AlertTriangle, Heart, Network, Users, Settings2, GripVertical,
@@ -27,6 +28,7 @@ import clsx from 'clsx'
 const WIDGET_DEFS = [
   { id: 'class',     label: 'הכיתה שלי',         icon: GraduationCap },
   { id: 'events',    label: 'אירועים קרובים',     icon: Calendar },
+  { id: 'allergies', label: 'אלרגיות — הנחיות', icon: AlertTriangle },
   { id: 'activity',  label: 'פעילות קהילה',    icon: Heart },
   { id: 'tasks',     label: 'משימות לביצוע',   icon: CheckSquare },
   { id: 'forms',     label: 'טפסים למילוי',    icon: ClipboardList },
@@ -451,6 +453,9 @@ export default function DashboardPage() {
           </section>
         )
       }
+
+      case 'allergies':
+        return <AllergiesWidget key="allergies" />
 
       case 'activity':
         return (
