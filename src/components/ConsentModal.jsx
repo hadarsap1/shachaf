@@ -30,7 +30,7 @@ export default function ConsentModal() {
       updateUserState({ consentVersion: CONSENT_VERSION })
     } catch (e) {
       console.error('recordConsent failed', e)
-      setError('שמירת האישור נכשלה — נסו שוב')
+      setError('שמירת האישור נכשלה, נסו שוב')
       setSaving(false)
     }
   }
@@ -52,7 +52,7 @@ export default function ConsentModal() {
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 text-right">
           <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
-            המידע שתמסור/י (שם, טלפון, אימייל, וכן — לפי בחירתך בלבד — כתובת, תמונה,
+            המידע שתמסור/י (שם, טלפון, אימייל, וכן, לפי בחירתך בלבד: כתובת, תמונה,
             ושם וכיתת ילדיך) נאסף וישמש <strong>אך ורק</strong> למטרות הבאות:
           </p>
           <ol className="space-y-1.5 pe-1">
@@ -99,7 +99,7 @@ export default function ConsentModal() {
                   ? 'bg-primary-600 text-white hover:bg-primary-700'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
               )}>
-              {saving ? <Loader2 size={15} className="animate-spin" /> : 'מאשר/ת — המשך'}
+              {saving ? <Loader2 size={15} className="animate-spin" /> : 'מאשר/ת והמשך'}
             </button>
             <button onClick={logout} disabled={saving}
               className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 border border-gray-200 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700">

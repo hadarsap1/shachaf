@@ -22,7 +22,7 @@ function PhotoErrors({ errors }) {
 export default function ContactSheetModal({ className, children, consentedParentsByUid = null, onClose }) {
   const [template, setTemplate] = useState('cards')
   const [theme, setTheme] = useState('pink')
-  const [title, setTitle] = useState(`דף קשר — כיתה ${className}`)
+  const [title, setTitle] = useState(`דף קשר, כיתה ${className}`)
   const [subtitle, setSubtitle] = useState('')
   const [entries, setEntries] = useState(() => entriesFromChildren(children, consentedParentsByUid))
   const [busy, setBusy] = useState(false)
@@ -99,7 +99,7 @@ export default function ContactSheetModal({ className, children, consentedParent
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
         URL.revokeObjectURL(url)
-        toast('שיתוף ישיר אינו נתמך במכשיר זה — התמונה הורדה, ניתן לצרף לוואטסאפ')
+        toast('שיתוף ישיר אינו נתמך במכשיר זה, התמונה הורדה, ניתן לצרף לוואטסאפ')
       }
     } catch (e) {
       if (e?.name !== 'AbortError') toast('השיתוף נכשל', 'error')
@@ -218,7 +218,7 @@ export default function ContactSheetModal({ className, children, consentedParent
               </div>
             ) : (
               <p className="text-xs text-gray-400 text-right bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
-                לא נמצאו תמונות ילדים לדף זה — תמונה נכללת רק כשההורה העלה ואישר אותה בהגדרות,
+                לא נמצאו תמונות ילדים לדף זה, תמונה נכללת רק כשההורה העלה ואישר אותה בהגדרות,
                 ורק לילדים שהוריהם אישרו את התקנון
               </p>
             )}

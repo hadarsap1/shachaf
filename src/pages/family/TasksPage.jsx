@@ -111,7 +111,7 @@ export default function TasksPage() {
             <RefreshCw size={13} />
             נסו שוב
           </button>
-          <span className="text-right">חלק מהתוכן לא נטען — ייתכן שהחיבור נקטע.</span>
+          <span className="text-right">חלק מהתוכן לא נטען, ייתכן שהחיבור נקטע.</span>
         </div>
       )}
 

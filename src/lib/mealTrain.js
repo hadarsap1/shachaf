@@ -223,7 +223,7 @@ export function mealTrainInviteMessage(train, url) {
     lines.push(`*התאריכים:* ${dates.map(formatSlotDate).join(' · ')}`)
   }
   if (stats.total) {
-    if (stats.open === 0) lines.push('כל המשבצות שוריינו — תודה לכולם! 🎉')
+    if (stats.open === 0) lines.push('כל המשבצות שוריינו, תודה לכולם! 🎉')
     else if (stats.open === 1) lines.push(`נותרה משבצת אחת פנויה מתוך ${stats.total} 🙏`)
     else lines.push(`נותרו ${stats.open} משבצות פנויות מתוך ${stats.total} 🙏`)
   }

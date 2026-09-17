@@ -258,7 +258,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
 
         </div>
         <p className="text-xs text-amber-600 dark:text-amber-400 text-right mb-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-          שימו לב: תשובות הטופס נקשרות למשפחה מזוהה — אין לאסוף כאן מידע רפואי
+          שימו לב: תשובות הטופס נקשרות למשפחה מזוהה, אין לאסוף כאן מידע רפואי
           (אלרגיות, תרופות וכד'). להגבלות אלרגיה השתמשו בהגדרות האירוע.
         </p>
         <div className="space-y-2">
@@ -275,7 +275,7 @@ function FormBuilder({ form, onSave, onCancel, classes = [] }) {
           ))}
           {draft.fields.length === 0 && (
             <div className="text-center py-8 text-gray-400 text-sm">
-              אין שדות עדיין — לחץ "הוסף שדה" כדי להתחיל
+              אין שדות עדיין, לחץ "הוסף שדה" כדי להתחיל
             </div>
           )}
         </div>

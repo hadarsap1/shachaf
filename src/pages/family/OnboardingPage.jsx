@@ -162,7 +162,7 @@ export default function OnboardingPage() {
             />
             {nameError
               ? <p className="text-xs text-red-500 mb-4 -mt-3">{nameError}</p>
-              : <p className="text-xs text-gray-400 mb-4 -mt-3">בעברית — כך חברי הקהילה יזהו אתכם</p>}
+              : <p className="text-xs text-gray-400 mb-4 -mt-3">בעברית, כך חברי הקהילה יזהו אתכם</p>}
 
             <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-200">טלפון</label>
             <input

@@ -147,7 +147,7 @@ export default function QuickEventModal({
   }
 
   const handleCreate = async () => {
-    if (!hat) { setError('יש לבחור מטעם מי נפתח האירוע — לא ניתן לפתוח אירוע ללא שיוך'); return }
+    if (!hat) { setError('יש לבחור מטעם מי נפתח האירוע, לא ניתן לפתוח אירוע ללא שיוך'); return }
     if (!form.title.trim() || !form.date) { setError('שם האירוע ותאריך הם שדות חובה'); return }
     if (hat.type === 'class' && classIds.length === 0) { setError('יש לבחור לפחות כיתה אחת'); return }
     if (!publishAck) { setError('יש לאשר את פרסום פרטי האירוע כתנאי לשמירה'); return }
@@ -170,7 +170,7 @@ export default function QuickEventModal({
           await saveEvent({ id: eventId, imageUrl: url, imagePath: path })
         } catch (e) {
           console.error('event image upload failed', e)
-          setError('האירוע נשמר, אך העלאת התמונה נכשלה — אפשר לנסות שוב או לסגור')
+          setError('האירוע נשמר, אך העלאת התמונה נכשלה, אפשר לנסות שוב או לסגור')
           setSaving(false)
           return
         }
@@ -180,7 +180,7 @@ export default function QuickEventModal({
       setSaving(false)
     } catch (e) {
       console.error('quick event create failed', e)
-      setError('שמירת האירוע נכשלה — נסה שוב')
+      setError('שמירת האירוע נכשלה, נסה שוב')
       setSaving(false)
     }
   }

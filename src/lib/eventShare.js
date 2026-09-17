@@ -56,7 +56,7 @@ export function eventShareText(event, { url = '' } = {}) {
   if (tags.length) lines.push(tags.join(', '))
 
   if (url) lines.push(url)
-  lines.push('— נשלח משחף+')
+  lines.push('נשלח משחף+')
   return lines.join('\n')
 }
 

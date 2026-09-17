@@ -156,7 +156,7 @@
     }
 
     var hint = document.createElement('p')
-    hint.textContent = 'אם זה חוזר גם אחרי כמה ניסיונות — ספרו לנו, וצרפו את השורה הבאה:'
+    hint.textContent = 'אם זה חוזר גם אחרי כמה ניסיונות, ספרו לנו, וצרפו את השורה הבאה:'
     hint.style.cssText = 'font-size:12px;color:' + faint + ';margin:6px 0 0'
 
     var code = document.createElement('code')

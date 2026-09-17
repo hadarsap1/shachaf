@@ -54,7 +54,7 @@ export async function readSheetRows(file) {
   rows = dropEmptyRows(rows || [])
   if (!rows.length) throw new Error('הקובץ ריק או שלא זוהו בו שורות')
   if (!Array.isArray(rows[0])) {
-    throw new Error('לא ניתן לקרוא את הקובץ — נסו לשמור אותו כ-CSV ולייבא מחדש')
+    throw new Error('לא ניתן לקרוא את הקובץ, נסו לשמור אותו כ-CSV ולייבא מחדש')
   }
   return rows
 }

@@ -244,7 +244,7 @@ function MonthView({ year, month, eventsByDay, onEventClick, today, classColorMa
                     isConflict={conflictEventIds.has(ev.id)} />
                 ))}
                 {(birthdaysByMonthDay[cell.key.slice(5)] || []).map(b => (
-                  <span key={`${b.kind}-${b.name}`} className="text-[10px]" title={`${b.name} — ${BIRTHDAY_LABEL[b.kind]}`}>
+                  <span key={`${b.kind}-${b.name}`} className="text-[10px]" title={`${b.name}: ${BIRTHDAY_LABEL[b.kind]}`}>
                     {BIRTHDAY_ICON[b.kind]}
                   </span>
                 ))}

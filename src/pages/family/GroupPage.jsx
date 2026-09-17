@@ -509,7 +509,7 @@ function MemberCard({ member, classMap }) {
 
         {/* Name + classes */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{member.name || '—'}</p>
+          <p className="font-semibold text-gray-800 text-sm dark:text-gray-100">{member.name || '-'}</p>
           {classes.length > 0 && (
             <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 dark:text-gray-400">
               <GraduationCap size={11} />

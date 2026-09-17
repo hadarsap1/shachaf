@@ -453,7 +453,7 @@ function ImportPanel({ classes, existing, onImport, onClose }) {
         .filter(p => p.name || p.phone || p.email)
       return finishRow(name, at(vals, classIdx), address, parents, familyName)
     }).filter(r => r.name)
-    if (!out.length) throw new Error('לא זוהו שמות בקובץ — נדרשת עמודת שם (או שם פרטי + שם משפחה)')
+    if (!out.length) throw new Error('לא זוהו שמות בקובץ, נדרשת עמודת שם (או שם פרטי + שם משפחה)')
     return out
   }
 
@@ -548,7 +548,7 @@ function ImportPanel({ classes, existing, onImport, onClose }) {
               <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 space-y-1 dark:bg-blue-900/20 dark:text-blue-300">
                 <p className="font-semibold">פורמט הקובץ (CSV / Excel):</p>
                 <p>עמודת חובה: <strong>שם</strong> (או <strong>שם פרטי</strong> + <strong>שם משפחה</strong>)</p>
-                <p><strong>כיתה</strong> — אם אין עמודה כזו, תתבקשו לבחור כיתת יעד לכל הקובץ</p>
+                <p><strong>כיתה</strong>: אם אין עמודה כזו, תתבקשו לבחור כיתת יעד לכל הקובץ</p>
                 <p>נקראות אוטומטית גם: כתובת (או רחוב + מספר בית), שם ונייד של אב/אם</p>
                 <p>ספר הטלפונים של בית הספר נתמך כמו שהוא</p>
               </div>
@@ -584,13 +584,13 @@ function ImportPanel({ classes, existing, onImport, onClose }) {
               </div>
               {skippedCount > 0 && (
                 <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                  {skippedCount === 1 ? 'ילד אחד כבר רשום במערכת ולא ייובא שוב' : `${skippedCount} ילדים כבר רשומים במערכת ולא ייובאו שוב`} — הפרטים הקיימים שלהם נשארים כמו שהם
+                  {skippedCount === 1 ? 'ילד אחד כבר רשום במערכת ולא ייובא שוב' : `${skippedCount} ילדים כבר רשומים במערכת ולא ייובאו שוב`}, הפרטים הקיימים שלהם נשארים כמו שהם
                 </div>
               )}
               {unclassifiedCount > 0 && (
                 <div className="bg-blue-50 rounded-xl px-3 py-2.5 space-y-1.5 dark:bg-blue-900/20">
                   <p className="text-xs text-blue-700 dark:text-blue-300 text-right">
-                    ל{unclassifiedCount === 1 ? 'שורה אחת' : `-${unclassifiedCount} שורות`} אין עמודת כיתה בקובץ — בחרו כיתת יעד:
+                    ל{unclassifiedCount === 1 ? 'שורה אחת' : `-${unclassifiedCount} שורות`} אין עמודת כיתה בקובץ, בחרו כיתת יעד:
                   </p>
                   <select value={fallbackClassId} onChange={e => setFallbackClassId(e.target.value)}
                     className="input w-full text-sm py-1.5">

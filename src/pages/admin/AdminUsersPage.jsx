@@ -19,19 +19,19 @@ const INVITE_URL = typeof window !== 'undefined' ? `${window.location.origin}/lo
 
 const DEFAULT_MESSAGES = {
   new_family: `היי, קהילת שחף 👋
-קהילת שחף מזמינה אתכם להצטרף ל"שחף+" — הפלטפורמה הקהילתית שלנו.
+קהילת שחף מזמינה אתכם להצטרף ל"שחף+", הפלטפורמה הקהילתית שלנו.
 כאן תמצאו את כל המשימות, האירועים והמידע שתצטרכו לקראת תחילת הלימודים.
 
 להרשמה:
 ${INVITE_URL}`,
   host_family: `היי, קהילת שחף 👋
-קהילת שחף מזמינה אתכם להצטרף ל"שחף+" — הפלטפורמה הקהילתית — כמשפחה קולטת.
+קהילת שחף מזמינה אתכם להצטרף ל"שחף+", הפלטפורמה הקהילתית, כמשפחה קולטת.
 דרכה תוכלו לעקוב אחר המשפחות שבאחריותכם ולהישאר מעודכנים.
 
 להרשמה:
 ${INVITE_URL}`,
   community: `היי, קהילת שחף 👋
-קהילת שחף מזמינה אתכם להצטרף ל"שחף+" — הפלטפורמה הקהילתית שלנו.
+קהילת שחף מזמינה אתכם להצטרף ל"שחף+", הפלטפורמה הקהילתית שלנו.
 כאן תמצאו אירועים, מידע שימושי ועדכונים מהקהילה.
 
 להרשמה:
@@ -429,7 +429,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
               : <div className="avatar w-16 h-16 text-2xl bg-primary-100 text-primary-700 dark:text-primary-300 dark:bg-primary-900/40">{(draft.name || user.name)?.[0] || '?'}</div>
             }
             <div className="text-center">
-              <div className="font-bold text-gray-800 text-base dark:text-gray-100">{editing ? draft.name || '—' : user.name}</div>
+              <div className="font-bold text-gray-800 text-base dark:text-gray-100">{editing ? draft.name || '-' : user.name}</div>
               <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
             </div>
           </div>
@@ -549,7 +549,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
             <label className="text-xs font-medium text-gray-500 block mb-2 text-right dark:text-gray-400">ילדים</label>
             {kidsError ? (
               <div className="text-center py-2">
-                <p className="text-xs text-gray-400 mb-2">הטעינה נמשכת יותר מדי — ייתכן שהחיבור נותק</p>
+                <p className="text-xs text-gray-400 mb-2">הטעינה נמשכת יותר מדי, ייתכן שהחיבור נותק</p>
                 <button
                   onClick={() => { invalidateCache('childrenBy', 'classes'); setRetryKey(k => k + 1) }}
                   className="text-xs font-medium text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 rounded-lg px-3 py-1.5 hover:bg-primary-50 dark:hover:bg-primary-900/30"
@@ -627,7 +627,7 @@ function UserDetailPanel({ user, onClose, onRoleChange, onRolesChange, onStatusC
                 {pendingCoParents > 0 && (
                   <p className="text-xs text-gray-400 text-right bg-gray-50 rounded-xl px-3 py-2 dark:bg-gray-900">
                     {pendingCoParents === 1 ? 'הורה נוסף אחד' : `${pendingCoParents} הורים נוספים`} ממתין/ים
-                    להרשמה ולאישור התקנון — פרטיו/הם לא יוצגו עד אז
+                    להרשמה ולאישור התקנון, פרטיו/הם לא יוצגו עד אז
                   </p>
                 )}
               </div>

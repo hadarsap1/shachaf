@@ -81,7 +81,7 @@ function ClassPicker({ classes, selected, onChange, restricted }) {
     <div ref={ref} className="relative">
       <label className="label block mb-1 text-right">
         כיתות
-        {!restricted && <span className="text-xs text-gray-400 me-1"> — ריק = כלל בית הספר</span>}
+        {!restricted && <span className="text-xs text-gray-400 me-1"> (ריק = כלל בית הספר)</span>}
       </label>
       <button
         type="button"

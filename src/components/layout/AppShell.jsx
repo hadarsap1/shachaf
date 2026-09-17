@@ -121,7 +121,7 @@ function buildMemberNav(allRoles, classIds, className, status) {
   links.push({ to: '/dashboard', label: 'בית' })
   if (hasClass) {
     const classWord = className && className.includes(',') ? 'הכיתות שלי' : 'הכיתה שלי'
-    links.push({ to: '/class', label: className ? `${classWord} — ${className}` : 'הכיתה שלי' })
+    links.push({ to: '/class', label: className ? `${classWord}, ${className}` : 'הכיתה שלי' })
   }
   if (allRoles.has('host_family'))
     links.push({ to: '/families', label: 'המשפחות שלי' })
@@ -460,7 +460,7 @@ export default function AppShell() {
 
   // Descriptive per-page document title (WCAG 2.4.2)
   useEffect(() => {
-    document.title = pageTitle ? `${pageTitle} — שחף+` : 'שחף+'
+    document.title = pageTitle ? `${pageTitle} | שחף+` : 'שחף+'
   }, [pageTitle])
 
   const sidebarBg = 'bg-[#0d1b35]'

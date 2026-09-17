@@ -22,7 +22,7 @@ export default function JoinConsentModal({ kind, name, onConfirm, onClose }) {
       onClose()
     } catch (e) {
       console.error('join failed', e)
-      setError('ההצטרפות נכשלה — נסו שוב')
+      setError('ההצטרפות נכשלה, נסו שוב')
       setSaving(false)
     }
   }
@@ -60,7 +60,7 @@ export default function JoinConsentModal({ kind, name, onConfirm, onClose }) {
                 ? 'bg-primary-600 text-white hover:bg-primary-700'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
             )}>
-            {saving ? <Loader2 size={15} className="animate-spin" /> : 'מאשר/ת — הצטרפות'}
+            {saving ? <Loader2 size={15} className="animate-spin" /> : 'מאשר/ת והצטרפות'}
           </button>
           <button onClick={onClose} disabled={saving}
             className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 border border-gray-200 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700">

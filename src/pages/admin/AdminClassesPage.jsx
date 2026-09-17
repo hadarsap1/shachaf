@@ -115,7 +115,7 @@ function ScheduleEditor({ schedule = {}, onChange }) {
               <tr key={period.id}>
                 <td colSpan={SCHEDULE_DAYS.length + 1}
                   className="py-1 px-3 text-[10px] text-gray-400 text-center bg-gray-50 border-y border-gray-100 italic dark:bg-gray-900 dark:border-gray-700">
-                  — {period.label} <span dir="ltr">{period.time}</span> —
+                  {period.label} <span dir="ltr">{period.time}</span>
                 </td>
               </tr>
             )
@@ -133,7 +133,7 @@ function ScheduleEditor({ schedule = {}, onChange }) {
                         value={schedule[key] || ''}
                         onChange={e => set(key, e.target.value)}
                         className="w-full rounded-lg border border-gray-200 px-1.5 py-1.5 text-xs text-center focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-100 bg-white placeholder-gray-300 dark:bg-gray-800 dark:border-gray-700"
-                        placeholder="—"
+                        placeholder="-"
                         dir="rtl"
                       />
                     </td>
@@ -284,7 +284,7 @@ function ClassChildrenTab({ classId, classColor }) {
             className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-5 text-center hover:border-primary-300 hover:bg-primary-50/30 transition-colors dark:border-gray-700">
             <Upload size={20} className="mx-auto text-gray-300 mb-1.5" />
             <p className="text-sm font-medium text-gray-400">ייבוא מ-Excel / CSV</p>
-            <p className="text-xs text-gray-300 mt-0.5">עמודת "שם" בלבד — הכיתה נקבעת אוטומטית</p>
+            <p className="text-xs text-gray-300 mt-0.5">עמודת "שם" בלבד, הכיתה נקבעת אוטומטית</p>
           </button>
         </>
       ) : (
@@ -543,7 +543,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
               </div>
               <div>
                 <label className="label">
-                  שכבה <span className="text-xs font-normal text-gray-400">— ניתן לבחור יותר מאחת (למשל גן חובה + גן ט״ח)</span>
+                  שכבה <span className="text-xs font-normal text-gray-400">(ניתן לבחור יותר מאחת, למשל גן חובה + גן ט״ח)</span>
                 </label>
                 {/* Multi-select — stored as one string joined with GRADE_SEP so
                     every existing cls.grade reader keeps working unchanged */}
@@ -621,7 +621,7 @@ function ClassPanel({ cls, isNew, onSave, onClose, allUsers }) {
 
           {tab === 'committee' && (
             <>
-              <p className="text-xs text-gray-500 dark:text-gray-400">חברי ועד כיתה — יופיעו בדף הכיתה לכלל ההורים.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">חברי ועד כיתה, יופיעו בדף הכיתה לכלל ההורים.</p>
               <PeopleEditor people={draft.committee || []} onChange={v => set('committee', v)}
                 showTitle placeholder="שם הורה" />
             </>
@@ -736,7 +736,7 @@ function SchoolStaffCard() {
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-gray-800 dark:text-gray-100">צוות בית הספר</div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            מנהל/ת, יועצ/ת, מורים מקצועיים — מוצג לכל הכיתות
+            מנהל/ת, יועצ/ת, מורים מקצועיים, מוצג לכל הכיתות
             {!loading && people.length > 0 && ` · ${people.length} אנשי צוות`}
           </div>
         </div>
@@ -764,12 +764,12 @@ function SchoolStaffCard() {
                       ? [report.added && `נוספו ${report.added} אנשי צוות`,
                          report.filled && `הושלמו פרטים ל-${report.filled}`].filter(Boolean).join(' · ')
                       : 'לא נמצאו פרטים חדשים להשלמה'}
-                    {' — בדקו ולחצו "שמור" כדי לשמור'}
+                    {', בדקו ולחצו "שמור" כדי לשמור'}
                   </div>
                   {report.conflicts.length > 0 && (
                     <div className="bg-amber-50 rounded-xl px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 space-y-1">
                       <p className="font-semibold">
-                        {report.conflicts.length} פרטים בקובץ שונים מהקיים — לא שונו אוטומטית:
+                        {report.conflicts.length} פרטים בקובץ שונים מהקיים, לא שונו אוטומטית:
                       </p>
                       {report.conflicts.map((c, i) => (
                         <p key={i} dir="rtl">
@@ -893,7 +893,7 @@ export default function AdminClassesPage() {
                 </div>
                 {cls.needsUpdate && (
                   <div className="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 mt-1 dark:bg-amber-900/20 dark:text-amber-300">
-                    נוצרה מייבוא — יש להשלים פרטים
+                    נוצרה מייבוא, יש להשלים פרטים
                   </div>
                 )}
                 {cls.teacherContact?.name && (

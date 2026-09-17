@@ -176,20 +176,20 @@ function PreviewTable({ rows, onClear, onImport, importing }) {
                   )}
                 >
                   <td className={clsx('px-4 py-2.5', missingName && !invalid ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-800 dark:text-gray-100')}>
-                    {row.name || <span className="italic text-gray-400">—</span>}
+                    {row.name || <span className="italic text-gray-400">-</span>}
                   </td>
                   <td className={clsx('px-4 py-2.5 font-mono text-xs', invalid ? 'text-gray-400 italic' : 'text-gray-700 dark:text-gray-200')} dir="ltr">
-                    {row.email || <span className="not-italic">—</span>}
+                    {row.email || <span className="not-italic">-</span>}
                   </td>
                   <td className={clsx('px-4 py-2.5', !row.phone && !invalid ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' : 'text-gray-700 dark:text-gray-200')}>
-                    {row.phone || <span className="text-gray-400 text-xs">—</span>}
+                    {row.phone || <span className="text-gray-400 text-xs">-</span>}
                   </td>
                   <td className={clsx('px-4 py-2.5', !row.address && !invalid ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' : 'text-gray-700 dark:text-gray-200')}>
-                    {row.address || <span className="text-gray-400 text-xs">—</span>}
+                    {row.address || <span className="text-gray-400 text-xs">-</span>}
                   </td>
                   {rows.some(r => r.children?.length) && (
                     <td className="px-4 py-2.5 text-gray-700 text-xs dark:text-gray-200">
-                      {(row.children || []).map(c => `${c.name} (${c.class})`).join(', ') || '—'}
+                      {(row.children || []).map(c => `${c.name} (${c.class})`).join(', ') || '-'}
                     </td>
                   )}
                   <td className="px-4 py-2.5">
@@ -267,10 +267,10 @@ function PendingTable({ pending, onDelete, onRefresh, loading }) {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {pending.map(fam => (
                 <tr key={fam.id} className="hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50">
-                  <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-100">{fam.name || '—'}</td>
+                  <td className="px-4 py-2.5 font-medium text-gray-800 dark:text-gray-100">{fam.name || '-'}</td>
                   <td className="px-4 py-2.5 font-mono text-xs text-gray-600 dark:text-gray-300" dir="ltr">{fam.email}</td>
-                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{fam.phone || <span className="text-gray-400">—</span>}</td>
-                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{fam.address || <span className="text-gray-400">—</span>}</td>
+                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{fam.phone || <span className="text-gray-400">-</span>}</td>
+                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{fam.address || <span className="text-gray-400">-</span>}</td>
                   <td className="px-4 py-2.5"><MissingBadges row={fam} /></td>
                   <td className="px-4 py-2.5">
                     <button

@@ -223,7 +223,7 @@ function ResourcePanel({ resource, isNew, categories, onSave, onClose }) {
               className="hidden"
               onChange={e => pickFile(e.target.files?.[0])}
             />
-            <p className="text-[11px] text-gray-400 mt-1 text-right">עד 10MB. אם לא הוזן קישור — הכרטיס יפתח את הקובץ.</p>
+            <p className="text-[11px] text-gray-400 mt-1 text-right">עד 10MB. אם לא הוזן קישור, הכרטיס יפתח את הקובץ.</p>
           </div>
 
           {/* Order */}

@@ -286,7 +286,7 @@ export default function EventsPage() {
           theirs to see. */}
       {!loading && sharedMissing && !selectedEvent && (
         <div className="mb-5 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 text-right">
-          האירוע שקיבלת בקישור אינו זמין לך — ייתכן שהוא בוטל, או שהוא מיועד לכיתה או לוועדה אחרת.
+          האירוע שקיבלת בקישור אינו זמין לך, ייתכן שהוא בוטל, או שהוא מיועד לכיתה או לוועדה אחרת.
         </div>
       )}
 

@@ -66,7 +66,7 @@ export default function MyPrivacyPage() {
           הפרטיות שלי
         </h1>
         <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">
-          כל המידע על הנתונים שלך, ההסכמות שנתת והזכויות שלך — במקום אחד
+          כל המידע על הנתונים שלך, ההסכמות שנתת והזכויות שלך, במקום אחד
         </p>
       </div>
 
@@ -135,7 +135,7 @@ export default function MyPrivacyPage() {
           <div className="flex justify-center py-3"><Loader2 size={18} className="animate-spin text-gray-300" /></div>
         ) : log.length === 0 ? (
           <p className="text-sm text-gray-400 text-right">
-            אין רישומי הסכמה עדיין — הסכמות חדשות (אישור תקנון, תמונות, הצטרפויות) יתועדו כאן
+            אין רישומי הסכמה עדיין, הסכמות חדשות (אישור תקנון, תמונות, הצטרפויות) יתועדו כאן
           </p>
         ) : (
           <ul className="divide-y divide-gray-50 dark:divide-gray-700">
@@ -155,10 +155,10 @@ export default function MyPrivacyPage() {
       {/* Rights */}
       <Card icon={UserCheck} title="הזכויות שלך">
         <ul className="space-y-1.5 text-sm text-gray-700 dark:text-gray-200 text-right">
-          <li><strong>עיון</strong> — לקבל עותק של המידע השמור עליך (עמוד זה ועמוד ההגדרות)</li>
-          <li><strong>תיקון</strong> — לעדכן כל פרט מתוך "הגדרות"</li>
-          <li><strong>מחיקה</strong> — לבקש מחיקת פרטים או את מחיקת החשבון כולו</li>
-          <li><strong>חזרה מהסכמה</strong> — ניתן לחזור בך מהסכמה בכל עת בפנייה לצוות הניהול</li>
+          <li><strong>עיון</strong>: לקבל עותק של המידע השמור עליך (עמוד זה ועמוד ההגדרות)</li>
+          <li><strong>תיקון</strong>: לעדכן כל פרט מתוך "הגדרות"</li>
+          <li><strong>מחיקה</strong>: לבקש מחיקת פרטים או את מחיקת החשבון כולו</li>
+          <li><strong>חזרה מהסכמה</strong>: ניתן לחזור בך מהסכמה בכל עת בפנייה לצוות הניהול</li>
         </ul>
         <Link to="/contact" className="mt-3 inline-flex btn-primary text-sm py-2 px-4">
           פנייה לצוות בנושא פרטיות

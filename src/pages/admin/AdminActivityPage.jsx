@@ -28,7 +28,7 @@ function buildLogs(messages, tasks, events, audit) {
     if (!d) return
     const label = AUDIT_LABELS[a.action] || a.action
     const detail = [a.targetName, a.details].filter(Boolean).join(' · ')
-    logs.push({ id: `audit-${a.id}`, type: 'audit', date: d, title: `${a.actorName || 'מנהל'} — ${label}`, detail: detail || label, icon: ShieldAlert, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/30' })
+    logs.push({ id: `audit-${a.id}`, type: 'audit', date: d, title: `${a.actorName || 'מנהל'}, ${label}`, detail: detail || label, icon: ShieldAlert, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/30' })
   })
 
   messages.forEach(m => {
