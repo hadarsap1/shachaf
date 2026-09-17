@@ -154,7 +154,7 @@ export default function AdminEmergencyPage() {
       setSavedDay(true)
       setTimeout(() => setSavedDay(false), 2500)
     } catch {
-      setError('השמירה נכשלה. הנתונים נשארו על המסך — נסה/י שוב.')
+      setError('השמירה נכשלה. הנתונים נשארו על המסך, נסה/י שוב.')
     }
     setSavingDay(false)
   }
@@ -171,7 +171,7 @@ export default function AdminEmergencyPage() {
     }
     setDay(prev)
     setDirty(true)
-    setCopyMsg(`הועתק מ-${from} — עדיין לא נשמר`)
+    setCopyMsg(`הועתק מ-${from}, עדיין לא נשמר`)
   }
 
   const rows = day[tab] || []
@@ -208,7 +208,7 @@ export default function AdminEmergencyPage() {
         </div>
         <div>
           <h1 className="text-xl font-black text-gray-900 flex items-center gap-2 dark:text-white"><span className="text-xl leading-none">🚨</span>מצב חירום</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">שיעורים, קבוצות למידה ומפגשי משחק — מוכן לרגע שצריך</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">שיעורים, קבוצות למידה ומפגשי משחק, מוכן לרגע שצריך</p>
         </div>
       </div>
 
@@ -239,7 +239,7 @@ export default function AdminEmergencyPage() {
         </div>
 
         <p className="text-xs text-gray-400 mb-3 text-right">
-          אפשר לבנות את השיעורים, הקבוצות והמפגשים גם כשהמצב כבוי — ההורים יראו אותם רק כשמדליקים.
+          אפשר לבנות את השיעורים, הקבוצות והמפגשים גם כשהמצב כבוי, ההורים יראו אותם רק כשמדליקים.
         </p>
 
         <div className="space-y-3">
@@ -250,7 +250,7 @@ export default function AdminEmergencyPage() {
               value={mode.title}
               onChange={e => setMode(m => ({ ...m, title: e.target.value }))}
               maxLength={100}
-              placeholder="לדוגמה: שגרת חירום — ינואר 2026"
+              placeholder="לדוגמה: שגרת חירום, ינואר 2026"
               className="input w-full text-right"
             />
           </div>
@@ -411,7 +411,7 @@ export default function AdminEmergencyPage() {
                       type="text"
                       value={g.name}
                       onChange={e => updateRow(i, 'name', e.target.value)}
-                      placeholder="שם הקבוצה (למשל: קבוצה 1 — קריאה)"
+                      placeholder="שם הקבוצה (למשל: קבוצה 1, קריאה)"
                       className="input text-sm text-right col-span-2"
                     />
                     <input
@@ -445,7 +445,7 @@ export default function AdminEmergencyPage() {
                     />
                   </div>
                   <p className="text-[11px] text-gray-400 mb-1.5 text-right">
-                    ילדים בקבוצה {g.childIds?.length ? `(${g.childIds.length})` : '— ריק = כל הכיתה'}
+                    ילדים בקבוצה {g.childIds?.length ? `(${g.childIds.length})` : '(ריק = כל הכיתה)'}
                   </p>
                   <ChildPicker
                     options={children}
@@ -488,7 +488,7 @@ export default function AdminEmergencyPage() {
                     className="input text-sm text-right w-full mb-2"
                   />
                   <p className="text-[11px] text-gray-400 mb-1.5 text-right">
-                    ילדים במפגש {p.childIds?.length ? `(${p.childIds.length})` : '— ריק = כל הכיתה'}
+                    ילדים במפגש {p.childIds?.length ? `(${p.childIds.length})` : '(ריק = כל הכיתה)'}
                   </p>
                   <ChildPicker
                     options={children}

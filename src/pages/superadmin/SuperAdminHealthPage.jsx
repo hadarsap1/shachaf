@@ -135,7 +135,7 @@ export default function SuperAdminHealthPage() {
     <div className="flex items-center justify-between gap-2">
       <span className="text-xs text-gray-400 flex-shrink-0">{extra}</span>
       <div className="min-w-0 text-right">
-        <span className="font-medium text-gray-800 dark:text-gray-100">{u.name || '—'}</span>
+        <span className="font-medium text-gray-800 dark:text-gray-100">{u.name || '-'}</span>
         <span className="text-xs text-gray-400 ms-2" dir="ltr">{u.email}</span>
       </div>
     </div>
@@ -152,7 +152,7 @@ export default function SuperAdminHealthPage() {
         <div className="flex flex-wrap gap-1.5 justify-end">
           {onlyFinalStep ? (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/25 dark:text-green-300 dark:border-green-800">
-              ✓ כל הפרטים קיימים — רק לא לחצו "סיום" באשף
+              ✓ כל הפרטים קיימים, רק לא לחצו "סיום" באשף
             </span>
           ) : gaps.map(gap => (
             <span key={gap}
@@ -191,7 +191,7 @@ export default function SuperAdminHealthPage() {
       {total === 0 && !error && (
         <div className="text-center py-16">
           <CheckCircle2 size={40} className="mx-auto text-green-500 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">הכל תקין — אין חריגות בתהליכי הרישום והקליטה</p>
+          <p className="text-gray-500 dark:text-gray-400">הכל תקין, אין חריגות בתהליכי הרישום והקליטה</p>
         </div>
       )}
 
@@ -204,7 +204,7 @@ export default function SuperAdminHealthPage() {
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-gray-400">{fmtDate(p.importedAt)}</span>
             <div className="text-right">
-              <span className="font-medium text-gray-800 dark:text-gray-100">{p.name || '—'}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-100">{p.name || '-'}</span>
               <span className="text-xs text-gray-400 ms-2" dir="ltr">{p.email}</span>
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function SuperAdminHealthPage() {
       <AnomalySection
         emoji="⏳" severity="red"
         title="ממתינים לאישור"
-        hint="נרשמו אך חשבונם עדיין לא אושר — חסומים מהאפליקציה"
+        hint="נרשמו אך חשבונם עדיין לא אושר, חסומים מהאפליקציה"
         items={awaitingApproval}
         renderItem={(u) => userLine(u)}
         linkTo="/admin/users" linkLabel="לניהול חברים"
@@ -224,7 +224,7 @@ export default function SuperAdminHealthPage() {
       <AnomalySection
         emoji="🚪" severity="amber"
         title="לא השלימו את תהליך הקליטה"
-        hint="לא נלחץ הכפתור האחרון באשף הקליטה — התגיות מראות מה חסר בפועל"
+        hint="לא נלחץ הכפתור האחרון באשף הקליטה, התגיות מראות מה חסר בפועל"
         items={onboardingIncomplete}
         renderItem={onboardingLine}
         linkTo="/admin/users" linkLabel="לניהול חברים"
@@ -251,7 +251,7 @@ export default function SuperAdminHealthPage() {
         renderItem={(c) => (
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-gray-400">{classNameById[c.classId] || 'ללא כיתה'}</span>
-            <span className="font-medium text-gray-800 dark:text-gray-100">{c.name || '—'}</span>
+            <span className="font-medium text-gray-800 dark:text-gray-100">{c.name || '-'}</span>
           </div>
         )}
         linkTo="/admin/children" linkLabel="לניהול ילדים"
@@ -262,7 +262,7 @@ export default function SuperAdminHealthPage() {
         title="ילדים ללא כיתה"
         hint="ילדים שאינם משויכים לאף כיתה"
         items={childrenNoClass}
-        renderItem={(c) => <span className="font-medium text-gray-800 dark:text-gray-100">{c.name || '—'}</span>}
+        renderItem={(c) => <span className="font-medium text-gray-800 dark:text-gray-100">{c.name || '-'}</span>}
         linkTo="/admin/children" linkLabel="לניהול ילדים"
       />
 
@@ -271,7 +271,7 @@ export default function SuperAdminHealthPage() {
         title="כיתות ללא מנהל כיתה"
         hint="אין מי שיאשר הורים חדשים בכיתות אלו"
         items={classesNoAdmin}
-        renderItem={(c) => <span className="font-medium text-gray-800 dark:text-gray-100">{c.name || '—'}</span>}
+        renderItem={(c) => <span className="font-medium text-gray-800 dark:text-gray-100">{c.name || '-'}</span>}
         linkTo="/admin/classes" linkLabel="לניהול כיתות"
       />
 
@@ -287,7 +287,7 @@ export default function SuperAdminHealthPage() {
       <AnomalySection
         emoji="🚫" severity="amber"
         title="לא יכולים לקשר ילדים בקליטה"
-        hint="משפחות חדשות ללא סימון ייבוא — לא יראו את רשימת הילדים בקליטה"
+        hint="משפחות חדשות ללא סימון ייבוא, לא יראו את רשימת הילדים בקליטה"
         items={missingImportedFlag}
         renderItem={(u) => userLine(u)}
         linkTo="/admin/users" linkLabel="לניהול חברים"

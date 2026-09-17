@@ -177,7 +177,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
         {links === null
           ? <p className="text-xs text-gray-400 text-center py-2"><Loader2 size={13} className="animate-spin inline" /></p>
           : links.length === 0
-            ? <p className="text-xs text-gray-400">{isMember ? 'אין קישורים עדיין — הוסיפו ראשונים!' : 'אין קישורים עדיין'}</p>
+            ? <p className="text-xs text-gray-400">{isMember ? 'אין קישורים עדיין, הוסיפו ראשונים!' : 'אין קישורים עדיין'}</p>
             : links.map(l => (
               <div key={l.id} className="flex items-center gap-2 py-1.5 group">
                 <a href={safeHref(l.url)} target="_blank" rel="noopener noreferrer"
@@ -217,7 +217,7 @@ function MemberLinks({ groupId, uid, isMember, isAdmin }) {
         {files === null
           ? <p className="text-xs text-gray-400 text-center py-2"><Loader2 size={13} className="animate-spin inline" /></p>
           : files.length === 0
-            ? <p className="text-xs text-gray-400">{isMember ? 'אין קבצים עדיין — העלו ראשונים!' : 'אין קבצים עדיין'}</p>
+            ? <p className="text-xs text-gray-400">{isMember ? 'אין קבצים עדיין, העלו ראשונים!' : 'אין קבצים עדיין'}</p>
             : files.map(f => (
               <div key={f.id} className="flex items-center gap-2 py-1.5 group">
                 <span className="flex-shrink-0 text-base leading-none">{fileIcon(f.fileName)}</span>
@@ -330,7 +330,7 @@ function GroupEvents({ groupId, uid, isMember, isAdmin, classes = [] }) {
       {events === null
         ? <p className="text-xs text-gray-400 text-center py-4"><Loader2 size={16} className="animate-spin inline" /></p>
         : visibleEvents.length === 0
-          ? <p className="text-xs text-gray-400 text-center py-3">{isMember ? 'אין אירועים עדיין — צרו ראשונים!' : 'אין אירועים עדיין'}</p>
+          ? <p className="text-xs text-gray-400 text-center py-3">{isMember ? 'אין אירועים עדיין, צרו ראשונים!' : 'אין אירועים עדיין'}</p>
           : visibleEvents.map(ev => {
             const d = new Date(ev.date)
             const canDel = isAdmin || ev.createdBy === uid
@@ -395,7 +395,7 @@ function GroupChat({ group, user }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
         {messages.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-4">אין הודעות עדיין — התחל שיחה!</p>
+          <p className="text-xs text-gray-400 text-center py-4">אין הודעות עדיין, התחל שיחה!</p>
         )}
         {messages.map(msg => {
           const isMe = msg.uid === user.uid

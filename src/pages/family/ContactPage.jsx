@@ -86,7 +86,7 @@ function ReportCard({ report }) {
       ) : (
         <p className="text-xs text-gray-400 mt-2 flex items-center gap-1.5 justify-end">
           <Clock3 size={12} />
-          הדיווח התקבל — נעדכן אותך כאן כשנטפל בו
+          הדיווח התקבל, נעדכן אותך כאן כשנטפל בו
         </p>
       )}
     </div>
@@ -161,7 +161,7 @@ export default function ContactPage() {
         <div className="card p-8 text-center mb-6">
           <CheckCircle2 size={48} className="text-green-500 mx-auto mb-4" />
           <h2 className="font-bold text-gray-800 text-lg mb-2 dark:text-gray-100">ההודעה נשלחה!</h2>
-          <p className="text-sm text-gray-500 mb-5 dark:text-gray-400">נחזור אליכם בהקדם — התשובה תופיע כאן.</p>
+          <p className="text-sm text-gray-500 mb-5 dark:text-gray-400">נחזור אליכם בהקדם, התשובה תופיע כאן.</p>
           <button onClick={() => { setSent(false); setSubject(''); setBody('') }}
             className="btn-primary py-2 px-6 text-sm">שלח הודעה נוספת</button>
         </div>

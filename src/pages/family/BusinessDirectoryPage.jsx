@@ -66,7 +66,7 @@ function BusinessForm({ draft, setDraft, onSave, onClose, saving }) {
       setDraft(d => ({ ...d, imageUrl: url, imagePath: path }))
     } catch (err) {
       console.error('image upload error', err)
-      toast.error('שגיאה בהעלאת התמונה — נסו שוב')
+      toast.error('שגיאה בהעלאת התמונה, נסו שוב')
     } finally { setUploading(false) }
   }
 
@@ -322,7 +322,7 @@ export default function BusinessDirectoryPage() {
       setEditing(null)
     } catch (err) {
       console.error('saveBusiness error', err)
-      toast.error('שגיאה בשמירה — נסו שוב')
+      toast.error('שגיאה בשמירה, נסו שוב')
     } finally { setSaving(false) }
   }
 
@@ -333,7 +333,7 @@ export default function BusinessDirectoryPage() {
       toast('העסק נמחק')
     } catch (err) {
       console.error('deleteBusiness error', err)
-      toast.error('שגיאה במחיקה — נסו שוב')
+      toast.error('שגיאה במחיקה, נסו שוב')
     }
   }
 

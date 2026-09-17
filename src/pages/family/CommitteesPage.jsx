@@ -91,7 +91,7 @@ function CommitteeChat({ committee, user }) {
       {/* Messages */}
       <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
         {messages.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-4">אין הודעות עדיין — התחל שיחה!</p>
+          <p className="text-xs text-gray-400 text-center py-4">אין הודעות עדיין, התחל שיחה!</p>
         )}
         {messages.map(msg => {
           const isMe = msg.uid === user.uid

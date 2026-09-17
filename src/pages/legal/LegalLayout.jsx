@@ -29,7 +29,7 @@ export default function LegalLayout({ title, children }) {
   const navigate = useNavigate()
   // Descriptive per-page document title (WCAG 2.4.2)
   useEffect(() => {
-    document.title = `${title} — שחף+`
+    document.title = `${title} | שחף+`
     return () => { document.title = 'שחף+' }
   }, [title])
   return (

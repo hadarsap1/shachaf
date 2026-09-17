@@ -72,7 +72,7 @@ export default function ShareEventButtons({ event, compact = false }) {
       )}
 
       <p className="text-[11px] text-gray-400 text-center mt-2">
-        הקישור פותח את האירוע באפליקציה — רק לחברי הקהילה שהאירוע מיועד להם
+        הקישור פותח את האירוע באפליקציה, רק לחברי הקהילה שהאירוע מיועד להם
       </p>
     </div>
   )

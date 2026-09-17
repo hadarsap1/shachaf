@@ -28,7 +28,7 @@ import clsx from 'clsx'
 const WIDGET_DEFS = [
   { id: 'class',     label: 'הכיתה שלי',         icon: GraduationCap },
   { id: 'events',    label: 'אירועים קרובים',     icon: Calendar },
-  { id: 'allergies', label: 'אלרגיות — הנחיות', icon: AlertTriangle },
+  { id: 'allergies', label: 'הנחיות אלרגיות', icon: AlertTriangle },
   { id: 'activity',  label: 'פעילות קהילה',    icon: Heart },
   { id: 'tasks',     label: 'משימות לביצוע',   icon: CheckSquare },
   { id: 'forms',     label: 'טפסים למילוי',    icon: ClipboardList },
@@ -198,7 +198,7 @@ function ActivityFeed({ events, groups, committees, user }) {
     return (
       <div className="card p-6 text-center text-gray-400">
         <Heart size={32} className="mx-auto mb-2 opacity-30" />
-        <p className="text-sm">עדיין אין פעילות קהילתית — הצטרפו לקבוצות וועדות!</p>
+        <p className="text-sm">עדיין אין פעילות קהילתית, הצטרפו לקבוצות וועדות!</p>
       </div>
     )
   }

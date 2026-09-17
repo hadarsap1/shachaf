@@ -39,7 +39,7 @@ const TUTORIALS = [
     icon: '📝',
     steps: [
       'עברו ל"הטפסים שלי" מהתפריט',
-      'טפסים ממתינים מסומנים בגבול כחול — לחצו "מלא טופס"',
+      'טפסים ממתינים מסומנים בגבול כחול, לחצו "מלא טופס"',
       'מלאו את השדות ולחצו "הגש טופס"',
       'טופס שמולא מוצג בגבול ירוק עם תאריך הגשה',
       'אם ההורה השני כבר הגיש, תראו "הוגש על ידי [שם]" ותוכלו לערוך',
@@ -54,7 +54,7 @@ const TUTORIALS = [
       'גללו למטה לקטע "הוסף הורה שני"',
       'הזינו את שם ההורה, מייל ומספר טלפון',
       'לחצו "צור חשבון לשותף/ה"',
-      'יישלח לינק לאיפוס סיסמה למייל שהוזן — ההורה השני מתחבר עם המייל שלו',
+      'יישלח לינק לאיפוס סיסמה למייל שהוזן, ההורה השני מתחבר עם המייל שלו',
     ],
   },
   {
@@ -76,7 +76,7 @@ const TUTORIALS = [
     steps: [
       'עברו לדף "משימות"',
       'פתחו משימה שיש לה כפתור "שלח וואטסאפ"',
-      'לחצו על הכפתור הירוק — ייפתח WhatsApp עם הודעה מוכנה',
+      'לחצו על הכפתור הירוק, ייפתח WhatsApp עם הודעה מוכנה',
       'ערכו את ההודעה לפי הצורך ולחצו שלח',
     ],
   },
@@ -219,7 +219,7 @@ function CoParentSection({ currentUser, onRegistered }) {
         <p className="text-xs text-gray-400 mt-2 text-right">
           {coParentConsented
             ? 'ההורה השני מקושר לחשבון ויש לו גישה מלאה'
-            : 'ממתין לאישור התקנון — פרטי ההורה השני לא יוצגו לחברי הקהילה עד שיתחבר ויאשר את תקנון הפרטיות'}
+            : 'ממתין לאישור התקנון, פרטי ההורה השני לא יוצגו לחברי הקהילה עד שיתחבר ויאשר את תקנון הפרטיות'}
         </p>
       </section>
     )
@@ -247,7 +247,7 @@ function CoParentSection({ currentUser, onRegistered }) {
         <UserPlus size={16} className="text-primary-600" />
         הוסף הורה שני
       </h2>
-      <p className="text-xs text-gray-400 mb-4 text-right">ניתן לרשום הורה נוסף — הוא יקבל גישה מלאה לאותם ילדים ומשימות</p>
+      <p className="text-xs text-gray-400 mb-4 text-right">ניתן לרשום הורה נוסף, הוא יקבל גישה מלאה לאותם ילדים ומשימות</p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
@@ -361,7 +361,7 @@ function ChildProfileCard({ child, user }) {
         } catch (e) {
           console.error('child photo upload failed', e)
           photoFailed = true
-          setPhotoError('התמונה לא נשמרה — נסו תמונה קטנה יותר או פורמט אחר')
+          setPhotoError('התמונה לא נשמרה, נסו תמונה קטנה יותר או פורמט אחר')
           setPhotoPreview(child.photoUrl || null)
         }
       }
@@ -557,7 +557,7 @@ export default function SettingsPage() {
         } catch (err) {
           console.error('avatar upload failed', err)
           avatarFailed = true
-          setSaveError('התמונה לא נשמרה — נסו תמונה קטנה יותר. שאר הפרטים נשמרו.')
+          setSaveError('התמונה לא נשמרה, נסו תמונה קטנה יותר. שאר הפרטים נשמרו.')
           setAvatarPreview(user.avatar || null)
         }
       }
@@ -594,7 +594,7 @@ export default function SettingsPage() {
             badly — so ask, rather than silently leaving it. */}
         {user?.name && !isHebrewName(user.name) && (
           <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 text-right">
-            השם שלכם מופיע כ"{user.name}". בקהילה מציגים שמות בעברית — נשמח
+            השם שלכם מופיע כ"{user.name}". בקהילה מציגים שמות בעברית, נשמח
             שתעדכנו אותו כאן.
           </div>
         )}
@@ -623,7 +623,7 @@ export default function SettingsPage() {
               className="input w-full text-right"
               placeholder="שם מלא בעברית"
             />
-            <p className="text-xs text-gray-400 mt-1 text-right">בעברית — כך חברי הקהילה יזהו אתכם</p>
+            <p className="text-xs text-gray-400 mt-1 text-right">בעברית, כך חברי הקהילה יזהו אתכם</p>
           </div>
           <div>
             <label className="label block mb-1 text-right flex items-center gap-1.5 justify-end">
@@ -834,7 +834,7 @@ export default function SettingsPage() {
             )}
             role="switch"
             aria-checked={theme === 'dark'}
-            aria-label={theme === 'dark' ? 'מצב כהה — לחצו למעבר למצב בהיר' : 'מצב בהיר — לחצו למעבר למצב כהה'}
+            aria-label={theme === 'dark' ? 'מצב כהה, לחצו למעבר למצב בהיר' : 'מצב בהיר, לחצו למעבר למצב כהה'}
           >
             <span className={clsx(
               'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200',
@@ -872,7 +872,7 @@ export default function SettingsPage() {
           </div>
         </div>
         <p className="text-xs text-gray-400 mt-3 text-right leading-relaxed">
-          האפליקציה מתעדכנת לבד כשפותחים אותה. אם משהו נראה תקוע או ישן —
+          האפליקציה מתעדכנת לבד כשפותחים אותה. אם משהו נראה תקוע או ישן,
           הכפתור הזה מוריד את הגרסה העדכנית ומנקה את המטמון.
         </p>
       </section>

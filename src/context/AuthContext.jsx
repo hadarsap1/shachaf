@@ -148,7 +148,7 @@ export function AuthProvider({ children }) {
       console.error('fetchUserProfile failed:', err)
       setAuthError(err?.code === 'app/timeout'
         ? 'ההתחברות הצליחה אך טעינת הפרופיל נתקעה. בדקו את החיבור ונסו שוב.'
-        : 'ההתחברות הצליחה אך טעינת הפרופיל נכשלה. נסו שוב, ואם זה חוזר — פנו לצוות.')
+        : 'ההתחברות הצליחה אך טעינת הפרופיל נכשלה. נסו שוב, ואם זה חוזר, פנו לצוות.')
       setUser(null)
     } finally {
       setLoading(false)

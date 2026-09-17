@@ -49,7 +49,7 @@ export default function LoginPage() {
 
   // Descriptive page title (WCAG 2.4.2)
   useEffect(() => {
-    document.title = 'התחברות — שחף+'
+    document.title = 'התחברות | שחף+'
     return () => { document.title = 'שחף+' }
   }, [])
 
@@ -336,9 +336,9 @@ export default function LoginPage() {
                   </div>
                   <p className="text-xs text-primary-500 text-center">
                     {AUTH_HANDLER_IS_FIRST_PARTY
-                      ? 'משלימים את הכניסה מול Google — זה ייקח רגע'
+                      ? 'משלימים את הכניסה מול Google, זה ייקח רגע'
                       : isStandalone()
-                        ? 'השלם כניסה עם Google בדפדפן שנפתח — לאחר מכן חזור לאפליקציה'
+                        ? 'השלם כניסה עם Google בדפדפן שנפתח, לאחר מכן חזור לאפליקציה'
                         : 'חזור לאפליקציה לאחר הכניסה בדפדפן'}
                   </p>
                   <button
@@ -402,7 +402,7 @@ export default function LoginPage() {
                       <label className="block text-sm font-medium text-gray-700 text-right mb-1 dark:text-gray-200">שם מלא</label>
                       <input value={name} onChange={e => setName(e.target.value)} required
                         placeholder="שם מלא בעברית" className="input w-full text-right" />
-                      <p className="text-xs text-gray-400 mt-1 text-right">בעברית — כך חברי הקהילה יזהו אתכם</p>
+                      <p className="text-xs text-gray-400 mt-1 text-right">בעברית, כך חברי הקהילה יזהו אתכם</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 text-right mb-2 dark:text-gray-200">
@@ -502,7 +502,7 @@ export default function LoginPage() {
                   {mode === 'login' ? 'אין לך חשבון? הירשם' : 'יש לך חשבון? היכנס'}
                 </button>
 
-                <div className="text-xs text-gray-300">—</div>
+                <div className="text-xs text-gray-300">-</div>
 
                 {import.meta.env.DEV && (
                   <button onClick={() => { setMode('demo'); setError('') }}
@@ -558,18 +558,18 @@ function firebaseError(code) {
     'auth/email-already-in-use':  'כתובת המייל כבר בשימוש',
     'auth/weak-password':         'הסיסמה חלשה מדי (מינימום 6 תווים)',
     'auth/invalid-email':         'כתובת מייל לא תקינה',
-    'auth/too-many-requests':     'יותר מדי ניסיונות — נסה שוב מאוחר יותר',
-    'auth/popup-blocked':         'הדפדפן חסם את חלון Google — אפשר חלונות קופצים ונסה שוב',
-    'auth/unauthorized-domain':   'הדומיין לא מורשה ב-Firebase — פנה למנהל',
+    'auth/too-many-requests':     'יותר מדי ניסיונות, נסה שוב מאוחר יותר',
+    'auth/popup-blocked':         'הדפדפן חסם את חלון Google, אפשר חלונות קופצים ונסה שוב',
+    'auth/unauthorized-domain':   'הדומיין לא מורשה ב-Firebase, פנה למנהל',
     'auth/cancelled-popup-request': null,  // a second click — ignore
-    'auth/popup-closed-by-user':  'חלון Google נסגר לפני סיום הכניסה — נסו שוב',
+    'auth/popup-closed-by-user':  'חלון Google נסגר לפני סיום הכניסה, נסו שוב',
     'auth/user-cancelled':        null,
     'auth/account-exists-with-different-credential':
       'קיים כבר חשבון עם כתובת המייל הזו. היכנסו עם מייל וסיסמה.',
     'app/google-timeout':
       'הכניסה עם Google לא הסתיימה. בדקו שהדפדפן לא חוסם חלונות קופצים, ' +
       'או היכנסו עם מייל וסיסמה.',
-    'auth/network-request-failed': 'בעיית רשת — בדוק את החיבור לאינטרנט',
+    'auth/network-request-failed': 'בעיית רשת, בדוק את החיבור לאינטרנט',
   }
   if (code in map) return map[code]  // null = silent
   return `שגיאה (${code || 'unknown'})`

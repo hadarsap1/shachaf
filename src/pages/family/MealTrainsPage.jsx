@@ -41,7 +41,7 @@ function AddressBlock({ train, uid, isAdmin }) {
       <div className="flex items-start gap-2 rounded-xl bg-gray-50 dark:bg-gray-900 px-3 py-2.5">
         <Lock size={13} className="text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500 dark:text-gray-400 text-right leading-relaxed">
-          הכתובת וקוד הכניסה יוצגו לאחר שתשריינו תאריך — כדי לשמור על פרטיות המשפחה
+          הכתובת וקוד הכניסה יוצגו לאחר שתשריינו תאריך, כדי לשמור על פרטיות המשפחה
         </p>
       </div>
     )
@@ -77,7 +77,7 @@ function SharePanel({ train, onClose }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast('ההעתקה נכשלה — סמנו את הטקסט והעתיקו ידנית', 'error')
+      toast('ההעתקה נכשלה, סמנו את הטקסט והעתיקו ידנית', 'error')
     }
   }
 
@@ -94,7 +94,7 @@ function SharePanel({ train, onClose }) {
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
           <p className="text-xs text-gray-500 dark:text-gray-400 text-right leading-relaxed">
-            העתיקו לקבוצת הוואטסאפ של הקהילה. ההודעה כוללת קישור ישיר לשריון תאריך —
+            העתיקו לקבוצת הוואטסאפ של הקהילה. ההודעה כוללת קישור ישיר לשריון תאריך.
             הכתובת וקוד הכניסה <span className="font-semibold">לא</span> נכללים בה, והם ייחשפו
             רק למי שמשריין בפועל.
           </p>
@@ -150,14 +150,14 @@ function SlotGrid({ train, uid, userName, isCoordinator, canPickMembers, onChang
     try {
       await claimMealSlot(train.id, slot.id, uid, userName)
       logConsent(uid, 'meal_train_signup', {
-        label: 'שריון תאריך בסיר לידה — שמי ופרטי הקשר יוצגו למשפחה ולמשריינים',
+        label: 'שריון תאריך בסיר לידה, שמי ופרטי הקשר יוצגו למשפחה ולמשריינים',
         version: CONSENT_VERSION,
         context: `${train.familyName} · ${formatSlotDate(slot.date)}`,
       })
       await onChanged()
     } catch (e) {
       console.error('claim failed', e)
-      toast('השריון נכשל — נסו שוב', 'error')
+      toast('השריון נכשל, נסו שוב', 'error')
     } finally { setBusy('') }
   }
 
@@ -168,7 +168,7 @@ function SlotGrid({ train, uid, userName, isCoordinator, canPickMembers, onChang
       await onChanged()
     } catch (e) {
       console.error('release failed', e)
-      toast('הביטול נכשל — נסו שוב', 'error')
+      toast('הביטול נכשל, נסו שוב', 'error')
     } finally { setBusy('') }
   }
 
@@ -183,7 +183,7 @@ function SlotGrid({ train, uid, userName, isCoordinator, canPickMembers, onChang
       await onChanged()
     } catch (e) {
       console.error('manual slot update failed', e)
-      toast('העדכון נכשל — נסו שוב', 'error')
+      toast('העדכון נכשל, נסו שוב', 'error')
     } finally { setBusy('') }
   }
 
@@ -199,7 +199,7 @@ function SlotGrid({ train, uid, userName, isCoordinator, canPickMembers, onChang
       toast(`${member.name} שובץ/ה ל${formatSlotDate(slot.date)}`)
     } catch (e) {
       console.error('assign failed', e)
-      toast('השיבוץ נכשל — נסו שוב', 'error')
+      toast('השיבוץ נכשל, נסו שוב', 'error')
     } finally { setBusy('') }
   }
 
@@ -278,7 +278,7 @@ function SlotGrid({ train, uid, userName, isCoordinator, canPickMembers, onChang
                       <div className="flex gap-1.5">
                         <input autoFocus value={manualName} onChange={e => setManualName(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter' && manualName.trim()) saveManual(slot, manualName) }}
-                          placeholder={canPickMembers ? 'שם — חפשו חבר קהילה או כתבו שם חופשי' : 'שם המתנדב/ת (מחוץ לאפליקציה)'}
+                          placeholder={canPickMembers ? 'שם, חפשו חבר קהילה או כתבו שם חופשי' : 'שם המתנדב/ת (מחוץ לאפליקציה)'}
                           aria-label="שם לשיבוץ"
                           className="input flex-1 text-xs text-right py-1" />
                         <button onClick={() => saveManual(slot, manualName)} disabled={!manualName.trim()}
@@ -401,7 +401,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
         { address: form.address.trim(), city: form.city.trim(), buildingCode: form.buildingCode.trim() },
       )
       if (!editing) logConsent(uid, 'meal_train_open', {
-        label: 'אישור פתיחת סיר לידה — פרטי המשפחה יוצגו לחברי הקהילה וכתובת המסירה למשריינים בלבד',
+        label: 'אישור פתיחת סיר לידה, פרטי המשפחה יוצגו לחברי הקהילה וכתובת המסירה למשריינים בלבד',
         version: CONSENT_VERSION,
         context: form.familyName.trim(),
       })
@@ -410,7 +410,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
       if (!editing) onSaved?.(saved)
     } catch (e) {
       console.error('meal train save failed', e)
-      setError('השמירה נכשלה — נסו שוב')
+      setError('השמירה נכשלה, נסו שוב')
       setSaving(false)
     }
   }
@@ -431,7 +431,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
             <div>
               <label className="label">מטעם</label>
               <select value={committeeId} onChange={e => setCommitteeId(e.target.value)} className="input w-full text-sm">
-                <option value="">— בחרו ועדה —</option>
+                <option value="">בחרו ועדה</option>
                 {hats.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
               </select>
             </div>
@@ -461,7 +461,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
 
           <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-2">
             <p className="text-[11px] text-amber-800 dark:text-amber-200 text-right leading-relaxed">
-              🔒 הכתובת וקוד הכניסה נשמרים בנפרד ונחשפים רק למי שמשריין תאריך — לא לכלל הקהילה
+              🔒 הכתובת וקוד הכניסה נשמרים בנפרד ונחשפים רק למי שמשריין תאריך, לא לכלל הקהילה
             </p>
             <input value={form.address} onChange={set('address')} placeholder="רחוב ומספר, קומה, דירה" className="input w-full text-sm text-right" />
             <div className="flex gap-2">
@@ -496,7 +496,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
 
             {days.length === 0 ? (
               <p className="text-xs text-gray-400 mt-2 text-right">
-                הוסיפו את הימים שבהם הקהילה מבשלת — לכל יום נפתחות משבצת ארוחה ומשבצת פינוק מתוק
+                הוסיפו את הימים שבהם הקהילה מבשלת, לכל יום נפתחות משבצת ארוחה ומשבצת פינוק מתוק
               </p>
             ) : (
               <div className="mt-2 space-y-1.5">
@@ -541,7 +541,7 @@ function TrainPanel({ train, hats, uid, userName, onClose, onCreated, onSaved })
               className="w-3.5 h-3.5 mt-0.5 accent-primary-600 flex-shrink-0" />
             <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed text-right">
               קיבלתי את הסכמת המשפחה, וידוע לי שפרטי הסיר יוצגו לחברי הקהילה
-              וכתובת המסירה וקוד הכניסה יוצגו רק למי שמשריין תאריך — בהתאם לתקנון
+              וכתובת המסירה וקוד הכניסה יוצגו רק למי שמשריין תאריך, בהתאם לתקנון
             </span>
           </label>
           )}
@@ -629,7 +629,7 @@ export default function MealTrainsPage() {
           <Baby size={44} className="mx-auto mb-4 opacity-25" />
           <p className="font-semibold text-gray-500 dark:text-gray-400">אין סירי לידה פעילים כרגע</p>
           <p className="text-sm mt-1">
-            כשמשפחה בקהילה יולדת, ועדת התמיכה או הנהלת הקהילה פותחות כאן סיר —
+            כשמשפחה בקהילה יולדת, ועדת התמיכה או הנהלת הקהילה פותחות כאן סיר,
             וכולם מוזמנים לשריין תאריך
           </p>
         </div>

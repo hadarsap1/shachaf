@@ -52,7 +52,7 @@ export default function EventDetailPanel({ event, onClose, onDeleted }) {
       onClose()
     } catch (e) {
       console.error('event delete failed', e)
-      setDeleteError('מחיקת האירוע נכשלה — נסו שוב, או פנו לצוות הניהול')
+      setDeleteError('מחיקת האירוע נכשלה, נסו שוב, או פנו לצוות הניהול')
       setDeleting(false)
       setConfirmDelete(false)
     }
@@ -182,7 +182,7 @@ export default function EventDetailPanel({ event, onClose, onDeleted }) {
               {rsvpLoading
                 ? <Loader2 size={15} className="animate-spin" />
                 : isGoing
-                  ? <><CheckCircle2 size={15} />אני מגיע/ה — לחץ לביטול</>
+                  ? <><CheckCircle2 size={15} />אני מגיע/ה, לחץ לביטול</>
                   : <>אני מגיע/ה</>
               }
             </button>

@@ -191,11 +191,11 @@ export const MOCK_EVENTS = [
     description: 'ערב חגיגי לקבלת פנים לכל המשפחות החדשות שהצטרפו השנה לקהילה.',
     date: '2024-02-01',
     time: '19:00',
-    location: 'בית הספר שחף — אולם האירועים',
+    location: 'בית הספר שחף, אולם האירועים',
     type: 'social',
     isRequired: true,
     calendarData: {
-      title: 'ערב קבלת פנים — שחף',
+      title: 'ערב קבלת פנים, שחף',
       start: '2024-02-01T19:00:00',
       end: '2024-02-01T21:30:00',
       location: 'רחוב הדוגמה 1, תל אביב',
@@ -203,7 +203,7 @@ export const MOCK_EVENTS = [
   },
   {
     id: 'e2',
-    title: 'ערב הורים — כיתה א',
+    title: 'ערב הורים, כיתה א',
     description: 'פגישה עם המורה ותיאום ציפיות לשנה הקרובה.',
     date: '2024-02-08',
     time: '18:30',
@@ -211,7 +211,7 @@ export const MOCK_EVENTS = [
     type: 'school',
     isRequired: true,
     calendarData: {
-      title: 'ערב הורים כיתה א — שחף',
+      title: 'ערב הורים כיתה א, שחף',
       start: '2024-02-08T18:30:00',
       end: '2024-02-08T20:00:00',
       location: 'רחוב הדוגמה 1, תל אביב',
@@ -219,7 +219,7 @@ export const MOCK_EVENTS = [
   },
   {
     id: 'e3',
-    title: 'שיעור היכרות — חינוך גופני',
+    title: 'שיעור היכרות, חינוך גופני',
     description: 'שיעור ספורט משותף להיכרות הילדים החדשים.',
     date: '2024-02-12',
     time: '08:00',
@@ -227,7 +227,7 @@ export const MOCK_EVENTS = [
     type: 'school',
     isRequired: false,
     calendarData: {
-      title: 'שיעור ספורט — שחף',
+      title: 'שיעור ספורט, שחף',
       start: '2024-02-12T08:00:00',
       end: '2024-02-12T09:00:00',
       location: 'רחוב הדוגמה 1, תל אביב',

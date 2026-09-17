@@ -106,7 +106,7 @@ function ScheduleView({ schedule, classId, uid }) {
                 <tr key={period.id}>
                   <td colSpan={SCHEDULE_DAYS.length + 1}
                     className="py-0.5 px-2 text-[10px] text-gray-300 text-center italic">
-                    — {period.label} <span dir="ltr">{period.time}</span> —
+                    {period.label} <span dir="ltr">{period.time}</span>
                   </td>
                 </tr>
               )
@@ -131,7 +131,7 @@ function ScheduleView({ schedule, classId, uid }) {
                           />
                         ) : (
                           <span className={isOverridden ? 'text-primary-600 font-medium dark:text-primary-400' : 'text-gray-700 dark:text-gray-200'}>
-                            {val || <span className="text-gray-200">—</span>}
+                            {val || <span className="text-gray-200">-</span>}
                           </span>
                         )}
                       </td>
@@ -328,7 +328,7 @@ function ClassEventCreate({ cls, uid, onCreated }) {
     return (
       <div className="mb-4 card p-4">
         <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 text-right mb-1">
-          האירוע נוצר — אפשר לשלוח אותו להורי הכיתה
+          האירוע נוצר, אפשר לשלוח אותו להורי הכיתה
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400 text-right mb-3">{createdEvent.title}</p>
         <ShareEventButtons event={createdEvent} />
@@ -595,9 +595,9 @@ export default function ClassPage() {
     <div className="mb-5">
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 text-right">
         {gradeClasses.length > 0
-          ? 'הכיתה שלך והכיתות המקבילות בשכבה — בחר/י כדי לעבור ביניהן:'
+          ? 'הכיתה שלך והכיתות המקבילות בשכבה, בחר/י כדי לעבור ביניהן:'
           : myClasses.length > 1
-            ? `יש לך ${myClasses.length} כיתות — בחר/י כדי לעבור ביניהן:`
+            ? `יש לך ${myClasses.length} כיתות, בחר/י כדי לעבור ביניהן:`
             : 'בחר/י מה להציג:'}
       </p>
       <div
@@ -639,7 +639,7 @@ export default function ClassPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-black">צוות בית הספר</h1>
-            <p className="text-sm opacity-80 mt-0.5">מנהל/ת, יועצ/ת ומורים מקצועיים — לכל הכיתות</p>
+            <p className="text-sm opacity-80 mt-0.5">מנהל/ת, יועצ/ת ומורים מקצועיים, לכל הכיתות</p>
           </div>
           <School size={32} className="opacity-30" />
         </div>
@@ -804,7 +804,7 @@ export default function ClassPage() {
         {/* Personal notes per child — visible only to this parent */}
         {!isParallel && myChildren.filter(c => c.classId === cls?.id).length > 0 && (
           <Section title="הערות אישיות" icon={StickyNote} color={cls?.color || '#1B3B70'}>
-            <p className="text-xs text-gray-400 mb-3 text-right">הערות אלו פרטיות — רק אתם רואים אותן</p>
+            <p className="text-xs text-gray-400 mb-3 text-right">הערות אלו פרטיות, רק אתם רואים אותן</p>
             <div className="space-y-4">
               {myChildren.filter(c => c.classId === cls?.id).map(child => (
                 <ChildNoteCard key={child.id} child={child} parentId={user.uid} color={cls?.color} />
@@ -883,7 +883,7 @@ export default function ClassPage() {
                           <div key={p.uid} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                             <span>{p.phone ? (
                               <a href={`tel:${p.phone}`} className="text-primary-600 dark:text-primary-400 hover:underline">{p.phone}</a>
-                            ) : '—'}</span>
+                            ) : '-'}</span>
                             <span>{p.name}</span>
                           </div>
                         ))}
