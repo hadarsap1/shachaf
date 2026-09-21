@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { createCommitteeEvent, createGroupEvent, saveEvent, uploadEventImage, logConsent } from '../lib/db'
 import { CONSENT_VERSION } from '../lib/consent'
 import { classLabel, isKindergarten } from '../lib/grades'
-import { EVENT_TYPE_OPTIONS } from '../lib/eventFields'
+import { EVENT_TYPE_OPTIONS, EVENT_TYPE_NONE, eventTypeHint } from '../lib/eventFields'
 import { DIETARY_OPTIONS, DIETARY_NOTE_MAX } from '../lib/dietary'
 import EventAudienceFields from './EventAudienceFields'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
@@ -30,7 +30,7 @@ const HAT_TYPE_LABEL = { committee: 'ועדה', group: 'קבוצה', class: 'כ�
 
 const blankForm = () => ({
   title: '', date: '', time: '', location: '', description: '',
-  type: 'social', dietaryRestrictions: [], dietaryNote: '', tbdFields: [], isRequired: false,
+  type: '', dietaryRestrictions: [], dietaryNote: '', tbdFields: [], isRequired: false,
 })
 
 // A committee/group event is members-only until its creator says otherwise; an
@@ -275,8 +275,12 @@ export default function QuickEventModal({
           <div>
             <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1 text-right">סוג אירוע</label>
             <select value={form.type} onChange={set('type')} className="w-full input text-sm text-right">
+              <option value={EVENT_TYPE_NONE.value}>{EVENT_TYPE_NONE.label}</option>
               {EVENT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            <p className="text-[11px] text-gray-400 mt-1 text-right dark:text-gray-500">
+              {eventTypeHint(form.type) || 'בלי בחירה האירוע יפורסם בלי תגית סוג'}
+            </p>
           </div>
 
           {/* Dietary restrictions — event-level and anonymous (see lib/dietary.js) */}

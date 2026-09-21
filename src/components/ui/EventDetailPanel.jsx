@@ -10,13 +10,7 @@ import DietaryBadges from './DietaryBadges'
 // drifted from the card's and exported different times.
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent } from '../../lib/calendar'
 import ShareEventButtons from './ShareEventButtons'
-
-const TYPE_LABEL = {
-  social:      'חברתי',
-  orientation: 'אוריינטציה',
-  ceremony:    'טקס',
-  community:   'קהילתי',
-}
+import { eventTypeLabel } from '../../lib/eventFields'
 
 const TYPE_BADGE = {
   social:      'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-800',
@@ -106,7 +100,7 @@ export default function EventDetailPanel({ event, onClose, onDeleted }) {
 
   const eventDate = new Date(event.date)
   const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-  const typeLabel = TYPE_LABEL[event.type] || event.type
+  const typeLabel = eventTypeLabel(event.type)
 
   return (
     <>
@@ -136,11 +130,13 @@ export default function EventDetailPanel({ event, onClose, onDeleted }) {
           )}
 
           <div className="px-5 py-5 space-y-4">
-            <div className="flex justify-end">
-              <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
-                {typeLabel}
-              </span>
-            </div>
+            {typeLabel && (
+              <div className="flex justify-end">
+                <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
+                  {typeLabel}
+                </span>
+              </div>
+            )}
 
             <h3 className="text-lg font-bold text-gray-900 text-right leading-snug dark:text-white">{event.title}</h3>
 
