@@ -728,7 +728,52 @@ async function main() {
           assertClean(`מובייל ${path}`)
         })
       }
+
+      // דיווח מהשטח: הצוות ענה על דיווח תקלה, ולמדווחת לא הייתה דרך להשיב.
+      await step('חברת קהילה יכולה להשיב לצוות על דיווח תקלה שנענה', async () => {
+        await page.goto(`${BASE}/contact`, { waitUntil: 'domcontentloaded' })
+        await expectText(page, SEED.reportText)
+        await expectText(page, SEED.reportAnswer)
+        // הכרטיס של הדיווח ולא של הפנייה: לשניהם יש עכשיו תיבת תשובה זהה.
+        const card = page.locator('.card').filter({ hasText: SEED.reportText }).first()
+        await card.locator('textarea').first().fill('תודה, אבל זה עדיין קורה גם היום')
+        await card.getByRole('button', { name: 'שלח תשובה' }).click()
+        await card.getByText('תודה, אבל זה עדיין קורה גם היום').waitFor({ timeout: 15000 })
+        await shoot(page, 'contact-report-followup-mobile')
+        await assertNoHorizontalOverflow(page, 'צור קשר')
+        assertClean('צור קשר מובייל')
+      })
       await page.context().close()
+
+      // הדיווח השני: בנייד ההודעה נפתחה מתחת לכל הרשימה, כך שלחיצה על כרטיס
+      // נראתה כאילו לא קרה כלום. הבדיקה לוחצת על הפנייה ודורשת שגוף ההודעה
+      // יהיה גלוי במסך עצמו.
+      const adminPhone = await newPage({ width: 390, height: 844 })
+      await step('מנהל פותח פנייה במסך צר ורואה את ההודעה המלאה', async () => {
+        await login(adminPhone, ACCOUNTS.admin)
+        await adminPhone.waitForURL(/\/admin/, { timeout: 25000 })
+        await adminPhone.goto(`${BASE}/admin/messages`, { waitUntil: 'domcontentloaded' })
+        const listCard = adminPhone.locator('button').filter({ hasText: SEED.messageSubject }).first()
+        await listCard.waitFor({ state: 'visible', timeout: 15000 })
+        await listCard.click()
+
+        // הפירוט מזוהה לפי הקישור שקיים רק בו, כדי שלא נמדוד בטעות את הכרטיס
+        // המקוצר שברשימה.
+        const detail = adminPhone.locator('.card').filter({ hasText: 'השב במייל במקום' }).first()
+        await detail.waitFor({ state: 'visible', timeout: 15000 })
+        const box = await detail.boundingBox()
+        const height = adminPhone.viewportSize().height
+        assert(box && box.y >= 0 && box.y < height,
+          `ההודעה נפתחה מחוץ למסך (y=${box && Math.round(box.y)}, גובה מסך ${height})`)
+        // זה הלב של התיקון: במסך צר הרשימה מתחלפת בהודעה במקום להידחף מעליה.
+        assert(!(await listCard.isVisible()), 'הרשימה נשארה מעל ההודעה במסך צר')
+        await shoot(adminPhone, 'admin-message-open-mobile')
+        await adminPhone.getByRole('button', { name: 'חזרה לרשימה' }).click()
+        await listCard.waitFor({ state: 'visible', timeout: 10000 })
+        await assertNoHorizontalOverflow(adminPhone, 'פניות')
+        assertClean('פניות מובייל')
+      })
+      await adminPhone.context().close()
     }
 
     // ── Session end ─────────────────────────────────────────────────────────

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getFeedback, updateFeedbackStatus, replyToFeedback } from '../../lib/db'
-import { Loader2, MessageSquarePlus, Send, ChevronDown, ChevronUp } from 'lucide-react'
+import { getFeedback, updateFeedbackStatus, replyToFeedback, addFeedbackReply } from '../../lib/db'
+import { reportThread } from '../../lib/replies'
+import { ReplyBubbles, ReplyBox } from '../../components/ui/ReplyThread'
+import { useAuth } from '../../context/AuthContext'
+import { Loader2, MessageSquarePlus, ChevronDown, ChevronUp } from 'lucide-react'
 import clsx from 'clsx'
 
 const STATUSES = [
@@ -15,23 +18,25 @@ const STATUS_STYLE = {
   resolved: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800',
 }
 
-function FeedbackItem({ item, onStatusChange }) {
+function FeedbackItem({ item, onStatusChange, onReplied, byName }) {
   const [expanded, setExpanded] = useState(!item.status || item.status === 'new')
-  const [reply, setReply] = useState(item.adminReply || '')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(!!item.adminReply)
 
   const ts = item.createdAt?.toDate ? item.createdAt.toDate()
     : item.createdAt ? new Date(item.createdAt) : null
 
-  const handleSendReply = async () => {
-    if (!reply.trim()) return
-    setSending(true)
-    try {
-      await replyToFeedback(item.id, reply.trim())
-      setSent(true)
-      onStatusChange(item.id, 'resolved')
-    } finally { setSending(false) }
+  const thread = reportThread(item)
+
+  // התגובה הראשונה נשמרת ב-adminReply (שם המדווח כבר יודע לחפש אותה), וכל
+  // תגובה אחריה מצטרפת לשרשור. כך אפשר להמשיך שיחה עם מי שכתב "זה עדיין קורה"
+  // במקום שהדיווח ייסגר אחרי תשובה אחת.
+  const send = async (text) => {
+    if (item.adminReply) {
+      const entry = await addFeedbackReply(item.id, { body: text, fromAdmin: true, byName })
+      onReplied(item.id, { replies: [...(item.replies || []), entry], status: 'resolved' })
+    } else {
+      await replyToFeedback(item.id, text)
+      onReplied(item.id, { adminReply: text, status: 'resolved' })
+    }
   }
 
   return (
@@ -78,29 +83,16 @@ function FeedbackItem({ item, onStatusChange }) {
             <img src={item.screenshotUrl} alt="צילום מסך"
               className="rounded-xl max-h-64 object-contain border border-gray-100 dark:border-gray-700 ms-auto block" />
           )}
+          {thread.length > 0 && (
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+              <ReplyBubbles entries={thread} viewer="admin" />
+            </div>
+          )}
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
             <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-2 text-right">
-              {sent ? 'תגובת מנהל' : 'שלח תגובה למשתמש'}
+              {thread.length > 0 ? 'המשך התכתבות עם המדווח' : 'שלח תגובה למשתמש'}
             </label>
-            <div className="flex gap-2 items-end">
-              <button
-                onClick={handleSendReply}
-                disabled={sending || !reply.trim() || sent}
-                className={clsx('flex-shrink-0 p-2.5 rounded-xl transition-colors',
-                  sent ? 'bg-green-100 text-green-600 dark:bg-green-900/30 cursor-default'
-                       : 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40')}
-              >
-                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              </button>
-              <textarea
-                value={reply}
-                onChange={e => { setReply(e.target.value); if (sent) setSent(false) }}
-                rows={2}
-                placeholder="כתוב תגובה או עדכון..."
-                className="input flex-1 text-right resize-none text-sm"
-              />
-            </div>
-            {sent && <p className="text-xs text-green-600 dark:text-green-400 text-right mt-1">✓ תגובה נשמרה</p>}
+            <ReplyBox compact={false} onSend={send} placeholder="כתוב תגובה או עדכון..." label="שלח תגובה" />
           </div>
         </div>
       )}
@@ -109,6 +101,7 @@ function FeedbackItem({ item, onStatusChange }) {
 }
 
 export default function SuperAdminFeedbackPage() {
+  const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -120,6 +113,11 @@ export default function SuperAdminFeedbackPage() {
   const changeStatus = async (id, status) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i))
     await updateFeedbackStatus(id, status)
+  }
+
+  // השינוי כבר נכתב ב-Firestore כחלק מהתגובה, כאן רק מיישרים את המסך.
+  const applyReply = (id, patch) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i))
   }
 
   const newCount = items.filter(i => !i.status || i.status === 'new').length
@@ -156,7 +154,13 @@ export default function SuperAdminFeedbackPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map(item => (
-            <FeedbackItem key={item.id} item={item} onStatusChange={changeStatus} />
+            <FeedbackItem
+              key={item.id}
+              item={item}
+              onStatusChange={changeStatus}
+              onReplied={applyReply}
+              byName={user?.name || 'צוות שחף'}
+            />
           ))}
         </div>
       )}

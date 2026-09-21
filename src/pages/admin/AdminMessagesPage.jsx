@@ -1,28 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getMessages, markMessageRead, getCommitteeMessages, markCommitteeMessageRead, getCommittees, addMessageReply } from '../../lib/db'
-import { MessageSquare, Loader2, User, Mail, Network, Send } from 'lucide-react'
+import { MessageSquare, Loader2, User, Mail, Network, ArrowRight } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '../../context/AuthContext'
+import { ReplyBubbles, ReplyBox } from '../../components/ui/ReplyThread'
 import AdminAnnouncementsPage from './AdminAnnouncementsPage'
 
-function Thread({ replies }) {
-  if (!replies?.length) return null
-  return (
-    <div className="space-y-2">
-      {replies.map((r, i) => (
-        <div key={i} className={clsx('max-w-[85%] rounded-2xl px-3.5 py-2',
-          r.fromAdmin ? 'bg-primary-600 text-white ms-auto' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100')}>
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">{r.body}</p>
-          <div className={clsx('text-[10px] mt-0.5', r.fromAdmin ? 'text-primary-100' : 'text-gray-400')}>
-            {r.byName || (r.fromAdmin ? 'צוות' : 'הורה')}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 const ROLE_LABELS = {
+  community:   'חבר קהילה',
   new_family:  'משפחה חדשה',
   host_family: 'משפחה קולטת',
   admin:       'מנהל',
@@ -35,18 +20,32 @@ function formatDate(ts) {
   return d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
+// חזרה לרשימה. בנייד הפירוט תופס את המסך במקום הרשימה, אחרת הוא נפתח מתחת
+// לכל הכרטיסים ונראה למנהל כאילו הלחיצה לא עשתה כלום - זה היה הדיווח.
+function BackToList({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="md:hidden inline-flex items-center gap-1.5 text-sm text-primary-700 dark:text-primary-300 font-medium mb-1"
+    >
+      <ArrowRight size={16} />
+      חזרה לרשימה
+    </button>
+  )
+}
+
 export default function AdminMessagesPage() {
   const { user } = useAuth()
   const [tab, setTab] = useState('messages')
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
-  const [replyText, setReplyText] = useState('')
-  const [replying, setReplying] = useState(false)
   const [committeeMessages, setCommitteeMessages] = useState([])
   const [committeeNames, setCommitteeNames] = useState({}) // committeeId → name
   const [loadingCommittee, setLoadingCommittee] = useState(false)
   const [selectedCMsg, setSelectedCMsg] = useState(null)
+  const detailRef = useRef(null)
+  const committeeDetailRef = useRef(null)
 
   useEffect(() => {
     getMessages()
@@ -67,28 +66,40 @@ export default function AdminMessagesPage() {
       .finally(() => setLoadingCommittee(false))
   }, [tab])
 
+  // גם כשהרשימה מוסתרת, הדף עצמו יכול להיות גלול באמצע. מביאים את הפירוט לראש
+  // המסך אחרי שהוא כבר קיים ב-DOM, כדי שההודעה תיפתח מול העיניים.
+  const selectedId = selected?.id
+  const selectedCMsgId = selectedCMsg?.id
+
+  useEffect(() => {
+    if (selectedId) detailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [selectedId])
+
+  useEffect(() => {
+    if (selectedCMsgId) committeeDetailRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [selectedCMsgId])
+
   async function handleSelect(msg) {
     setSelected(msg)
-    setReplyText('')
     if (!msg.read) {
       await markMessageRead(msg.id)
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))
     }
   }
 
-  async function handleReply() {
-    if (!replyText.trim() || !selected) return
-    setReplying(true)
-    try {
-      const entry = await addMessageReply(selected.id, { body: replyText.trim(), fromAdmin: true, byName: user?.name || 'צוות' })
-      const upd = (m) => ({ ...m, replies: [...(m.replies || []), entry] })
-      setSelected(upd)
-      setMessages(prev => prev.map(m => m.id === selected.id ? upd(m) : m))
-      setReplyText('')
-    } catch (e) {
-      console.error('reply failed', e)
-    } finally {
-      setReplying(false)
+  async function handleReply(text) {
+    if (!selected) return
+    const entry = await addMessageReply(selected.id, { body: text, fromAdmin: true, byName: user?.name || 'צוות' })
+    const upd = (m) => ({ ...m, replies: [...(m.replies || []), entry] })
+    setSelected(upd)
+    setMessages(prev => prev.map(m => m.id === selected.id ? upd(m) : m))
+  }
+
+  async function handleSelectCommittee(msg) {
+    setSelectedCMsg(msg)
+    if (!msg.read) {
+      await markCommitteeMessageRead(msg.id)
+      setCommitteeMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))
     }
   }
 
@@ -138,17 +149,11 @@ export default function AdminMessagesPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4 items-start">
-          <div className="space-y-2">
+          <div className={clsx('space-y-2', selectedCMsg && 'hidden md:block')}>
             {committeeMessages.map(msg => (
               <button
                 key={msg.id}
-                onClick={async () => {
-                  setSelectedCMsg(msg)
-                  if (!msg.read) {
-                    await markCommitteeMessageRead(msg.id)
-                    setCommitteeMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))
-                  }
-                }}
+                onClick={() => handleSelectCommittee(msg)}
                 className={clsx(
                   'w-full text-right card p-4 border-2 transition-all',
                   selectedCMsg?.id === msg.id
@@ -178,18 +183,21 @@ export default function AdminMessagesPage() {
             ))}
           </div>
           {selectedCMsg && (
-            <div className="card p-5 space-y-4">
-              <div>
-                <h2 className="font-bold text-gray-800 text-base dark:text-gray-100">
-                  {committeeNames[selectedCMsg.committeeId] || 'ועדה'}
-                </h2>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1"><User size={12} />{selectedCMsg.userName}</span>
+            <div ref={committeeDetailRef} className="space-y-2 scroll-mt-4">
+              <BackToList onClick={() => setSelectedCMsg(null)} />
+              <div className="card p-5 space-y-4">
+                <div>
+                  <h2 className="font-bold text-gray-800 text-base dark:text-gray-100">
+                    {committeeNames[selectedCMsg.committeeId] || 'ועדה'}
+                  </h2>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1"><User size={12} />{selectedCMsg.userName}</span>
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">{formatDate(selectedCMsg.createdAt)}</div>
                 </div>
-                <div className="text-xs text-gray-400 mt-0.5">{formatDate(selectedCMsg.createdAt)}</div>
+                <hr />
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selectedCMsg.body}</p>
               </div>
-              <hr />
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selectedCMsg.body}</p>
             </div>
           )}
         </div>
@@ -210,7 +218,7 @@ export default function AdminMessagesPage() {
       ) : (
         <div className="grid md:grid-cols-2 gap-4 items-start">
           {/* Message list */}
-          <div className="space-y-2">
+          <div className={clsx('space-y-2', selected && 'hidden md:block')}>
             {messages.map(msg => (
               <button
                 key={msg.id}
@@ -244,45 +252,40 @@ export default function AdminMessagesPage() {
 
           {/* Message detail */}
           {selected && (
-            <div className="card p-5 space-y-4">
-              <div>
-                <h2 className="font-bold text-gray-800 text-base dark:text-gray-100">{selected.subject}</h2>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1"><User size={12} />{selected.userName}</span>
-                  <span className="flex items-center gap-1"><Mail size={12} />{selected.userEmail}</span>
-                  <span>{ROLE_LABELS[selected.userRole] || selected.userRole}</span>
+            <div ref={detailRef} className="space-y-2 scroll-mt-4">
+              <BackToList onClick={() => setSelected(null)} />
+              <div className="card p-5 space-y-4">
+                <div>
+                  <h2 className="font-bold text-gray-800 text-base dark:text-gray-100">{selected.subject}</h2>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap dark:text-gray-400">
+                    <span className="flex items-center gap-1"><User size={12} />{selected.userName}</span>
+                    <span className="flex items-center gap-1 break-all"><Mail size={12} />{selected.userEmail}</span>
+                    <span>{ROLE_LABELS[selected.userRole] || selected.userRole}</span>
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">{formatDate(selected.createdAt)}</div>
                 </div>
-                <div className="text-xs text-gray-400 mt-0.5">{formatDate(selected.createdAt)}</div>
-              </div>
-              <hr />
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selected.body}</p>
+                <hr />
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed dark:text-gray-200">{selected.body}</p>
 
-              {/* Reply thread */}
-              {selected.replies?.length > 0 && (
-                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <Thread replies={selected.replies} />
-                </div>
-              )}
+                {/* Reply thread */}
+                {selected.replies?.length > 0 && (
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <ReplyBubbles entries={selected.replies} viewer="admin" />
+                  </div>
+                )}
 
-              {/* In-app reply */}
-              <div className="pt-2">
-                <textarea
-                  value={replyText}
-                  onChange={e => setReplyText(e.target.value)}
-                  rows={2}
-                  placeholder="כתבו תשובה שההורה יראה באפליקציה..."
-                  className="input w-full text-right text-sm resize-none"
-                />
-                <div className="flex items-center justify-between mt-2 gap-2">
-                  <a href={`mailto:${selected.userEmail}?subject=Re: ${encodeURIComponent(selected.subject)}`}
-                    className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 dark:text-gray-300">
-                    <Mail size={12} /> השב במייל במקום
-                  </a>
-                  <button onClick={handleReply} disabled={replying || !replyText.trim()}
-                    className="btn-primary text-sm py-1.5 px-4 inline-flex items-center gap-2 disabled:opacity-50">
-                    {replying ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                    שלח תשובה
-                  </button>
+                {/* In-app reply */}
+                <div className="pt-2">
+                  <ReplyBox
+                    compact={false}
+                    onSend={handleReply}
+                    placeholder="כתבו תשובה שההורה יראה באפליקציה..."
+                  >
+                    <a href={`mailto:${selected.userEmail}?subject=Re: ${encodeURIComponent(selected.subject || '')}`}
+                      className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 dark:text-gray-300">
+                      <Mail size={12} /> השב במייל במקום
+                    </a>
+                  </ReplyBox>
                 </div>
               </div>
             </div>

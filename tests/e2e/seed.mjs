@@ -36,6 +36,14 @@ export const SEED = {
   committeeName: 'ועדת תרבות',
   groupName: 'חוג ריצה',
   announcement: 'ברוכים הבאים לשנה החדשה',
+  // פנייה ארוכה בכוונה: בנייד היא נחתכת לשתי שורות ברשימה, והשורה האחרונה היא
+  // מה שצריך להופיע כשפותחים אותה.
+  messageSubject: 'שאלה על הכיתה',
+  messageBody: 'רשומים לי הנתונים של כיתה א בלבד, אבל יש לי גם ילדה בכיתה ג. '
+    + 'הנתונים הרלוונטיים לא מופיעים לי במקום שבו ציפיתי לראות אותם, '
+    + 'ואשמח שתעדכנו אותי מה צריך לעשות כדי שהכל יופיע. תודה רבה מראש.',
+  reportText: 'לא מצליחה להשיב להודעות הקודמות',
+  reportAnswer: 'בדקנו את הדיווח, מטפלים בזה',
   resourceTitle: 'מדריך למשפחה חדשה',
   // Birthdays are matched on MM-DD, so pin them to today for the calendar test.
   childBirthday:  'נועה כהן',
@@ -181,6 +189,20 @@ export async function seed() {
     await set('hobbyGroups', 'group-1', {
       name: SEED.groupName, description: 'ריצה משותפת בבקרים',
       order: 1, status: 'active', memberUids: [], links: [],
+    })
+    // פנייה של הורה שממתינה בתיבה של הצוות, ודיווח תקלה שכבר נענה. שניהם קיימים
+    // כדי שאפשר יהיה לבדוק את מה שדווח מהשטח: פתיחת פנייה במסך צר, ותשובה של
+    // חבר קהילה על דיווח שהצוות כבר ענה עליו.
+    await set('messages', 'msg-1', {
+      userId: uids.parent, userName: ACCOUNTS.parent.name, userEmail: ACCOUNTS.parent.email,
+      userRole: 'community', subject: SEED.messageSubject, body: SEED.messageBody,
+      replies: [], read: false, userUnread: false, createdAt: new Date(),
+    })
+    await set('feedback', 'fb-1', {
+      text: SEED.reportText,
+      submittedBy: { uid: uids.parent, name: ACCOUNTS.parent.name, email: ACCOUNTS.parent.email },
+      status: 'resolved', adminReply: SEED.reportAnswer, userUnread: true,
+      screenshotUrl: null, createdAt: new Date(),
     })
     // Waiting to be claimed by whoever signs up with this address.
     await set('pendingFamilies', 'invited@e2e.test', {

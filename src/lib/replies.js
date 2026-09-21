@@ -8,9 +8,25 @@
 // the whole thing was invisible. So both channels now answer one question, and
 // the dashboard, the side menu and the contact page all ask it here.
 
-// Was this bug report answered by the team?
+// Was this bug report answered by the team? The answer can be the first reply
+// (adminReply) or any later one in the follow-up thread.
 export function hasAdminReply(report) {
-  return !!report?.adminReply
+  if (report?.adminReply) return true
+  return (report?.replies || []).some(r => r?.fromAdmin && r?.body)
+}
+
+// One thread out of a report: the team's first answer and every follow-up
+// after it, in the order they were written. The report's own text stays out —
+// it is shown as the opening message, not as part of the replies.
+export function reportThread(report) {
+  const entries = []
+  if (report?.adminReply) {
+    entries.push({ body: report.adminReply, fromAdmin: true, byName: 'צוות שחף', at: 0 })
+  }
+  for (const r of report?.replies || []) {
+    if (r?.body) entries.push(r)
+  }
+  return entries
 }
 
 // Threads/reports carrying an answer the member has not opened yet.
