@@ -7,7 +7,7 @@ import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebas
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where, setDoc, updateDoc, deleteDoc, writeBatch, arrayUnion } from 'firebase/firestore'
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'firestore.rules')
 
@@ -555,6 +555,80 @@ await check('a member CANNOT clear the flag on someone else\'s report',
   updateDoc(doc(stranger, 'feedback', 'fbMine'), { userUnread: false }), 'deny')
 await check('an admin CAN answer it',
   updateDoc(doc(admin, 'feedback', 'fbMine'), { adminReply: 'תוקן, תודה', status: 'resolved', userUnread: true }), 'allow')
+
+// A report the team answered used to be a dead end: the member could read the
+// answer and had nowhere to write back, which is what sent people to open a
+// new message just to say "still broken".
+await check('a member CAN answer back on their own report',
+  updateDoc(doc(parent, 'feedback', 'fbMine'), {
+    replies: arrayUnion({ body: 'עדיין קורה', fromAdmin: false, byName: 'Parent', at: 1 }),
+    status: 'new', userUnread: false,
+  }), 'allow')
+await check('a member CANNOT close their own report while answering',
+  updateDoc(doc(parent, 'feedback', 'fbMine'), {
+    replies: arrayUnion({ body: 'סוגר לעצמי', fromAdmin: false, at: 2 }), status: 'resolved',
+  }), 'deny')
+await check('a member CANNOT rewrite the report while answering',
+  updateDoc(doc(parent, 'feedback', 'fbMine'), {
+    replies: arrayUnion({ body: 'תוספת', fromAdmin: false, at: 3 }), text: 'טקסט אחר', status: 'new',
+  }), 'deny')
+await check('a member CANNOT answer on someone else\'s report',
+  updateDoc(doc(stranger, 'feedback', 'fbMine'), {
+    replies: arrayUnion({ body: 'לא שלי', fromAdmin: false, at: 4 }), status: 'new',
+  }), 'deny')
+await check('an admin CAN keep the conversation going',
+  updateDoc(doc(admin, 'feedback', 'fbMine'), {
+    replies: arrayUnion({ body: 'בודקים שוב', fromAdmin: true, byName: 'Admin', at: 5 }),
+    status: 'resolved', userUnread: true,
+  }), 'allow')
+
+console.log('\n— a member and the team can hold a conversation on a message —')
+await check('a member can send a message to the team',
+  setDoc(doc(parent, 'messages', 'msgMine'), {
+    userId: 'parent1', userName: 'Parent', userEmail: 'parent@x.com', userRole: 'new_family',
+    subject: 'שאלה', body: 'מתי מתחילים?', replies: [], read: false, userUnread: false,
+  }), 'allow')
+await check('a member CANNOT send a message in someone else\'s name',
+  setDoc(doc(stranger, 'messages', 'msgFake'), {
+    userId: 'parent1', userName: 'Parent', userEmail: 'parent@x.com', userRole: 'new_family',
+    subject: 'התחזות', body: 'לא אני', replies: [],
+  }), 'deny')
+await check('a member CANNOT send an oversized message',
+  setDoc(doc(parent, 'messages', 'msgBig'), {
+    userId: 'parent1', subject: 'ארוך', body: 'א'.repeat(5001), replies: [],
+  }), 'deny')
+await check('a member can read back their own thread',
+  getDoc(doc(parent, 'messages', 'msgMine')), 'allow')
+await check('a member can query their own threads',
+  getDocs(query(collection(parent, 'messages'), where('userId', '==', 'parent1'))), 'allow')
+await check('a member CANNOT read someone else\'s thread',
+  getDoc(doc(stranger, 'messages', 'msgMine')), 'deny')
+await check('a member CANNOT list the whole inbox',
+  getDocs(collection(parent, 'messages')), 'deny')
+await check('an admin CAN read the inbox',
+  getDocs(collection(admin, 'messages')), 'allow')
+await check('an admin CAN answer a thread',
+  updateDoc(doc(admin, 'messages', 'msgMine'), {
+    replies: arrayUnion({ body: 'בשבוע הבא', fromAdmin: true, byName: 'Admin', at: 1 }),
+    userUnread: true,
+  }), 'allow')
+// This is the write the member's "כתבו תשובה" box sends. It was never covered
+// by a rules test, so nothing would have caught it breaking.
+await check('a member CAN reply in their own thread',
+  updateDoc(doc(parent, 'messages', 'msgMine'), {
+    replies: arrayUnion({ body: 'תודה, ומה לגבי כיתה ג?', fromAdmin: false, byName: 'Parent', at: 2 }),
+    read: false, userUnread: false,
+  }), 'allow')
+await check('a member can clear their own "new answer" flag',
+  updateDoc(doc(parent, 'messages', 'msgMine'), { userUnread: false }), 'allow')
+await check('a member CANNOT rewrite the message body while replying',
+  updateDoc(doc(parent, 'messages', 'msgMine'), {
+    replies: arrayUnion({ body: 'x', fromAdmin: false, at: 3 }), body: 'טקסט אחר',
+  }), 'deny')
+await check('a member CANNOT reply in someone else\'s thread',
+  updateDoc(doc(stranger, 'messages', 'msgMine'), {
+    replies: arrayUnion({ body: 'לא שלי', fromAdmin: false, at: 4 }),
+  }), 'deny')
 
 console.log('\n— parallel class in the same grade level ("השכבה שלי") —')
 await check('grade parent CAN read a child of the parallel class in their grade',

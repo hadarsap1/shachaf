@@ -1467,6 +1467,25 @@ export async function replyToFeedback(id, reply) {
   })
 }
 
+// המשך שיחה על דיווח תקלה, לשני הכיוונים. עד היום התשובה של הצוות הייתה סוף
+// הדרך: המדווח ראה אותה ולא היה לו איפה לענות, וזה מה שהחזיר אותו לפתוח פנייה
+// חדשה בשביל להגיד "לא הצלחתי להשיב". תשובה של חבר קהילה פותחת את הדיווח מחדש
+// (status חוזר ל-'new') כדי שיחזור לתיבה של הצוות במקום להיקבר תחת "טופל";
+// תשובה של הצוות מדליקה את דגל ה"תשובה חדשה" של המדווח, בדיוק כמו בשרשור פנייה.
+export async function addFeedbackReply(id, { body, fromAdmin, byName }) {
+  const entry = {
+    body: String(body).slice(0, 2000),
+    fromAdmin: !!fromAdmin,
+    byName: byName || '',
+    at: Date.now(),
+  }
+  const updates = { replies: arrayUnion(entry) }
+  if (fromAdmin) { updates.userUnread = true; updates.status = 'resolved' }
+  else { updates.userUnread = false; updates.status = 'new' }
+  await updateDoc(doc(db, 'feedback', id), updates)
+  return entry
+}
+
 // The reports this member filed, newest first — backed by the feedback read
 // rule (submittedBy.uid == the caller), so the query is provably their own.
 export async function getMyFeedback(uid) {

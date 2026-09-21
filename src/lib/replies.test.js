@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hasAdminReply, unreadReplyCount, unreadIds, replyBannerText } from './replies'
+import { hasAdminReply, unreadReplyCount, unreadIds, replyBannerText, reportThread } from './replies'
 
 describe('unreadReplyCount', () => {
   it('counts unread message replies and answered reports together', () => {
@@ -27,6 +27,34 @@ describe('hasAdminReply', () => {
     expect(hasAdminReply({ adminReply: '' })).toBe(false)
     expect(hasAdminReply({})).toBe(false)
     expect(hasAdminReply(null)).toBe(false)
+  })
+
+  it('counts an answer that came as a follow-up in the thread', () => {
+    expect(hasAdminReply({ replies: [{ body: 'בודקים', fromAdmin: true }] })).toBe(true)
+    // the member answering themselves is not an answer from the team
+    expect(hasAdminReply({ replies: [{ body: 'עדיין קורה', fromAdmin: false }] })).toBe(false)
+  })
+})
+
+describe('reportThread', () => {
+  it('opens with the team answer and keeps the follow-ups in order', () => {
+    const thread = reportThread({
+      text: 'הכפתור לא נלחץ',
+      adminReply: 'תוקן',
+      replies: [
+        { body: 'עדיין קורה', fromAdmin: false, at: 2 },
+        { body: 'בודקים שוב', fromAdmin: true, at: 3 },
+      ],
+    })
+    expect(thread.map(e => e.body)).toEqual(['תוקן', 'עדיין קורה', 'בודקים שוב'])
+    expect(thread[0].fromAdmin).toBe(true)
+  })
+
+  it('leaves the report itself out, and survives an empty report', () => {
+    expect(reportThread({ text: 'משהו נשבר' })).toEqual([])
+    expect(reportThread(null)).toEqual([])
+    // an empty bubble is never worth rendering
+    expect(reportThread({ replies: [{ body: '', fromAdmin: true }] })).toEqual([])
   })
 })
 
