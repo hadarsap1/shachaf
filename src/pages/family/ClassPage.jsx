@@ -305,7 +305,9 @@ function ClassEventCreate({ cls, uid, onCreated }) {
         date: form.date,
         time: form.time || '',
         location: form.location.trim(),
-        type: 'social',
+        // אין בטופס הזה בורר סוג, ולכן אין גם סיווג: תגית ציבורית לא נקבעת
+        // במקומו של מי שפותח את האירוע.
+        type: '',
         targetGroups: ['class'],
         classIds: [cls.id],
         createdBy: uid,

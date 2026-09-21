@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getEvents, saveEvent, deleteEvent, getClasses, getCommittees, uploadEventImage, deleteEventImage, logConsent } from '../../lib/db'
-import { EVENT_TYPE_OPTIONS as TYPE_OPTIONS, isEventForEveryone } from '../../lib/eventFields'
+import { EVENT_TYPE_OPTIONS as TYPE_OPTIONS, EVENT_TYPE_NONE, eventTypeHint, eventTypeLabel, isEventForEveryone } from '../../lib/eventFields'
 import { CONSENT_VERSION } from '../../lib/consent'
 import { Calendar, Plus, Edit2, Trash2, MapPin, Clock, X, Check, CalendarPlus, Loader2, ImagePlus, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
@@ -46,7 +46,7 @@ const blankEvent = () => ({
   date: '',
   time: '',
   location: '',
-  type: 'social',
+  type: '',
   isRequired: false,
   // written alongside isRequired so an event saved before the rename can be
   // un-flagged here (isEventForEveryone reads both)
@@ -268,10 +268,14 @@ function EventPanel({ event, isNew, onSave, onClose, allClasses = [], allCommitt
 
           <div>
             <label className="label block mb-1 text-right">סוג אירוע</label>
-            <select value={draft.type} onChange={e => set('type', e.target.value)}
+            <select value={draft.type || ''} onChange={e => set('type', e.target.value)}
               className="input w-full text-right">
+              <option value={EVENT_TYPE_NONE.value}>{EVENT_TYPE_NONE.label}</option>
               {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            <p className="text-xs text-gray-400 mt-1 text-right dark:text-gray-500">
+              {eventTypeHint(draft.type) || 'בלי בחירה האירוע יפורסם בלי תגית סוג'}
+            </p>
           </div>
 
           {/* Anonymous, event-level only — never tied to a specific child
@@ -654,7 +658,7 @@ export default function AdminEventsPage() {
         <div className="space-y-3">
           {sorted.map(event => {
             const typeConf = TYPE_COLOR[event.type]
-            const typeLabel = TYPE_OPTIONS.find(o => o.value === event.type)?.label || event.type
+            const typeLabel = eventTypeLabel(event.type)
 
             return (
               <div key={event.id}
@@ -681,7 +685,7 @@ export default function AdminEventsPage() {
                   <div className="flex-1 text-right min-w-0">
                     <div className="flex items-center gap-2 justify-end flex-wrap mb-0.5">
                       <span className="font-semibold text-gray-800 text-sm dark:text-gray-100">{event.title}</span>
-                      <span className={typeConf || 'badge'}>{typeLabel}</span>
+                      {typeLabel && <span className={typeConf || 'badge'}>{typeLabel}</span>}
                       {isEventForEveryone(event) && (
                         <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium dark:bg-blue-900/20 dark:text-blue-400">כולם מוזמנים</span>
                       )}

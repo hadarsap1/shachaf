@@ -773,6 +773,21 @@ async function main() {
         await assertNoHorizontalOverflow(adminPhone, 'פניות')
         assertClean('פניות מובייל')
       })
+
+      // סוג האירוע הוא תווית שכל הקהילה רואה, ולכן הטופס לא בוחר אותה לבד.
+      await step('טופס אירוע חדש נפתח בלי סיווג ומסביר כל סוג', async () => {
+        await adminPhone.goto(`${BASE}/events`, { waitUntil: 'domcontentloaded' })
+        await adminPhone.getByRole('button', { name: 'צור אירוע' }).first().click()
+        const select = adminPhone.locator('select').filter({ hasText: 'ללא סיווג' }).first()
+        await select.waitFor({ timeout: 15000 })
+        assert(await select.inputValue() === '', 'טופס אירוע חדש נפתח עם סיווג שאיש לא בחר')
+        await expectText(adminPhone, 'בלי בחירה האירוע יפורסם בלי תגית סוג')
+        // "אוריינטציה" לא אמר כלום לאיש. עכשיו יש גם שם וגם הסבר.
+        await select.selectOption('orientation')
+        await expectText(adminPhone, 'מפגש היכרות למשפחות חדשות')
+        await shoot(adminPhone, 'event-type-hint-mobile')
+        assertClean('טופס אירוע חדש')
+      })
       await adminPhone.context().close()
     }
 

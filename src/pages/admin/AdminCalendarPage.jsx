@@ -5,6 +5,7 @@ import CalendarGrid from '../../components/ui/CalendarGrid'
 import { Calendar, MapPin, Clock, Edit2, X, CalendarPlus, Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent } from '../../lib/calendar'
+import { eventTypeLabel } from '../../lib/eventFields'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -26,13 +27,6 @@ function matchesFilter(ev, filterValue) {
   if (groups.includes('all')) return true
   if (groups.includes('class')) return (ev.classIds || []).includes(filterValue)
   return false
-}
-
-const TYPE_LABEL = {
-  social:      'חברתי',
-  orientation: 'אוריינטציה',
-  ceremony:    'טקס',
-  community:   'קהילתי',
 }
 
 const TYPE_BADGE = {
@@ -58,7 +52,7 @@ function EventDetailPanel({ event, onClose }) {
 
   const eventDate = new Date(event.date)
   const badgeCls  = TYPE_BADGE[event.type] || 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300'
-  const typeLabel = TYPE_LABEL[event.type] || event.type
+  const typeLabel = eventTypeLabel(event.type)
 
   const targetLabel = () => {
     const groups = event.targetGroups || ['all']
@@ -102,9 +96,11 @@ function EventDetailPanel({ event, onClose }) {
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 font-medium dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
               {targetLabel()}
             </span>
-            <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
-              {typeLabel}
-            </span>
+            {typeLabel && (
+              <span className={clsx('text-xs px-2.5 py-0.5 rounded-full border font-medium', badgeCls)}>
+                {typeLabel}
+              </span>
+            )}
           </div>
 
           {/* Title */}

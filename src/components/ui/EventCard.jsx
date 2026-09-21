@@ -2,17 +2,19 @@ import { Calendar, MapPin, Clock, CalendarPlus, Download } from 'lucide-react'
 import clsx from 'clsx'
 import { buildCalendarData, buildGoogleCalendarUrl, buildICSContent, isEventPast } from '../../lib/calendar'
 import DietaryBadges from './DietaryBadges'
-import { isEventForEveryone } from '../../lib/eventFields'
+import { isEventForEveryone, eventTypeLabel } from '../../lib/eventFields'
 
-const TYPE_CONFIG = {
-  social:      { label: 'חברתי',     color: 'badge-primary' },
-  orientation: { label: 'אוריינטציה', color: 'badge-secondary' },
-  ceremony:    { label: 'טקס',       color: 'badge-accent' },
-  community:   { label: 'קהילה',     color: 'badge-warning' },
+// צבע בלבד. התווית מגיעה מ-lib/eventFields, כדי שאותו אירוע לא ייקרא כאן
+// בשם אחד ובפאנל הפירוט בשם אחר.
+const TYPE_COLOR = {
+  social:      'badge-primary',
+  orientation: 'badge-secondary',
+  ceremony:    'badge-accent',
+  community:   'badge-warning',
 }
 
 export default function EventCard({ event, onCardClick }) {
-  const typeConfig = TYPE_CONFIG[event.type] || TYPE_CONFIG.social
+  const typeLabel = eventTypeLabel(event.type)
   // Parse as LOCAL time (a bare 'YYYY-MM-DD' is otherwise treated as UTC midnight,
   // which makes a same-day event read as "past" during the local evening).
   const eventDate = new Date(`${event.date}T00:00:00`)
@@ -56,9 +58,11 @@ export default function EventCard({ event, onCardClick }) {
               <span className="badge bg-accent-50 text-accent-700 border border-accent-200 text-xs mt-1 dark:bg-accent-900/30">כולם מוזמנים</span>
             )}
           </div>
-          <span className={clsx(typeConfig.color, 'badge text-xs flex-shrink-0')}>
-            {typeConfig.label}
-          </span>
+          {typeLabel && (
+            <span className={clsx(TYPE_COLOR[event.type], 'badge text-xs flex-shrink-0')}>
+              {typeLabel}
+            </span>
+          )}
         </div>
 
         <p className="text-xs text-gray-600 leading-relaxed mb-3 dark:text-gray-300">{event.description}</p>
