@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Share, Download, X } from 'lucide-react'
+import { Share, Download, X, Copy, Check } from 'lucide-react'
+import { isIOSDevice, inAppBrowserName } from '../../lib/installHelp'
 
 const DISMISSED_KEY = 'shachaf_install_dismissed'
 
@@ -10,21 +11,21 @@ function isStandalone() {
   )
 }
 
-function isIOS() {
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream
-}
-
 export default function InstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [show, setShow] = useState(false)
   const [ios, setIos] = useState(false)
+  // null in a real browser; the app's name (or '') inside WhatsApp/Instagram/…
+  const [inApp, setInApp] = useState(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (isStandalone()) return
     if (sessionStorage.getItem(DISMISSED_KEY)) return
 
-    if (isIOS()) {
+    if (isIOSDevice()) {
       setIos(true)
+      setInApp(inAppBrowserName())
       setShow(true)
       return
     }
@@ -52,6 +53,17 @@ export default function InstallBanner() {
     setDeferredPrompt(null)
   }
 
+  // Inside an app's browser the only way forward is Safari, and the link the
+  // user tapped is buried in a chat — hand them one to paste.
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.origin)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
   if (!show) return null
 
   return (
@@ -64,11 +76,26 @@ export default function InstallBanner() {
 
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm leading-snug">התקן את האפליקציה</p>
-          {ios ? (
+          {ios && inApp !== null ? (
+            <>
+              <p className="text-xs text-primary-200 mt-0.5 leading-relaxed">
+                {inApp ? `בדפדפן של ${inApp}` : 'בדפדפן שבתוך האפליקציה'} אין אפשרות להתקין.
+                {' '}פתח את הקישור ב-<strong className="text-white">Safari</strong> ומשם הוסף למסך הבית.
+              </p>
+              <button
+                onClick={copyLink}
+                className="mt-2 flex items-center gap-1.5 text-xs font-semibold bg-white text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors dark:bg-gray-800 dark:hover:bg-primary-900/30 dark:text-primary-300"
+              >
+                {copied ? <Check size={13} /> : <Copy size={13} />}
+                {copied ? 'הקישור הועתק, הדבק אותו ב-Safari' : 'העתק קישור'}
+              </button>
+            </>
+          ) : ios ? (
             <p className="text-xs text-primary-200 mt-0.5 leading-relaxed">
-              לחץ על{' '}
+              ב-Safari לחץ על{' '}
               <Share size={12} className="inline-block mx-0.5 -mt-0.5" />
-              {' '}שיתוף ← <strong className="text-white">הוסף למסך הבית</strong>
+              {' '}שיתוף (או ••• ← שיתוף), גלול למטה ובחר <strong className="text-white">הוסף למסך הבית</strong>.
+              {' '}נכנסת מוואטסאפ? פתח קודם ב-Safari.
             </p>
           ) : (
             <p className="text-xs text-primary-200 mt-0.5">

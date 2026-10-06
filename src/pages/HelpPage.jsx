@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { Link } from 'react-router-dom'
+import { IOS_OPEN_IN_SAFARI, IOS_ADD_STEP, ANDROID_ADD_STEP } from '../lib/installHelp'
 
 const SECTIONS = [
   {
@@ -23,7 +24,7 @@ const SECTIONS = [
       },
       {
         q: 'האם האפליקציה עובדת על הטלפון?',
-        a: 'כן! ניתן להתקין את האפליקציה על מסך הבית של הטלפון (PWA). ב-iPhone: לחצו על כפתור השיתוף → "הוסף למסך הבית". ב-Android: תפריט שלוש נקודות → "הוסף למסך הבית". האפליקציה תיפתח בלי פס דפדפן, כמו אפליקציה רגילה.',
+        a: `כן! ניתן להתקין את האפליקציה על מסך הבית של הטלפון (PWA). ${IOS_OPEN_IN_SAFARI}. ${IOS_ADD_STEP}. ${ANDROID_ADD_STEP}. האפליקציה תיפתח בלי פס דפדפן, כמו אפליקציה רגילה.`,
       },
       {
         q: 'שכחתי סיסמה, מה עושים?',

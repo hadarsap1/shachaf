@@ -6,6 +6,7 @@ import { updateUserProfile, updateChildProfile, uploadChildPhoto, deleteChildPho
 import { CONSENT_VERSION, hasConsented } from '../../lib/consent'
 import { APP_VERSION } from '../../lib/appUpdate'
 import { clearAppCaches } from '../../lib/hardReload'
+import { IOS_OPEN_IN_SAFARI, IOS_ADD_STEP, ANDROID_ADD_STEP } from '../../lib/installHelp'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { User, Phone, Mail, MapPin, ChevronDown, ChevronUp, CheckCircle2, Settings, Loader2, UserPlus, Briefcase, Smile, Clock, PawPrint, Camera, X, Calendar } from 'lucide-react'
@@ -98,8 +99,9 @@ const TUTORIALS = [
     icon: '📱',
     steps: [
       'פתחו את האפליקציה בדפדפן הטלפון (Safari ב-iPhone, Chrome ב-Android)',
-      'iPhone: לחצו על כפתור השיתוף ← "הוסף למסך הבית"',
-      'Android: לחצו על תפריט שלוש הנקודות ← "הוסף למסך הבית"',
+      IOS_OPEN_IN_SAFARI,
+      IOS_ADD_STEP,
+      ANDROID_ADD_STEP,
       'האפליקציה תופיע כאייקון ותפתח ללא פס דפדפן',
     ],
   },
