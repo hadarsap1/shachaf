@@ -576,13 +576,14 @@ export default function AppShell() {
           </button>
         </header>
 
+        <InstallBanner />
+
         <main id="main-content" tabIndex={-1} key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in focus:outline-none">
           <RouteErrorBoundary resetKey={pathname} uid={user?.uid} userName={user?.name}>
             <Outlet />
           </RouteErrorBoundary>
         </main>
 
-        <InstallBanner />
         <FeedbackButton />
         <Toaster />
 

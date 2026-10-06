@@ -3,6 +3,19 @@ import { Share, Download, X, Copy, Check } from 'lucide-react'
 import { isIOSDevice, inAppBrowserName } from '../../lib/installHelp'
 
 const DISMISSED_KEY = 'shachaf_install_dismissed'
+// Closing the banner keeps it closed across visits for a while — per tab
+// (sessionStorage) it came back on every visit and the user had to hunt
+// for the X again.
+const DISMISS_FOR_MS = 30 * 24 * 60 * 60 * 1000
+
+function recentlyDismissed() {
+  try {
+    const at = Number(localStorage.getItem(DISMISSED_KEY))
+    return at > 0 && Date.now() - at < DISMISS_FOR_MS
+  } catch {
+    return false
+  }
+}
 
 function isStandalone() {
   return (
@@ -21,7 +34,7 @@ export default function InstallBanner() {
 
   useEffect(() => {
     if (isStandalone()) return
-    if (sessionStorage.getItem(DISMISSED_KEY)) return
+    if (recentlyDismissed()) return
 
     if (isIOSDevice()) {
       setIos(true)
@@ -41,7 +54,7 @@ export default function InstallBanner() {
   }, [])
 
   const dismiss = () => {
-    sessionStorage.setItem(DISMISSED_KEY, '1')
+    try { localStorage.setItem(DISMISSED_KEY, String(Date.now())) } catch { /* private mode */ }
     setShow(false)
   }
 
@@ -67,12 +80,12 @@ export default function InstallBanner() {
   if (!show) return null
 
   return (
-    <div
-      className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 max-w-sm mx-auto"
-      dir="rtl"
-    >
-      <div className="bg-primary-700 text-white rounded-2xl shadow-2xl p-4 flex items-start gap-3">
-        <img src="/apple-touch-icon.png" alt="" className="w-10 h-10 rounded-xl flex-shrink-0" />
+    // In the page flow under the top bar, not floating: a fixed card at the
+    // bottom sat over the side menu and under the accessibility button, which
+    // hid its X — the banner could not be closed.
+    <div className="flex-shrink-0 px-4 pt-3" dir="rtl">
+      <div className="bg-primary-700 text-white rounded-2xl shadow-md p-3 flex items-start gap-3 max-w-2xl mx-auto">
+        <img src="/apple-touch-icon.png" alt="" className="w-9 h-9 rounded-xl flex-shrink-0" />
 
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm leading-snug">התקן את האפליקציה</p>
@@ -117,9 +130,9 @@ export default function InstallBanner() {
         <button
           onClick={dismiss}
           aria-label="סגור"
-          className="p-1 rounded-lg hover:bg-primary-600 text-primary-200 flex-shrink-0 transition-colors"
+          className="p-2 -m-1 rounded-lg hover:bg-primary-600 text-primary-200 flex-shrink-0 transition-colors"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
       </div>
     </div>
