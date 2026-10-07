@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { getUsers, getChildren, getClasses, getPendingFamilies, markUsersImported, markOnboardingComplete } from '../../lib/db'
+import { getUsers, getChildren, getClasses, getPendingFamilies, markUsersImported, markOnboardingComplete, syncUserClassIds } from '../../lib/db'
 import { computeHealthAnomalies, onboardingGaps, closableOnboarding } from '../../lib/health'
 import { RefreshCw, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
@@ -282,6 +282,13 @@ export default function SuperAdminHealthPage() {
         items={staleClassIds}
         renderItem={(u) => userLine(u, (u.classIds || []).map(id => classNameById[id] || id).join(', '))}
         linkTo="/admin/users" linkLabel="לניהול חברים"
+        action={{
+          label: 'עדכן את הכיתות לפי הילדים המקושרים',
+          run: async (items) => {
+            await Promise.allSettled(items.map(u => syncUserClassIds(u.uid)))
+            load()
+          },
+        }}
       />
 
       <AnomalySection
