@@ -557,7 +557,12 @@ async function _saveChild(child) {
 }
 
 async function _deleteChild(id) {
+  const snap = await getDoc(doc(db, 'children', id))
+  const parentUids = snap.exists() ? (snap.data().parentUids || []) : []
   await deleteDoc(doc(db, 'children', id))
+  // The parents' classIds were derived from this child — without a resync a
+  // parent whose child left keeps the class (its roster, events, chats).
+  await Promise.allSettled(parentUids.map(uid => syncUserClassIds(uid)))
 }
 
 async function _bulkImportChildren(children) {
