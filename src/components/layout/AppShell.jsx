@@ -578,7 +578,9 @@ export default function AppShell() {
 
         <InstallBanner />
 
-        <main id="main-content" tabIndex={-1} key={pathname} className="flex-1 overflow-y-auto pb-16 md:pb-0 animate-fade-in focus:outline-none">
+        {/* Bottom padding clears the floating accessibility and feedback
+            buttons, so the last thing on a page (a send button) can be reached. */}
+        <main id="main-content" tabIndex={-1} key={pathname} className="flex-1 overflow-y-auto pb-52 md:pb-32 animate-fade-in focus:outline-none">
           <RouteErrorBoundary resetKey={pathname} uid={user?.uid} userName={user?.name}>
             <Outlet />
           </RouteErrorBoundary>
