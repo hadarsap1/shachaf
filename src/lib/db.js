@@ -863,6 +863,7 @@ export async function registerCoParent(currentUser, { name, phone, email }) {
   const appName = `co-parent-${Date.now()}`
   const secondaryApp = initializeApp(firebaseConfig, appName)
   const secondaryAuth = getAuth(secondaryApp)
+  secondaryAuth.languageCode = 'he'  // the invite (reset) email, in Hebrew
   const secondaryDb = getFirestore(secondaryApp)
 
   try {
@@ -937,6 +938,7 @@ async function _createMember({ name, email, phone, role, roles }) {
   const appName = `new-member-${Date.now()}`
   const secondaryApp = initializeApp(firebaseConfig, appName)
   const secondaryAuth = getAuth(secondaryApp)
+  secondaryAuth.languageCode = 'he'  // the invite (reset) email, in Hebrew
   const secondaryDb = getFirestore(secondaryApp)
   try {
     const arr = new Uint8Array(9)

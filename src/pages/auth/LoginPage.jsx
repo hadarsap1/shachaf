@@ -289,11 +289,26 @@ export default function LoginPage() {
               {resetSent ? (
                 <div className="text-center py-6">
                   <div className="text-4xl mb-3">📬</div>
-                  <p className="font-semibold text-gray-800 dark:text-gray-100">נשלח מייל לאיפוס</p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">בדוק את תיבת הדואר שלך</p>
-                  <button onClick={() => { setMode('login'); setResetSent(false) }} className="mt-4 text-sm text-primary-600 dark:text-primary-200 hover:underline">
-                    חזרה לכניסה
-                  </button>
+                  {/* Firebase answers "sent" even when no password account has
+                      this address (it will not reveal which addresses exist),
+                      so this cannot promise a mail — it says what to check. */}
+                  <p className="font-semibold text-gray-800 dark:text-gray-100">הבקשה נשלחה</p>
+                  <p className="text-sm text-gray-600 mt-1 dark:text-gray-300">
+                    אם קיים חשבון עם הכתובת <span dir="ltr" className="font-medium">{email}</span>, נשלח אליו מייל לאיפוס הסיסמה.
+                  </p>
+                  <ul className="text-xs text-gray-500 dark:text-gray-400 mt-3 space-y-1 text-right list-disc pr-5">
+                    <li>המייל לא הגיע תוך כמה דקות? בדוק בתיקיית הספאם ובלשונית "קידומי מכירות".</li>
+                    <li>נרשמת עם Google? אין לך סיסמה. חזור לכניסה ולחץ על "המשך עם Google".</li>
+                    <li>בדוק שהכתובת נכונה, בלי רווחים או טעויות הקלדה.</li>
+                  </ul>
+                  <div className="mt-4 flex items-center justify-center gap-4">
+                    <button onClick={() => setResetSent(false)} className="text-sm text-primary-600 dark:text-primary-200 hover:underline">
+                      שלח שוב
+                    </button>
+                    <button onClick={() => { setMode('login'); setResetSent(false) }} className="text-sm text-primary-600 dark:text-primary-200 hover:underline">
+                      חזרה לכניסה
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleReset} className="space-y-4">

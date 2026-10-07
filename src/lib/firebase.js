@@ -35,6 +35,9 @@ export const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig)
 export const auth    = getAuth(app)
+// Emails Firebase sends for us (password reset) go out in Hebrew. In the
+// default English they read like spam from an unknown sender and get ignored.
+auth.languageCode = 'he'
 export const db      = getFirestore(app)
 export const storage = getStorage(app)
 
